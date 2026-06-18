@@ -120,6 +120,7 @@ def latest_research_bundle() -> dict[str, object]:
         "generated_at": now_iso(),
         "model_version": MODEL_VERSION,
         "endpoints": {
+            "index": "/api/index",
             "all_latest": "/api/research/latest",
             "market_snapshot": "/api/research/latest/market-snapshot",
             "market_score": "/api/research/latest/market-score",
@@ -134,12 +135,174 @@ def latest_research_bundle() -> dict[str, object]:
     }
 
 
+def score_records() -> list[dict[str, object]]:
+    history = load_history(DEFAULT_HISTORY_PATH)
+    records = history.get("records", [])
+    if not isinstance(records, list):
+        return []
+    return sorted(records, key=lambda row: str(row.get("scored_at", "")))
+
+
+def homepage_index_result() -> dict[str, object]:
+    records = score_records()
+    latest = records[-1] if records else {}
+    modules = latest.get("modules", {}) if isinstance(latest.get("modules"), dict) else {}
+    selected_module_key = next(iter(modules.keys()), None)
+    selected_module = modules.get(selected_module_key, {}) if selected_module_key else {}
+    latest_research = latest_research_bundle()
+    api_results = latest_research.get("results", {})
+    api_available = {
+        key: bool(value.get("available")) if isinstance(value, dict) else False
+        for key, value in api_results.items()
+    }
+
+    module_cards = []
+    for key, module in modules.items():
+        if not isinstance(module, dict):
+            continue
+        module_cards.append(
+            {
+                "key": key,
+                "label": module.get("label"),
+                "score": module.get("score"),
+                "weight": module.get("weight"),
+                "score_pct": module.get("score_pct"),
+                "summary": module.get("summary"),
+                "history": [
+                    {
+                        "basis_trade_date": record.get("basis_trade_date"),
+                        "scored_at": record.get("scored_at"),
+                        "score": ((record.get("modules", {}) or {}).get(key, {}) or {}).get("score"),
+                        "score_pct": ((record.get("modules", {}) or {}).get(key, {}) or {}).get("score_pct"),
+                    }
+                    for record in records
+                ],
+            }
+        )
+
+    return {
+        "schema_version": 1,
+        "generated_at": now_iso(),
+        "page": {
+            "path": "/",
+            "title": "A股市场评分",
+            "model_line": f"{latest.get('model_version', MODEL_VERSION)} · {latest.get('scored_at', '--')}" if latest else MODEL_VERSION,
+            "primary_action": {"label": "记录当前评分", "method": "POST", "endpoint": "/api/score"},
+        },
+        "summary": {
+            "basis_trade_date": latest.get("basis_trade_date"),
+            "run_id": latest.get("run_id"),
+            "market_regime": latest.get("market_regime"),
+            "confidence": latest.get("confidence"),
+            "equity_position_range": latest.get("equity_position_range"),
+            "cards": [
+                {
+                    "id": "position_score",
+                    "label": "仓位参考分",
+                    "value": latest.get("market_position_score"),
+                    "max": 100,
+                    "detail": latest.get("equity_position_range"),
+                },
+                {
+                    "id": "opportunity_score",
+                    "label": "市场机会分",
+                    "value": latest.get("market_opportunity_score"),
+                    "max": 100,
+                    "detail": "100分制",
+                },
+                {
+                    "id": "crowding_penalty",
+                    "label": "拥挤惩罚",
+                    "value": latest.get("crowding_penalty"),
+                    "max": 30,
+                    "detail": "30分上限",
+                },
+                {
+                    "id": "market_regime",
+                    "label": "市场状态",
+                    "value": latest.get("market_regime"),
+                    "detail": latest.get("confidence"),
+                },
+            ],
+        },
+        "api_status": {
+            "label": "最新研究结果 API",
+            "available_count": sum(1 for available in api_available.values() if available),
+            "total_count": len(api_available),
+            "items": api_available,
+            "endpoints": latest_research.get("endpoints", {}),
+        },
+        "overview_chart": {
+            "title": "总分与上证指数",
+            "record_count": len(records),
+            "series": {
+                "market_position_score": [
+                    {"basis_trade_date": row.get("basis_trade_date"), "scored_at": row.get("scored_at"), "value": row.get("market_position_score")}
+                    for row in records
+                ],
+                "market_opportunity_score": [
+                    {"basis_trade_date": row.get("basis_trade_date"), "scored_at": row.get("scored_at"), "value": row.get("market_opportunity_score")}
+                    for row in records
+                ],
+                "crowding_penalty": [
+                    {"basis_trade_date": row.get("basis_trade_date"), "scored_at": row.get("scored_at"), "value": row.get("crowding_penalty")}
+                    for row in records
+                ],
+                "shanghai_composite": [
+                    {"basis_trade_date": row.get("basis_trade_date"), "scored_at": row.get("scored_at"), "value": row.get("shanghai_composite")}
+                    for row in records
+                ],
+            },
+        },
+        "modules": {
+            "title": "子项分历史",
+            "selected_key": selected_module_key,
+            "cards": module_cards,
+        },
+        "selected_module_detail": {
+            "key": selected_module_key,
+            "label": selected_module.get("label") if isinstance(selected_module, dict) else None,
+            "metrics": selected_module.get("metrics", {}) if isinstance(selected_module, dict) else {},
+            "evidence": selected_module.get("evidence", []) if isinstance(selected_module, dict) else [],
+        },
+        "history_table": {
+            "title": "评分历史",
+            "updated_at": load_history(DEFAULT_HISTORY_PATH).get("updated_at"),
+            "rows": [
+                {
+                    "scored_at": row.get("scored_at"),
+                    "basis_trade_date": row.get("basis_trade_date"),
+                    "market_opportunity_score": row.get("market_opportunity_score"),
+                    "crowding_penalty": row.get("crowding_penalty"),
+                    "market_position_score": row.get("market_position_score"),
+                    "shanghai_composite": row.get("shanghai_composite"),
+                    "equity_position_range": row.get("equity_position_range"),
+                    "market_regime": row.get("market_regime"),
+                }
+                for row in reversed(records)
+            ],
+        },
+        "source_endpoints": {
+            "page": "/",
+            "index": "/api/index",
+            "history": "/api/history",
+            "latest_research": "/api/research/latest",
+            "latest_score": "/api/research/latest/market-score",
+            "latest_snapshot": "/api/research/latest/market-snapshot",
+            "latest_analysis": "/api/research/latest/market-analysis",
+        },
+    }
+
+
 class MarketWebHandler(BaseHTTPRequestHandler):
     server_version = "MyInvestMarketWeb/1.0"
 
     def do_GET(self) -> None:
         try:
             path = unquote(urlparse(self.path).path)
+            if path == "/api/index":
+                self.send_json(homepage_index_result())
+                return
             if path in ["/api/latest", "/api/research/latest"]:
                 self.send_json(latest_research_bundle())
                 return
