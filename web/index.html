@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>MyInvest A股市场评分</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <header class="app-bar">
+      <div>
+        <h1>A股市场评分</h1>
+        <p id="modelLine">加载中</p>
+      </div>
+      <div class="actions">
+        <button id="scoreButton" type="button">记录当前评分</button>
+        <span id="statusLine" role="status"></span>
+      </div>
+    </header>
+
+    <main class="layout">
+      <section class="summary-grid" aria-label="评分摘要">
+        <article class="score-card primary">
+          <span class="label">仓位参考分</span>
+          <strong id="positionScore">--</strong>
+          <div class="meter"><span id="positionMeter"></span></div>
+          <small id="positionRange">--</small>
+        </article>
+        <article class="score-card">
+          <span class="label">市场机会分</span>
+          <strong id="opportunityScore">--</strong>
+          <div class="meter"><span id="opportunityMeter"></span></div>
+          <small>100分制</small>
+        </article>
+        <article class="score-card">
+          <span class="label">拥挤惩罚</span>
+          <strong id="crowdingPenalty">--</strong>
+          <div class="meter warning"><span id="crowdingMeter"></span></div>
+          <small>30分上限</small>
+        </article>
+        <article class="score-card">
+          <span class="label">市场状态</span>
+          <strong id="marketRegime">--</strong>
+          <small id="basisDate">--</small>
+          <small id="confidence">--</small>
+        </article>
+      </section>
+
+      <section class="chart-band">
+        <div class="section-head">
+          <h2>总分与上证指数</h2>
+          <span id="recordCount">--</span>
+        </div>
+        <div id="overviewChart" class="chart-frame"></div>
+      </section>
+
+      <section>
+        <div class="section-head">
+          <h2>子项分历史</h2>
+          <select id="moduleSelect" aria-label="选择评分子项"></select>
+        </div>
+        <div id="moduleGrid" class="module-grid"></div>
+      </section>
+
+      <section class="detail-layout">
+        <div>
+          <div class="section-head">
+            <h2>打分依据曲线</h2>
+            <span id="selectedModuleLabel">--</span>
+          </div>
+          <div id="metricCharts" class="metric-grid"></div>
+        </div>
+        <div>
+          <div class="section-head">
+            <h2>当前依据明细</h2>
+            <span id="latestRun">--</span>
+          </div>
+          <div id="evidenceTable" class="evidence-table"></div>
+        </div>
+      </section>
+
+      <section class="history-section">
+        <div class="section-head">
+          <h2>评分历史</h2>
+          <span id="historyUpdated">--</span>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>评分时间</th>
+                <th>基准日</th>
+                <th>机会分</th>
+                <th>惩罚</th>
+                <th>最终分</th>
+                <th>上证</th>
+                <th>仓位区间</th>
+                <th>状态</th>
+              </tr>
+            </thead>
+            <tbody id="historyRows"></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+
+    <script src="/app.js"></script>
+  </body>
+</html>

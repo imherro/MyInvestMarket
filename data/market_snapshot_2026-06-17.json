@@ -1,0 +1,310 @@
+{
+  "date": "2026-06-17",
+  "market": {
+    "as_of_trade_date": "2026-06-17",
+    "indices": {
+      "000001.SH": {
+        "name": "上证指数",
+        "name_en": "Shanghai Composite",
+        "trade_date": "2026-06-17",
+        "close": 4108.0762,
+        "return_5d_pct": 2.8761,
+        "return_20d_pct": -1.3,
+        "ma20": 4066.4472,
+        "ma20_deviation_pct": 1.0237,
+        "volume_ratio_5d": 0.9487,
+        "above_ma20": true,
+        "source": "Tushare.index_daily"
+      },
+      "399001.SZ": {
+        "name": "深证成指",
+        "name_en": "Shenzhen Component",
+        "trade_date": "2026-06-17",
+        "close": 15880.9507,
+        "return_5d_pct": 6.198,
+        "return_20d_pct": 1.9973,
+        "ma20": 15465.4996,
+        "ma20_deviation_pct": 2.6863,
+        "volume_ratio_5d": 1.0122,
+        "above_ma20": true,
+        "source": "Tushare.index_daily"
+      },
+      "399006.SZ": {
+        "name": "创业板指",
+        "name_en": "ChiNext Index",
+        "trade_date": "2026-06-17",
+        "close": 4167.0478,
+        "return_5d_pct": 8.1004,
+        "return_20d_pct": 6.2537,
+        "ma20": 3989.5689,
+        "ma20_deviation_pct": 4.4486,
+        "volume_ratio_5d": 1.0273,
+        "above_ma20": true,
+        "source": "Tushare.index_daily"
+      },
+      "899050.BJ": {
+        "name": "北证50",
+        "name_en": "BSE 50",
+        "trade_date": "2026-06-17",
+        "close": 1280.2455,
+        "return_5d_pct": -1.1853,
+        "return_20d_pct": -5.1229,
+        "ma20": 1278.9387,
+        "ma20_deviation_pct": 0.1022,
+        "volume_ratio_5d": 0.9668,
+        "above_ma20": true,
+        "source": "Tushare.index_daily"
+      }
+    }
+  },
+  "breadth": {
+    "trade_date": "2026-06-17",
+    "advancers": 1723,
+    "decliners": 3734,
+    "flat": 52,
+    "total": 5509,
+    "limit_up": 86,
+    "limit_down": 1,
+    "max_limit_up_streak": 5,
+    "industry_up_ratio": 0.2903,
+    "industry_count": 31
+  },
+  "capital_flow": {
+    "trade_date": "2026-06-17",
+    "market_cap_bucket_thresholds_100m_cny": {
+      "large_cap_min": 2000,
+      "mid_cap_min": 300,
+      "small_cap_max_exclusive": 300
+    },
+    "northbound_net_inflow_raw": 385055.84,
+    "northbound_net_inflow_100m_cny": 38.5056,
+    "northbound_trade_date": "2026-06-17",
+    "northbound_unit_note": "northbound_net_inflow_100m_cny = raw north_money / 10000; raw field is preserved",
+    "main_net_inflow_100m_cny": -491.2641,
+    "turnover_distribution": {
+      "large_cap": {
+        "turnover_100m_cny": 5654.6483,
+        "share": 0.1816
+      },
+      "mid_cap": {
+        "turnover_100m_cny": 13125.1114,
+        "share": 0.4215
+      },
+      "small_cap": {
+        "turnover_100m_cny": 12360.6308,
+        "share": 0.3969
+      }
+    }
+  },
+  "sector_rotation": {
+    "trade_date": "2026-06-17",
+    "top5_industries_by_return": [
+      {
+        "industry": "电子",
+        "ts_code": "801080.SI",
+        "pct_change": 4.7,
+        "close": 10608.41
+      },
+      {
+        "industry": "建筑材料",
+        "ts_code": "801710.SI",
+        "pct_change": 4.31,
+        "close": 7437.07
+      },
+      {
+        "industry": "综合",
+        "ts_code": "801230.SI",
+        "pct_change": 4.23,
+        "close": 4523.81
+      },
+      {
+        "industry": "建筑装饰",
+        "ts_code": "801720.SI",
+        "pct_change": 1.79,
+        "close": 2112.39
+      },
+      {
+        "industry": "通信",
+        "ts_code": "801770.SI",
+        "pct_change": 1.45,
+        "close": 9447.25
+      }
+    ],
+    "bottom5_industries_by_return": [
+      {
+        "industry": "商贸零售",
+        "ts_code": "801200.SI",
+        "pct_change": -2.21,
+        "close": 1828.3
+      },
+      {
+        "industry": "煤炭",
+        "ts_code": "801950.SI",
+        "pct_change": -2.18,
+        "close": 3051.84
+      },
+      {
+        "industry": "钢铁",
+        "ts_code": "801040.SI",
+        "pct_change": -2.01,
+        "close": 2296.75
+      },
+      {
+        "industry": "传媒",
+        "ts_code": "801760.SI",
+        "pct_change": -1.75,
+        "close": 675.15
+      },
+      {
+        "industry": "农林牧渔",
+        "ts_code": "801010.SI",
+        "pct_change": -1.67,
+        "close": 2318.28
+      }
+    ],
+    "top5_industries_by_capital_inflow": [
+      {
+        "industry": "半导体",
+        "ts_code": "881121.TI",
+        "pct_change": 3.97,
+        "net_amount_100m_cny": 267.0,
+        "lead_stock": "盛美上海"
+      },
+      {
+        "industry": "电子化学品",
+        "ts_code": "881172.TI",
+        "pct_change": 5.34,
+        "net_amount_100m_cny": 33.0,
+        "lead_stock": "国瓷材料"
+      },
+      {
+        "industry": "计算机设备",
+        "ts_code": "881130.TI",
+        "pct_change": 0.44,
+        "net_amount_100m_cny": 28.0,
+        "lead_stock": "飞天诚信"
+      },
+      {
+        "industry": "光学光电子",
+        "ts_code": "881122.TI",
+        "pct_change": 2.89,
+        "net_amount_100m_cny": 26.0,
+        "lead_stock": "美迪凯"
+      },
+      {
+        "industry": "消费电子",
+        "ts_code": "881124.TI",
+        "pct_change": 0.86,
+        "net_amount_100m_cny": 14.0,
+        "lead_stock": "昀冢科技"
+      }
+    ]
+  },
+  "macro": {
+    "us_10y_treasury_yield_pct": {
+      "date": "2026-06-16",
+      "value": 4.43,
+      "source": "FRED:DGS10"
+    },
+    "dxy": {
+      "date": "2026-06-17",
+      "value": 100.249,
+      "source": "yfinance:DX-Y.NYB"
+    },
+    "usd_cny": {
+      "date": "2026-06-18",
+      "value": 6.7676,
+      "source": "yfinance:CNY=X"
+    },
+    "china_10y_government_bond_yield_pct": {
+      "date": "2026-06-17",
+      "value_pct": 1.727,
+      "source": "Eastmoney:RPTA_WEB_TREASURYYIELD"
+    },
+    "fred_key_indicators": {
+      "FEDFUNDS": {
+        "date": "2026-05-01",
+        "value": 3.63,
+        "source": "FRED:FEDFUNDS"
+      },
+      "DFF": {
+        "date": "2026-06-16",
+        "value": 3.63,
+        "source": "FRED:DFF"
+      },
+      "CPIAUCSL": {
+        "date": "2026-05-01",
+        "value": 333.979,
+        "source": "FRED:CPIAUCSL"
+      },
+      "PCEPI": {
+        "date": "2026-04-01",
+        "value": 130.902,
+        "source": "FRED:PCEPI"
+      }
+    }
+  },
+  "qmt_portfolio": {
+    "available": false,
+    "mode": "read_only_probe",
+    "positions": [],
+    "cash": null,
+    "reason": "xtquant is not installed in the active Python environment"
+  },
+  "data_quality": {
+    "missing_fields": [
+      "macro.china_10y_government_bond_yield_pct.tushare_yc_cb",
+      "qmt_portfolio.positions"
+    ],
+    "sources_used": [
+      "Tushare.trade_cal",
+      "Tushare.daily",
+      "Tushare.index_daily",
+      "Tushare.index_classify",
+      "Tushare.sw_daily",
+      "Tushare.limit_list_d",
+      "Tushare.limit_step",
+      "Tushare.moneyflow_hsgt",
+      "Tushare.moneyflow",
+      "Tushare.daily_basic",
+      "Tushare.moneyflow_ind_ths",
+      "FRED.DGS10",
+      "yfinance.DX-Y.NYB",
+      "yfinance.CNY=X",
+      "Eastmoney.RPTA_WEB_TREASURYYIELD",
+      "FRED.FEDFUNDS",
+      "FRED.DFF",
+      "FRED.CPIAUCSL",
+      "FRED.PCEPI",
+      "BaoStock.query_history_k_data_plus"
+    ],
+    "generated_at": "2026-06-18T09:36:42+08:00",
+    "basis": "latest complete Tushare A-share trading day at or before as_of",
+    "notes": [
+      "macro.china_10y_government_bond_yield_pct.tushare_yc_cb: 抱歉，您没有接口(yc_cb)访问权限，权限的具体详情访问：https://tushare.pro/document/1?doc_id=108。",
+      "qmt_portfolio.positions: xtquant is not installed in the active Python environment"
+    ],
+    "cross_validation": {
+      "baostock_indices": {
+        "000001.SH": {
+          "available": true,
+          "baostock_close": 4108.0762,
+          "tushare_close": 4108.0762,
+          "close_abs_diff": 0.0
+        },
+        "399001.SZ": {
+          "available": true,
+          "baostock_close": 15880.9507,
+          "tushare_close": 15880.9507,
+          "close_abs_diff": 0.0
+        },
+        "399006.SZ": {
+          "available": true,
+          "baostock_close": 4167.0478,
+          "tushare_close": 4167.0478,
+          "close_abs_diff": 0.0
+        }
+      }
+    }
+  }
+}
