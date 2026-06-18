@@ -125,6 +125,7 @@ select {
 
 .score-card,
 .chart-band,
+.api-band,
 .history-section,
 .evidence-table {
   border: 1px solid var(--line);
@@ -190,6 +191,33 @@ select {
   min-height: 40px;
   margin-top: 24px;
   margin-bottom: 10px;
+}
+
+.api-band {
+  margin-top: 18px;
+  padding: 16px 18px;
+}
+
+.api-band .section-head {
+  margin-top: 0;
+}
+
+.api-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.api-grid code {
+  display: block;
+  min-height: 42px;
+  padding: 12px;
+  overflow-wrap: anywhere;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--surface-soft);
+  color: var(--ink);
+  font-size: 0.83rem;
 }
 
 .chart-band {
@@ -439,6 +467,10 @@ td.score-risk {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
+  .api-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .detail-layout {
     grid-template-columns: 1fr;
   }
@@ -463,6 +495,7 @@ td.score-risk {
   }
 
   .summary-grid,
+  .api-grid,
   .module-grid,
   .metric-grid {
     grid-template-columns: 1fr;

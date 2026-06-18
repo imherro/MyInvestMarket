@@ -51,7 +51,19 @@ async function loadHistory() {
   state.records = normalizeRecords(payload.history.records || []);
   state.latest = state.records[state.records.length - 1] || null;
   setStatus(state.latest ? "已更新" : "无评分记录");
+  await loadResearchApiStatus();
   renderAll();
+}
+
+async function loadResearchApiStatus() {
+  try {
+    const payload = await fetchJson("/api/research/latest");
+    const results = payload.results || {};
+    const availableCount = Object.values(results).filter((item) => item && item.available).length;
+    setText("apiStatus", `${availableCount} / ${Object.keys(results).length} 可用 · ${formatDateTime(payload.generated_at)}`);
+  } catch (error) {
+    setText("apiStatus", `不可用：${error.message}`);
+  }
 }
 
 async function appendCurrentScore() {

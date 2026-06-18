@@ -1,13 +1,17 @@
 from __future__ import annotations
 
+import hashlib
 import json
 import mimetypes
 import traceback
+from datetime import datetime
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import unquote, urlparse
+from zoneinfo import ZoneInfo
 
 from market_scoring import (
+    DATA_DIR,
     DEFAULT_HISTORY_PATH,
     DEFAULT_SNAPSHOT_PATH,
     MODEL_VERSION,
@@ -19,6 +23,115 @@ from market_scoring import (
 
 WEB_DIR = ROOT / "web"
 PORT = 8011
+TZ = ZoneInfo("Asia/Shanghai")
+
+
+def now_iso() -> str:
+    return datetime.now(TZ).isoformat(timespec="seconds")
+
+
+def relative_path(path: Path) -> str:
+    resolved = path.resolve()
+    try:
+        return str(resolved.relative_to(ROOT))
+    except ValueError:
+        return str(resolved)
+
+
+def sha256_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def file_meta(path: Path) -> dict[str, object]:
+    stat = path.stat()
+    return {
+        "file": relative_path(path),
+        "size_bytes": stat.st_size,
+        "modified_at": datetime.fromtimestamp(stat.st_mtime, TZ).isoformat(timespec="seconds"),
+        "sha256": sha256_file(path),
+    }
+
+
+def latest_matching_file(pattern: str) -> Path | None:
+    matches = [path for path in DATA_DIR.glob(pattern) if path.is_file()]
+    if not matches:
+        return None
+    return max(matches, key=lambda path: (path.stat().st_mtime, path.name))
+
+
+def latest_market_snapshot_result() -> dict[str, object]:
+    path = DEFAULT_SNAPSHOT_PATH
+    if not path.exists():
+        return {"available": False, "kind": "market_snapshot", "error": "latest_market_snapshot.json not found"}
+    payload = json.loads(path.read_text(encoding="utf-8-sig"))
+    return {
+        "available": True,
+        "kind": "market_snapshot",
+        "endpoint": "/api/research/latest/market-snapshot",
+        "metadata": file_meta(path),
+        "basis_trade_date": payload.get("date") or (payload.get("market", {}) or {}).get("as_of_trade_date"),
+        "payload": payload,
+    }
+
+
+def latest_market_score_result() -> dict[str, object]:
+    history = load_history(DEFAULT_HISTORY_PATH)
+    records = history.get("records", [])
+    if not records:
+        return {"available": False, "kind": "market_score", "error": "market_score_history.json has no records"}
+    record = sorted(records, key=lambda row: str(row.get("scored_at", "")))[-1]
+    result: dict[str, object] = {
+        "available": True,
+        "kind": "market_score",
+        "endpoint": "/api/research/latest/market-score",
+        "history_endpoint": "/api/history",
+        "record": record,
+    }
+    if DEFAULT_HISTORY_PATH.exists():
+        result["metadata"] = file_meta(DEFAULT_HISTORY_PATH)
+    return result
+
+
+def latest_market_analysis_result() -> dict[str, object]:
+    path = latest_matching_file("chatgpt_market_analysis_*.md")
+    if not path:
+        return {"available": False, "kind": "market_analysis", "error": "chatgpt_market_analysis_*.md not found"}
+    content = path.read_text(encoding="utf-8-sig")
+    lines = content.splitlines()
+    title = next((line.lstrip("# ").strip() for line in lines if line.startswith("#")), path.stem)
+    return {
+        "available": True,
+        "kind": "market_analysis",
+        "endpoint": "/api/research/latest/market-analysis",
+        "metadata": file_meta(path),
+        "title": title,
+        "format": "text/markdown",
+        "content": content,
+    }
+
+
+def latest_research_bundle() -> dict[str, object]:
+    return {
+        "schema_version": 1,
+        "generated_at": now_iso(),
+        "model_version": MODEL_VERSION,
+        "endpoints": {
+            "all_latest": "/api/research/latest",
+            "market_snapshot": "/api/research/latest/market-snapshot",
+            "market_score": "/api/research/latest/market-score",
+            "market_analysis": "/api/research/latest/market-analysis",
+            "score_history": "/api/history",
+        },
+        "results": {
+            "market_snapshot": latest_market_snapshot_result(),
+            "market_score": latest_market_score_result(),
+            "market_analysis": latest_market_analysis_result(),
+        },
+    }
 
 
 class MarketWebHandler(BaseHTTPRequestHandler):
@@ -27,6 +140,18 @@ class MarketWebHandler(BaseHTTPRequestHandler):
     def do_GET(self) -> None:
         try:
             path = unquote(urlparse(self.path).path)
+            if path in ["/api/latest", "/api/research/latest"]:
+                self.send_json(latest_research_bundle())
+                return
+            if path == "/api/research/latest/market-snapshot":
+                self.send_json(latest_market_snapshot_result())
+                return
+            if path == "/api/research/latest/market-score":
+                self.send_json(latest_market_score_result())
+                return
+            if path == "/api/research/latest/market-analysis":
+                self.send_json(latest_market_analysis_result())
+                return
             if path == "/api/history":
                 self.send_json(
                     {
