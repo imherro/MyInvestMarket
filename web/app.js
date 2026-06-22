@@ -26,6 +26,25 @@ const chartColors = {
   penalty: "#bf3d2b",
 };
 
+const positionCurvePoints = [
+  { score: 0, position: 10 },
+  { score: 20, position: 20 },
+  { score: 35, position: 35 },
+  { score: 50, position: 45 },
+  { score: 65, position: 60 },
+  { score: 80, position: 75 },
+  { score: 100, position: 85 },
+];
+
+const marketRegimeBands = [
+  { from: 0, to: 20, label: "熊市防守", fill: "#f3ded7" },
+  { from: 20, to: 35, label: "弱修复", fill: "#f4ead4" },
+  { from: 35, to: 50, label: "震荡", fill: "#e8eee8" },
+  { from: 50, to: 65, label: "结构牛", fill: "#dcebe3" },
+  { from: 65, to: 80, label: "趋势牛", fill: "#d9e8f3" },
+  { from: 80, to: 100, label: "高热牛", fill: "#e8e4f0" },
+];
+
 const svgNs = "http://www.w3.org/2000/svg";
 
 let state = {
@@ -100,6 +119,7 @@ function normalizeRecords(records) {
 
 function renderAll() {
   renderSummary();
+  renderPositionMap();
   renderOverviewChart();
   renderModuleSelect();
   renderModuleGrid();
@@ -134,6 +154,114 @@ function renderSummary() {
   setMeter("crowdingMeter", latest.crowding_penalty, 30);
   setText("recordCount", `${state.records.length} 条记录`);
   setText("historyUpdated", state.history?.updated_at ? `更新 ${formatDateTime(state.history.updated_at)}` : "--");
+}
+
+function renderPositionMap() {
+  const container = document.getElementById("positionMapChart");
+  const latest = state.latest;
+  if (!latest) {
+    setText("positionMapLabel", "--");
+    renderEmpty(container, "暂无仓位映射");
+    return;
+  }
+
+  const currentScore = numeric(latest.market_position_score);
+  const baseRange = latest.base_equity_position_range || latest.equity_position_range || "--";
+  const volRange = latest.vol_adjusted_equity_position_range || "--";
+  setText("positionMapLabel", `${formatNumber(currentScore)} 分 · 基准权益 ${baseRange}`);
+  renderPositionCurve(container, currentScore, baseRange, volRange, latest.market_regime || "--");
+}
+
+function renderPositionCurve(container, currentScore, baseRange, volRange, regimeText) {
+  container.innerHTML = "";
+  if (currentScore === null) {
+    renderEmpty(container, "暂无仓位映射");
+    return;
+  }
+
+  const width = 920;
+  const height = 330;
+  const margin = { top: 26, right: 44, bottom: 48, left: 52 };
+  const plotWidth = width - margin.left - margin.right;
+  const plotHeight = height - margin.top - margin.bottom;
+  const xRange = { min: 0, max: 100 };
+  const yRange = { min: 0, max: 90 };
+  const xForScore = (score) => margin.left + ((score - xRange.min) / (xRange.max - xRange.min)) * plotWidth;
+  const yForPosition = (position) => yPos(position, yRange, margin, plotHeight);
+
+  const svg = createSvg("svg", {
+    class: "position-map-svg",
+    viewBox: `0 0 ${width} ${height}`,
+    role: "img",
+  });
+
+  marketRegimeBands.forEach((band) => {
+    const x = xForScore(band.from);
+    const bandWidth = xForScore(band.to) - x;
+    svg.appendChild(createSvg("rect", { x, y: margin.top, width: bandWidth, height: plotHeight, fill: band.fill }));
+    svg.appendChild(
+      createSvg(
+        "text",
+        { class: "position-band-label", x: x + bandWidth / 2, y: margin.top + 18, "text-anchor": "middle" },
+        band.label,
+      ),
+    );
+  });
+
+  for (let value = 0; value <= 90; value += 15) {
+    const y = yForPosition(value);
+    svg.appendChild(createSvg("line", { class: "grid-line", x1: margin.left, y1: y, x2: width - margin.right, y2: y }));
+    svg.appendChild(createSvg("text", { class: "tick-label", x: 8, y: y + 4 }, `${value}%`));
+  }
+
+  [0, 20, 35, 50, 65, 80, 100].forEach((score) => {
+    const x = xForScore(score);
+    svg.appendChild(createSvg("line", { class: "position-map-tick", x1: x, y1: margin.top, x2: x, y2: height - margin.bottom }));
+    svg.appendChild(createSvg("text", { class: "tick-label", x, y: height - 18, "text-anchor": "middle" }, String(score)));
+  });
+
+  svg.appendChild(createSvg("line", { class: "axis-line", x1: margin.left, y1: height - margin.bottom, x2: width - margin.right, y2: height - margin.bottom }));
+  svg.appendChild(createSvg("line", { class: "axis-line", x1: margin.left, y1: margin.top, x2: margin.left, y2: height - margin.bottom }));
+  svg.appendChild(createSvg("text", { class: "axis-label", x: width / 2, y: height - 4, "text-anchor": "middle" }, "市场分"));
+  svg.appendChild(createSvg("text", { class: "axis-label", x: 12, y: margin.top - 8 }, "基准权益仓位"));
+
+  const curveD = positionCurvePoints
+    .map((pointItem, index) => `${index === 0 ? "M" : "L"} ${xForScore(pointItem.score)} ${yForPosition(pointItem.position)}`)
+    .join(" ");
+  svg.appendChild(createSvg("path", { d: curveD, class: "position-curve" }));
+  positionCurvePoints.forEach((pointItem) => {
+    svg.appendChild(createSvg("circle", { cx: xForScore(pointItem.score), cy: yForPosition(pointItem.position), r: 3.8, class: "position-curve-node" }));
+  });
+
+  const markerX = xForScore(currentScore);
+  const markerY = yForPosition(interpolatePosition(currentScore));
+  svg.appendChild(createSvg("line", { class: "current-score-line", x1: markerX, y1: margin.top, x2: markerX, y2: height - margin.bottom }));
+  svg.appendChild(createSvg("circle", { cx: markerX, cy: markerY, r: 6.5, class: "current-score-dot" }));
+
+  const labelWidth = 228;
+  const labelHeight = 72;
+  const labelX = clamp(markerX + 14, margin.left + 4, width - margin.right - labelWidth);
+  const labelY = clamp(markerY - labelHeight - 12, margin.top + 10, height - margin.bottom - labelHeight - 8);
+  svg.appendChild(createSvg("rect", { class: "current-score-label-box", x: labelX, y: labelY, width: labelWidth, height: labelHeight, rx: 6 }));
+  svg.appendChild(createSvg("text", { class: "current-score-label strong", x: labelX + 12, y: labelY + 22 }, `当前 ${formatNumber(currentScore)} 分`));
+  svg.appendChild(createSvg("text", { class: "current-score-label", x: labelX + 12, y: labelY + 42 }, `基准权益 ${baseRange}`));
+  svg.appendChild(createSvg("text", { class: "current-score-label muted", x: labelX + 12, y: labelY + 61 }, `波动后 ${volRange} · ${regimeText}`));
+  svg.appendChild(createSvg("title", {}, `当前市场分 ${formatNumber(currentScore)}，基准权益 ${baseRange}，波动调整 ${volRange}`));
+
+  container.appendChild(svg);
+}
+
+function interpolatePosition(score) {
+  const safeScore = clamp(score, 0, 100);
+  for (let index = 0; index < positionCurvePoints.length - 1; index += 1) {
+    const left = positionCurvePoints[index];
+    const right = positionCurvePoints[index + 1];
+    if (safeScore >= left.score && safeScore <= right.score) {
+      const ratio = (safeScore - left.score) / (right.score - left.score || 1);
+      return left.position + ratio * (right.position - left.position);
+    }
+  }
+  return positionCurvePoints[positionCurvePoints.length - 1].position;
 }
 
 function renderOverviewChart() {
@@ -577,6 +705,10 @@ function rangeFor(values, fixedMin = null, fixedMax = null) {
     max = fixedMax !== null ? fixedMax : max + pad;
   }
   return { min, max };
+}
+
+function clamp(value, minValue, maxValue) {
+  return Math.max(minValue, Math.min(maxValue, value));
 }
 
 function xPos(index, count, margin, plotWidth) {

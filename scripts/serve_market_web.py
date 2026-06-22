@@ -25,6 +25,25 @@ WEB_DIR = ROOT / "web"
 PORT = 8011
 TZ = ZoneInfo("Asia/Shanghai")
 
+POSITION_CURVE_POINTS = [
+    {"score": 0, "base_equity_midpoint_pct": 10},
+    {"score": 20, "base_equity_midpoint_pct": 20},
+    {"score": 35, "base_equity_midpoint_pct": 35},
+    {"score": 50, "base_equity_midpoint_pct": 45},
+    {"score": 65, "base_equity_midpoint_pct": 60},
+    {"score": 80, "base_equity_midpoint_pct": 75},
+    {"score": 100, "base_equity_midpoint_pct": 85},
+]
+
+MARKET_REGIME_BANDS = [
+    {"from": 0, "to": 20, "label": "熊市防守"},
+    {"from": 20, "to": 35, "label": "弱修复"},
+    {"from": 35, "to": 50, "label": "震荡"},
+    {"from": 50, "to": 65, "label": "结构牛"},
+    {"from": 65, "to": 80, "label": "趋势牛"},
+    {"from": 80, "to": 100, "label": "高热牛"},
+]
+
 
 def now_iso() -> str:
     return datetime.now(TZ).isoformat(timespec="seconds")
@@ -242,6 +261,19 @@ def homepage_index_result() -> dict[str, object]:
             "total_count": len(api_available),
             "items": api_available,
             "endpoints": latest_research.get("endpoints", {}),
+        },
+        "position_map": {
+            "title": "市场分与仓位对应",
+            "x_axis": "市场分",
+            "y_axis": "基准权益仓位",
+            "curve_points": POSITION_CURVE_POINTS,
+            "regime_bands": MARKET_REGIME_BANDS,
+            "current": {
+                "market_position_score": latest.get("market_position_score"),
+                "base_equity_position_range": latest.get("base_equity_position_range") or latest.get("equity_position_range"),
+                "vol_adjusted_equity_position_range": latest.get("vol_adjusted_equity_position_range"),
+                "market_regime": latest.get("market_regime"),
+            },
         },
         "overview_chart": {
             "title": "总分与上证指数",
