@@ -44,9 +44,15 @@ class Quality:
         if field_name not in self.missing_fields:
             self.missing_fields.append(field_name)
         if reason:
-            note = f"{field_name}: {reason}"
-            if note not in self.notes:
-                self.notes.append(note)
+            self.note(f"{field_name}: {reason}")
+
+    def note(self, message: str) -> None:
+        if message not in self.notes:
+            self.notes.append(message)
+
+    def optional_missing(self, field_name: str, reason: str | None = None) -> None:
+        suffix = f": {reason}" if reason else ""
+        self.note(f"optional {field_name}{suffix}")
 
     def warning(self, message: str) -> None:
         if message not in self.warnings:
@@ -224,10 +230,16 @@ def index_valuation(pro: Any, trade_date: str, q: Quality) -> dict[str, Any]:
             df = pro.index_dailybasic(ts_code=code, start_date=start, end_date=trade_date)
             q.source("Tushare.index_dailybasic")
         except Exception as exc:
+            if code == "899050.BJ":
+                q.optional_missing(f"valuation.indices.{code}", str(exc))
+                continue
             q.missing(f"valuation.indices.{code}", str(exc))
             continue
 
         if df.empty:
+            if code == "899050.BJ":
+                q.optional_missing(f"valuation.indices.{code}", "empty index_dailybasic")
+                continue
             q.missing(f"valuation.indices.{code}", "empty index_dailybasic")
             continue
 
@@ -602,6 +614,7 @@ def fred_latest(
 
 
 def china_10y_yield(pro: Any, q: Quality, basis_date: date) -> dict[str, Any] | None:
+    tushare_error: str | None = None
     try:
         df = pro.yc_cb(
             start_date=(basis_date - timedelta(days=20)).strftime("%Y%m%d"),
@@ -635,7 +648,7 @@ def china_10y_yield(pro: Any, q: Quality, basis_date: date) -> dict[str, Any] | 
                                 "source": "Tushare.yc_cb",
                             }
     except Exception as exc:
-        q.missing("macro.china_10y_government_bond_yield_pct.tushare_yc_cb", str(exc))
+        tushare_error = str(exc)
 
     try:
         url = "https://datacenter-web.eastmoney.com/api/data/v1/get"
@@ -698,12 +711,19 @@ def china_10y_yield(pro: Any, q: Quality, basis_date: date) -> dict[str, Any] | 
             "available",
             future_count,
         )
+        if tushare_error:
+            q.note(
+                "macro.china_10y_government_bond_yield_pct: "
+                f"Tushare.yc_cb unavailable, Eastmoney fallback used ({tushare_error})"
+            )
         return {
             "date": observation_date.isoformat(),
             "value_pct": finite_float(row.get("EMM00166466")),
             "source": "Eastmoney:RPTA_WEB_TREASURYYIELD",
         }
     except Exception as exc:
+        if tushare_error:
+            q.missing("macro.china_10y_government_bond_yield_pct.tushare_yc_cb", tushare_error)
         q.missing("macro.china_10y_government_bond_yield_pct", str(exc))
         return None
 
@@ -730,7 +750,7 @@ def qmt_portfolio(q: Quality) -> dict[str, Any]:
         import importlib.util
 
         if importlib.util.find_spec("xtquant") is None:
-            q.missing("qmt_portfolio.positions", "xtquant is not installed in the active Python environment")
+            q.optional_missing("qmt_portfolio.positions", "xtquant is not installed in the active Python environment")
             return {
                 "available": False,
                 "mode": "read_only_probe",
@@ -748,7 +768,7 @@ def qmt_portfolio(q: Quality) -> dict[str, Any]:
             "reason": "xtquant is installed, but no QMT account/session configuration was provided; no write APIs were called",
         }
     except Exception as exc:
-        q.missing("qmt_portfolio", str(exc))
+        q.optional_missing("qmt_portfolio", str(exc))
         return {
             "available": False,
             "mode": "read_only_probe",

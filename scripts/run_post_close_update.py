@@ -10,7 +10,7 @@ import subprocess
 import sys
 import time
 import urllib.request
-from datetime import datetime
+from datetime import date, datetime, timedelta
 from pathlib import Path
 from typing import Any
 from uuid import uuid4
@@ -26,6 +26,7 @@ TZ = ZoneInfo("Asia/Shanghai")
 PORT = 8011
 LOCK_PATH = ROOT / "temp" / "runtime" / "post_close_update.lock"
 LOCK_STALE_SECONDS = 6 * 60 * 60
+ROLLING_SNAPSHOT_TARGET_COUNT = market_scoring.MIN_ROLLING_SAMPLE_COUNT + 1
 VERIFY_ENDPOINTS = [
     "/api/service",
     "/api/index",
@@ -169,6 +170,51 @@ def write_snapshot(snapshot: dict[str, Any]) -> tuple[Path, Path, bytes]:
     dated_path.write_bytes(payload_bytes)
     latest_path.write_bytes(payload_bytes)
     return dated_path, latest_path, payload_bytes
+
+
+def recent_complete_trade_dates(as_of: date, count: int = ROLLING_SNAPSHOT_TARGET_COUNT) -> list[str]:
+    pro = build_market_dataset.tushare_client()
+    start = build_market_dataset.yyyymmdd(as_of - timedelta(days=45))
+    end = build_market_dataset.yyyymmdd(as_of)
+    cal = pro.trade_cal(exchange="SSE", start_date=start, end_date=end, is_open="1")
+    if cal.empty:
+        raise RuntimeError(f"No open trading day found from {start} to {end}")
+
+    complete_days: list[str] = []
+    for trade_date in sorted(cal["cal_date"].astype(str).tolist(), reverse=True):
+        daily = pro.daily(trade_date=trade_date)
+        index_probe = pro.index_daily(ts_code="000001.SH", trade_date=trade_date)
+        if daily.empty or index_probe.empty:
+            continue
+        complete_days.append(trade_date)
+        if len(complete_days) >= count:
+            break
+    return list(reversed(complete_days))
+
+
+def write_dated_snapshot(dataset: dict[str, Any]) -> Path:
+    DATA_DIR.mkdir(parents=True, exist_ok=True)
+    path = DATA_DIR / f"market_snapshot_{dataset['date']}.json"
+    payload = json.dumps(dataset, ensure_ascii=False, indent=2, sort_keys=False) + "\n"
+    path.write_text(payload, encoding="utf-8")
+    return path
+
+
+def backfill_recent_market_snapshots(as_of: date, current_trade_date: str) -> list[Path]:
+    backfilled: list[Path] = []
+    current_iso = str(current_trade_date)
+    for trade_date in recent_complete_trade_dates(as_of, ROLLING_SNAPSHOT_TARGET_COUNT):
+        trade_iso = build_market_dataset.iso_date(trade_date)
+        if trade_iso == current_iso:
+            continue
+        path = DATA_DIR / f"market_snapshot_{trade_iso}.json"
+        if path.exists():
+            continue
+        dataset = build_market_dataset.build_dataset(datetime.strptime(trade_iso, "%Y-%m-%d").date())
+        if dataset.get("date") != trade_iso:
+            raise RuntimeError(f"Backfill expected {trade_iso}, got {dataset.get('date')}")
+        backfilled.append(write_dated_snapshot(dataset))
+    return backfilled
 
 
 def latest_record(history: dict[str, Any] | None) -> dict[str, Any] | None:
@@ -480,17 +526,19 @@ def main() -> None:
     snapshot = build_market_dataset.build_dataset(as_of)
     new_fingerprint = stable_fingerprint(snapshot)
     trade_date = snapshot.get("date")
+    backfilled_paths = backfill_recent_market_snapshots(as_of, str(trade_date))
 
     history = market_scoring.load_history(market_scoring.DEFAULT_HISTORY_PATH)
     last = latest_record(history)
     same_trade_date = bool(last and last.get("basis_trade_date") == trade_date)
-    unchanged = same_trade_date and old_fingerprint == new_fingerprint
+    unchanged = same_trade_date and old_fingerprint == new_fingerprint and not backfilled_paths
 
     result: dict[str, Any] = {
         "basis_trade_date": trade_date,
         "model_version": market_scoring.MODEL_VERSION,
         "same_trade_date_as_latest_score": same_trade_date,
         "stable_market_snapshot_unchanged": unchanged,
+        "backfilled_snapshots": [str(path.relative_to(ROOT)) for path in backfilled_paths],
     }
 
     if unchanged and not args.force_score:
@@ -509,6 +557,7 @@ def main() -> None:
         [
             latest_path,
             dated_path,
+            *backfilled_paths,
             market_scoring.DEFAULT_HISTORY_PATH,
             report_path,
         ],

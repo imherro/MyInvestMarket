@@ -287,12 +287,12 @@
     },
     "dxy": {
       "date": "2026-06-22",
-      "value": 100.882,
+      "value": 100.847,
       "source": "yfinance:DX-Y.NYB"
     },
     "usd_cny": {
       "date": "2026-06-22",
-      "value": 6.7737,
+      "value": 6.7633,
       "source": "yfinance:CNY=X"
     },
     "china_10y_government_bond_yield_pct": {
@@ -331,11 +331,7 @@
     "reason": "xtquant is not installed in the active Python environment"
   },
   "data_quality": {
-    "missing_fields": [
-      "valuation.indices.899050.BJ",
-      "macro.china_10y_government_bond_yield_pct.tushare_yc_cb",
-      "qmt_portfolio.positions"
-    ],
+    "missing_fields": [],
     "sources_used": [
       "Tushare.trade_cal",
       "Tushare.daily",
@@ -426,12 +422,12 @@
         "ignored_future_observations": 0
       }
     },
-    "generated_at": "2026-06-22T18:15:50+08:00",
+    "generated_at": "2026-06-22T20:31:26+08:00",
     "basis": "latest complete Tushare A-share trading day at or before as_of",
     "notes": [
-      "valuation.indices.899050.BJ: empty index_dailybasic",
-      "macro.china_10y_government_bond_yield_pct.tushare_yc_cb: 抱歉，您没有接口(yc_cb)访问权限，权限的具体详情访问：https://tushare.pro/document/1?doc_id=108。",
-      "qmt_portfolio.positions: xtquant is not installed in the active Python environment"
+      "optional valuation.indices.899050.BJ: empty index_dailybasic",
+      "macro.china_10y_government_bond_yield_pct: Tushare.yc_cb unavailable, Eastmoney fallback used (抱歉，您没有接口(yc_cb)访问权限，权限的具体详情访问：https://tushare.pro/document/1?doc_id=108。)",
+      "optional qmt_portfolio.positions: xtquant is not installed in the active Python environment"
     ],
     "cross_validation": {
       "baostock_indices": {
