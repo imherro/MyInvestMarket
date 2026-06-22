@@ -16,9 +16,9 @@ DATA_DIR = ROOT / "data"
 DEFAULT_SNAPSHOT_PATH = DATA_DIR / "latest_market_snapshot.json"
 DEFAULT_HISTORY_PATH = DATA_DIR / "market_score_history.json"
 TZ = ZoneInfo("Asia/Shanghai")
-MODEL_VERSION = "a_share_market_score_v1_1"
-SCORE_SCHEMA_VERSION = "1.1"
-FEATURE_SCHEMA_VERSION = "1.1"
+MODEL_VERSION = "a_share_market_score_v1_2"
+SCORE_SCHEMA_VERSION = "1.2"
+FEATURE_SCHEMA_VERSION = "1.2"
 
 MODULES = {
     "index_trend": {"label": "指数趋势", "weight": 20},
@@ -80,6 +80,22 @@ def pct(value: float | None) -> float | None:
     return round(value * 100, 2)
 
 
+def parse_percent_range(value: str | None) -> tuple[float, float] | None:
+    if not value or "-" not in value:
+        return None
+    try:
+        left, right = value.replace("%", "").split("-", 1)
+        return float(left), float(right)
+    except Exception:
+        return None
+
+
+def format_percent_range(bounds: tuple[float, float] | None) -> str | None:
+    if bounds is None:
+        return None
+    return f"{round(bounds[0])}%-{round(bounds[1])}%"
+
+
 def metric(label: str, value: Any, unit: str = "", higher_is_better: bool | None = None) -> dict[str, Any]:
     return {
         "label": label,
@@ -117,6 +133,94 @@ def module_result(
         "summary": summary,
         "evidence": evidence_items,
         "metrics": metrics,
+    }
+
+
+def market_snapshot_files() -> list[Path]:
+    return sorted(DATA_DIR.glob("market_snapshot_*.json"))
+
+
+def snapshot_sort_key(snapshot: dict[str, Any]) -> str:
+    return str(snapshot.get("date") or (snapshot.get("market", {}) or {}).get("as_of_trade_date") or "")
+
+
+def load_market_snapshots_through(basis_trade_date: str | None) -> list[dict[str, Any]]:
+    snapshots: list[dict[str, Any]] = []
+    for path in market_snapshot_files():
+        try:
+            payload = load_json(path)
+        except Exception:
+            continue
+        date_key = snapshot_sort_key(payload)
+        if basis_trade_date and date_key > basis_trade_date:
+            continue
+        snapshots.append(payload)
+    snapshots.sort(key=snapshot_sort_key)
+    return snapshots
+
+
+def rolling_market_features(snapshot: dict[str, Any]) -> dict[str, Any]:
+    basis = snapshot.get("date") or (snapshot.get("market", {}) or {}).get("as_of_trade_date")
+    snapshots = load_market_snapshots_through(str(basis) if basis else None)
+    if not snapshots or snapshot_sort_key(snapshots[-1]) != str(basis):
+        snapshots.append(snapshot)
+        snapshots.sort(key=snapshot_sort_key)
+
+    def values(key_fn: Any, window: int) -> list[float]:
+        result: list[float] = []
+        for row in snapshots[-window:]:
+            value = as_float(key_fn(row))
+            if value is not None:
+                result.append(value)
+        return result
+
+    def advancer_ratio(row: dict[str, Any]) -> float | None:
+        breadth = row.get("breadth", {}) or {}
+        total = as_float(breadth.get("total"))
+        advancers = as_float(breadth.get("advancers"))
+        return advancers / total if total else None
+
+    def top_flow_sum(row: dict[str, Any]) -> float:
+        flows = (row.get("sector_rotation", {}) or {}).get("top5_industries_by_capital_inflow", []) or []
+        return sum(as_float(item.get("net_amount_100m_cny")) or 0 for item in flows)
+
+    current_flows = (snapshot.get("sector_rotation", {}) or {}).get("top5_industries_by_capital_inflow", []) or []
+    current_groups = {theme_group(row.get("industry", "")) for row in current_flows}
+    recent_group_hits = 0
+    recent_group_total = 0
+    basis_key = str(basis) if basis else ""
+    prior_rows = [row for row in snapshots if snapshot_sort_key(row) != basis_key][-5:]
+    for row in prior_rows:
+        groups = {theme_group(item.get("industry", "")) for item in ((row.get("sector_rotation", {}) or {}).get("top5_industries_by_capital_inflow", []) or [])}
+        if not groups:
+            continue
+        recent_group_total += 1
+        if current_groups & groups:
+            recent_group_hits += 1
+
+    north_5 = values(lambda row: (row.get("capital_flow", {}) or {}).get("northbound_net_inflow_100m_cny"), 5)
+    main_5 = values(lambda row: (row.get("capital_flow", {}) or {}).get("main_net_inflow_100m_cny"), 5)
+    breadth_5 = values(advancer_ratio, 5)
+    top_flow_5 = values(top_flow_sum, 5)
+
+    return {
+        "sample_count": len(snapshots),
+        "basis_trade_date": basis,
+        "capital_flow": {
+            "northbound_5d_sum_100m_cny": round2(sum(north_5)) if north_5 else None,
+            "main_5d_sum_100m_cny": round2(sum(main_5)) if main_5 else None,
+            "northbound_sample_count": len(north_5),
+            "main_sample_count": len(main_5),
+        },
+        "breadth": {
+            "advancer_ratio_5d_avg_pct": pct(mean(breadth_5)) if breadth_5 else None,
+            "sample_count": len(breadth_5),
+        },
+        "mainline": {
+            "top_flow_5d_sum_100m_cny": round2(sum(top_flow_5)) if top_flow_5 else None,
+            "current_group_repeat_ratio_5d": round2(recent_group_hits / recent_group_total) if recent_group_total else None,
+            "sample_count": recent_group_total,
+        },
     }
 
 
@@ -273,24 +377,34 @@ def liquidity(snapshot: dict[str, Any]) -> dict[str, Any]:
 
 def capital_flow(snapshot: dict[str, Any]) -> dict[str, Any]:
     cap = snapshot.get("capital_flow", {}) or {}
+    rolling = rolling_market_features(snapshot).get("capital_flow", {}) or {}
     north = as_float(cap.get("northbound_net_inflow_100m_cny"))
     main = as_float(cap.get("main_net_inflow_100m_cny"))
+    north_5d = as_float(rolling.get("northbound_5d_sum_100m_cny"))
+    main_5d = as_float(rolling.get("main_5d_sum_100m_cny"))
 
-    north_score = scale(north, -50, 80, 5)
-    main_score = scale(main, -800, 300, 6)
+    north_score = scale(north, -50, 80, 3)
+    main_score = scale(main, -800, 300, 4)
     if north is not None and main is not None and north > 0 and main < 0:
-        consistency_score = 1.2
+        consistency_score = 0.9
     elif north is not None and main is not None and north > 0 and main > 0:
-        consistency_score = 4.0
+        consistency_score = 3.0
     elif north is not None and main is not None and north < 0 and main < 0:
-        consistency_score = 0.6
+        consistency_score = 0.5
     else:
-        consistency_score = 2.0
+        consistency_score = 1.5
 
-    score = north_score + main_score + consistency_score
+    north_5d_score = scale(north_5d, -150, 250, 2)
+    main_5d_score = scale(main_5d, -2500, 800, 3)
+
+    score = north_score + main_score + consistency_score + north_5d_score + main_5d_score
     metrics = {
         "northbound_net_inflow_100m_cny": metric("北向净流入", north, "亿元", True),
         "main_net_inflow_100m_cny": metric("主力净流入", main, "亿元", True),
+        "northbound_5d_sum_100m_cny": metric("北向5日净流入", north_5d, "亿元", True),
+        "main_5d_sum_100m_cny": metric("主力5日净流入", main_5d, "亿元", True),
+        "northbound_5d_sample_count": metric("北向滚动样本数", rolling.get("northbound_sample_count"), "日", True),
+        "main_5d_sample_count": metric("主力滚动样本数", rolling.get("main_sample_count"), "日", True),
         "flow_direction_pair": {
             "label": "内外资方向",
             "value": "同向流入" if north is not None and main is not None and north > 0 and main > 0 else "分歧或偏弱",
@@ -299,11 +413,13 @@ def capital_flow(snapshot: dict[str, Any]) -> dict[str, Any]:
         },
     }
     evidences = [
-        evidence("北向净流入", north, "亿元", north_score, 5, "外资流入对风险偏好有支撑。"),
-        evidence("主力净流入", main, "亿元", main_score, 6, "主力资金代表内资承接和兑现压力。"),
-        evidence("内外资一致性", "", "", consistency_score, 4, "北向和主力同向时更可靠，背离时降分。"),
+        evidence("北向当日净流入", north, "亿元", north_score, 3, "外资当日方向对风险偏好有边际影响。"),
+        evidence("主力当日净流入", main, "亿元", main_score, 4, "主力资金代表内资承接和兑现压力。"),
+        evidence("内外资一致性", "", "", consistency_score, 3, "北向和主力同向时更可靠，背离时降分。"),
+        evidence("北向5日持续性", north_5d, "亿元", north_5d_score, 2, "持续流入比单日脉冲更可靠。"),
+        evidence("主力5日持续性", main_5d, "亿元", main_5d_score, 3, "连续流出说明内资兑现压力仍重。"),
     ]
-    return module_result("capital_flow", score, "北向流入但主力流出，资金层面是分歧上行。", evidences, metrics)
+    return module_result("capital_flow", score, "北向流入但主力流出，滚动资金仍需防分歧反复。", evidences, metrics)
 
 
 def theme_group(name: str) -> str:
@@ -321,6 +437,7 @@ def theme_group(name: str) -> str:
 
 def mainline(snapshot: dict[str, Any]) -> dict[str, Any]:
     rotation = snapshot.get("sector_rotation", {}) or {}
+    rolling = rolling_market_features(snapshot).get("mainline", {}) or {}
     top_returns = rotation.get("top5_industries_by_return", []) or []
     top_flows = rotation.get("top5_industries_by_capital_inflow", []) or []
     return_avg = mean([as_float(row.get("pct_change")) or 0 for row in top_returns]) or 0
@@ -331,52 +448,81 @@ def mainline(snapshot: dict[str, Any]) -> dict[str, Any]:
     flow_groups = {theme_group(row.get("industry", "")) for row in top_flows}
     overlap_count = len(return_groups & flow_groups)
     flow_group_count = len(flow_groups)
+    repeat_ratio = as_float(rolling.get("current_group_repeat_ratio_5d"))
+    top_flow_5d = as_float(rolling.get("top_flow_5d_sum_100m_cny"))
 
-    return_score = scale(return_avg, 0, 4, 4)
-    flow_score = scale(top_flow_sum, 0, 250, 4)
+    return_score = scale(return_avg, 0, 4, 3.5)
+    flow_score = scale(top_flow_sum, 0, 250, 3.5)
     alignment_score = scale(overlap_count, 0, 2, 3)
     breadth_score = scale(flow_group_count, 1, 4, 2)
-    continuity_score = 1.0
+    continuity_score = scale(repeat_ratio, 0.2, 0.8, 3)
     score = return_score + flow_score + alignment_score + breadth_score + continuity_score
 
     metrics = {
         "top5_return_avg_pct": metric("涨幅前五行业均值", return_avg, "%", True),
         "top5_industry_inflow_sum_100m_cny": metric("前五行业净流入合计", top_flow_sum, "亿元", True),
+        "top5_industry_inflow_5d_sum_100m_cny": metric("前五行业5日净流入合计", top_flow_5d, "亿元", True),
         "price_flow_overlap_count": metric("价量重合主线数", overlap_count, "组", True),
         "flow_group_count": metric("资金主线组数", flow_group_count, "组", True),
+        "current_group_repeat_ratio_5d_pct": metric("当前主线5日重复率", pct(repeat_ratio), "%", True),
+        "mainline_rolling_sample_count": metric("主线连续性样本数", rolling.get("sample_count"), "日", True),
         "top_flow_concentration_pct": metric("第一主线资金占比", pct(concentration), "%", False),
     }
     evidences = [
-        evidence("涨幅前五行业均值", return_avg, "%", return_score, 4, "领涨行业涨幅越强，主线越清晰。"),
-        evidence("前五行业净流入合计", top_flow_sum, "亿元", flow_score, 4, "资金集中流入说明主线有承接。"),
+        evidence("涨幅前五行业均值", return_avg, "%", return_score, 3.5, "领涨行业涨幅越强，主线越清晰。"),
+        evidence("前五行业净流入合计", top_flow_sum, "亿元", flow_score, 3.5, "资金集中流入说明主线有承接。"),
         evidence("价量重合主线数", overlap_count, "组", alignment_score, 3, "涨幅榜和资金榜重合越高越可靠。"),
         evidence("资金主线组数", flow_group_count, "组", breadth_score, 2, "主线过窄时降低扩仓质量。"),
-        evidence("连续性数据", "缺少多日行业流向", "", continuity_score, 2, "没有多日主线验证，按中性偏低处理。"),
+        evidence("当前主线5日重复率", pct(repeat_ratio), "%", continuity_score, 3, "主线连续出现比单日冲高更可靠。"),
     ]
     return module_result("mainline", score, "科技成长主线明确，但资金集中度偏高。", evidences, metrics)
 
 
 def valuation(snapshot: dict[str, Any]) -> dict[str, Any]:
-    valuation_data = snapshot.get("valuation") or snapshot.get("repricing")
-    if not valuation_data:
+    valuation_data = snapshot.get("valuation") or snapshot.get("repricing") or {}
+    market = valuation_data.get("market", {}) or {}
+    indices = valuation_data.get("indices", {}) or {}
+    value_score_pct = as_float(market.get("valuation_score"))
+    pe_value_score = as_float(market.get("index_pe_value_score"))
+    pb_value_score = as_float(market.get("index_pb_value_score"))
+    erp_value_score = as_float(market.get("erp_value_score"))
+
+    if value_score_pct is None:
         score = 7.5
         summary = "估值数据缺失，按中性处理并降低置信度。"
         metrics = {
             "valuation_data_available": metric("估值数据可用", 0, "", True),
             "neutral_valuation_score_pct": metric("中性估值分", 50, "%", None),
+            "valuation_index_count": metric("估值指数样本数", len(indices), "个", True),
         }
         evidences = [
             evidence("估值分位", "缺失", "", 7.5, 15, "缺估值时不主观乐观，先给中性分。"),
         ]
     else:
-        score = 7.5
-        summary = "估值数据已接入，但当前模型未识别标准字段，暂按中性处理。"
+        composite_score = scale(value_score_pct, 0, 100, 6)
+        pe_score = scale(pe_value_score, 0, 100, 3)
+        pb_score = scale(pb_value_score, 0, 100, 3)
+        erp_score = scale(erp_value_score, 0, 100, 3) if erp_value_score is not None else 1.5
+        score = composite_score + pe_score + pb_score + erp_score
+        if value_score_pct >= 65:
+            summary = "宽基估值相对五年历史偏便宜，估值锚对中期仓位有支撑。"
+        elif value_score_pct <= 35:
+            summary = "宽基估值相对五年历史偏贵，趋势行情需要更强风控约束。"
+        else:
+            summary = "宽基估值处于中性区间，估值不构成明显加分或减分。"
         metrics = {
             "valuation_data_available": metric("估值数据可用", 1, "", True),
-            "neutral_valuation_score_pct": metric("中性估值分", 50, "%", None),
+            "market_valuation_score_pct": metric("市场估值便宜度", value_score_pct, "%", True),
+            "index_pe_value_score_pct": metric("PE便宜度", pe_value_score, "%", True),
+            "index_pb_value_score_pct": metric("PB便宜度", pb_value_score, "%", True),
+            "erp_value_score_pct": metric("股债性价比便宜度", erp_value_score, "%", True),
+            "valuation_index_count": metric("估值指数样本数", len(indices), "个", True),
         }
         evidences = [
-            evidence("估值字段", "未标准化", "", 7.5, 15, "需要补充指数和行业估值分位字段。"),
+            evidence("综合估值便宜度", value_score_pct, "%", composite_score, 6, "分数越高代表相对五年分位越便宜。"),
+            evidence("PE便宜度", pe_value_score, "%", pe_score, 3, "盈利口径估值越低越有安全边际。"),
+            evidence("PB便宜度", pb_value_score, "%", pb_score, 3, "净资产口径用于约束泡沫风险。"),
+            evidence("股债性价比", erp_value_score if erp_value_score is not None else "缺失", "%", erp_score, 3, "缺少ERP时先给中性，后续可接入股债利差。"),
         ]
     return module_result("valuation", score, summary, evidences, metrics)
 
@@ -416,6 +562,8 @@ def crowding_penalty(snapshot: dict[str, Any], modules: dict[str, Any]) -> dict[
     cap = snapshot.get("capital_flow", {}) or {}
     rotation = snapshot.get("sector_rotation", {}) or {}
     indices = snapshot.get("market", {}).get("indices", {}) or {}
+    valuation_market = ((snapshot.get("valuation") or snapshot.get("repricing") or {}).get("market", {}) or {})
+    volatility_market = (snapshot.get("volatility", {}) or {}).get("market", {}) or {}
 
     advancers = as_float(breadth.get("advancers")) or 0
     total = as_float(breadth.get("total")) or 0
@@ -449,7 +597,22 @@ def crowding_penalty(snapshot: dict[str, Any], modules: dict[str, Any]) -> dict[
     if concentration_penalty > 0:
         items.append({"label": "资金过度集中在单一主线", "penalty": round2(concentration_penalty), "basis": f"第一主线资金占比 {pct(concentration)}%"})
 
-    if not snapshot.get("valuation") and not snapshot.get("repricing"):
+    valuation_score = as_float(valuation_market.get("valuation_score"))
+    valuation_bubble_penalty = penalty_scale(valuation_score, 35, 15, 5)
+    if valuation_bubble_penalty > 0:
+        items.append({"label": "全市场估值偏贵", "penalty": round2(valuation_bubble_penalty), "basis": f"估值便宜度 {round2(valuation_score)}%"})
+
+    realized_vol_30d = as_float(volatility_market.get("realized_vol_30d"))
+    volatility_penalty = penalty_scale(realized_vol_30d, 0.18, 0.32, 5)
+    if volatility_penalty > 0:
+        items.append({"label": "市场波动率偏高", "penalty": round2(volatility_penalty), "basis": f"30日年化波动 {pct(realized_vol_30d)}%"})
+
+    avg_volume_ratio = as_float((modules["liquidity"].get("metrics", {}).get("avg_volume_ratio", {}) or {}).get("value"))
+    liquidity_starvation_penalty = penalty_scale(avg_volume_ratio, 0.85, 0.65, 3)
+    if liquidity_starvation_penalty > 0:
+        items.append({"label": "流动性显著萎缩", "penalty": round2(liquidity_starvation_penalty), "basis": f"指数平均量能比 {round2(avg_volume_ratio)}"})
+
+    if valuation_score is None:
         items.append({"label": "估值字段缺失", "penalty": 2, "basis": "估值与再定价模块按中性处理"})
 
     penalty = round2(sum(as_float(item["penalty"]) or 0 for item in items)) or 0
@@ -461,6 +624,9 @@ def crowding_penalty(snapshot: dict[str, Any], modules: dict[str, Any]) -> dict[
             "chinext_return_5d_pct": metric("创业板5日涨跌", chinext_ret5, "%", False),
             "main_net_inflow_100m_cny": metric("主力净流入", main, "亿元", True),
             "top_flow_concentration_pct": metric("第一主线资金占比", pct(concentration), "%", False),
+            "market_valuation_score_pct": metric("市场估值便宜度", valuation_score, "%", True),
+            "realized_vol_30d_pct": metric("30日年化波动率", pct(realized_vol_30d), "%", False),
+            "avg_volume_ratio": metric("指数平均量能比", avg_volume_ratio, "倍", True),
         },
     }
 
@@ -477,6 +643,37 @@ def position_range(score: float) -> str:
     if score <= 80:
         return "60%-75%"
     return "75%-85%"
+
+
+def volatility_targeting(snapshot: dict[str, Any], base_score: float, base_range: str) -> dict[str, Any]:
+    market = (snapshot.get("volatility", {}) or {}).get("market", {}) or {}
+    realized_vol = as_float(market.get("realized_vol_30d"))
+    target_vol = as_float(market.get("target_annual_vol")) or 0.08
+    if realized_vol is None or realized_vol <= 0:
+        scale_factor = 1.0
+        status = "unavailable"
+        note = "缺少30日已实现波动率，暂不缩放基准仓位。"
+    else:
+        scale_factor = clamp(target_vol / realized_vol, 0.25, 1.15)
+        status = "active"
+        note = "以目标年化波动率缩放基准权益仓位，波动越高仓位越低。"
+
+    parsed_range = parse_percent_range(base_range)
+    adjusted_range = None
+    if parsed_range is not None:
+        adjusted_range = (parsed_range[0] * scale_factor, parsed_range[1] * scale_factor)
+
+    return {
+        "status": status,
+        "target_annual_vol": round2(target_vol),
+        "realized_vol_30d": round2(realized_vol),
+        "scale_factor": round2(scale_factor),
+        "base_position_score": round2(base_score),
+        "adjusted_position_score": round2(clamp(base_score * scale_factor, 0, 100)),
+        "base_equity_position_range": base_range,
+        "adjusted_equity_position_range": format_percent_range(adjusted_range),
+        "note": note,
+    }
 
 
 def sleeve_mix(score: float, modules: dict[str, Any], crowding: dict[str, Any]) -> dict[str, str]:
@@ -508,7 +705,9 @@ def regime(opportunity: float, position: float, modules: dict[str, Any], crowdin
 
 def confidence(snapshot: dict[str, Any]) -> str:
     missing = (snapshot.get("data_quality", {}) or {}).get("missing_fields", []) or []
-    valuation_missing = not snapshot.get("valuation") and not snapshot.get("repricing")
+    valuation_market = ((snapshot.get("valuation") or snapshot.get("repricing") or {}).get("market", {}) or {})
+    valuation_missing = as_float(valuation_market.get("valuation_score")) is None
+    volatility_missing = as_float(((snapshot.get("volatility", {}) or {}).get("market", {}) or {}).get("realized_vol_30d")) is None
 
     core_prefixes = [
         "market.indices",
@@ -519,6 +718,8 @@ def confidence(snapshot: dict[str, Any]) -> str:
     important_prefixes = [
         "capital_flow.turnover_distribution",
         "sector_rotation.",
+        "valuation.",
+        "volatility.",
         "macro.",
     ]
     auxiliary_prefixes = [
@@ -532,7 +733,7 @@ def confidence(snapshot: dict[str, Any]) -> str:
 
     if core_missing:
         return "low"
-    if valuation_missing or important_missing:
+    if valuation_missing or volatility_missing or important_missing:
         return "medium"
     if auxiliary_only:
         return "high"
@@ -542,6 +743,7 @@ def confidence(snapshot: dict[str, Any]) -> str:
 
 
 def score_snapshot(snapshot: dict[str, Any], snapshot_path: Path | None = None, snapshot_bytes: bytes | None = None) -> dict[str, Any]:
+    rolling = rolling_market_features(snapshot)
     modules = {
         "index_trend": index_trend(snapshot),
         "breadth": market_breadth(snapshot),
@@ -554,6 +756,8 @@ def score_snapshot(snapshot: dict[str, Any], snapshot_path: Path | None = None, 
     opportunity = round2(sum(as_float(module["score"]) or 0 for module in modules.values())) or 0
     crowding = crowding_penalty(snapshot, modules)
     final_score = round2(clamp(opportunity - (crowding["penalty"] or 0), 0, 100)) or 0
+    base_range = position_range(final_score)
+    vol_targeting = volatility_targeting(snapshot, final_score, base_range)
     shanghai = (snapshot.get("market", {}).get("indices", {}) or {}).get("000001.SH", {})
     now = datetime.now(TZ).isoformat(timespec="seconds")
     if snapshot_bytes is None and snapshot_path and snapshot_path.exists():
@@ -570,7 +774,8 @@ def score_snapshot(snapshot: dict[str, Any], snapshot_path: Path | None = None, 
     key_constraints = [
         "上涨家数和行业上涨占比不足时，不把指数强势直接等同于全面加仓。",
         "主力资金持续流出时，进攻仓只做主线，不扩散到弱势行业。",
-        "估值字段未接入前，估值模块保持中性，最终置信度不评为高。",
+        "估值分位偏贵时，即使趋势强也要用拥挤惩罚约束泡沫风险。",
+        "波动率目标缩放只调整执行仓位，不覆盖原始市场机会分，便于复盘归因。",
     ]
     record = {
         "run_id": f"{datetime.now(TZ).strftime('%Y%m%dT%H%M%S')}-{uuid4().hex[:8]}",
@@ -585,17 +790,26 @@ def score_snapshot(snapshot: dict[str, Any], snapshot_path: Path | None = None, 
         "market_opportunity_score": opportunity,
         "crowding_penalty": crowding["penalty"],
         "market_position_score": final_score,
+        "base_market_position_score": final_score,
+        "vol_adjusted_market_position_score": vol_targeting.get("adjusted_position_score"),
         "confidence": confidence(snapshot),
-        "equity_position_range": position_range(final_score),
+        "equity_position_range": base_range,
+        "base_equity_position_range": base_range,
+        "vol_adjusted_equity_position_range": vol_targeting.get("adjusted_equity_position_range"),
         "sleeve_mix": sleeve_mix(final_score, modules, crowding),
         "shanghai_composite": round2(as_float(shanghai.get("close"))),
         "modules": modules,
         "crowding": crowding,
+        "rolling_features": rolling,
+        "volatility_targeting": vol_targeting,
         "factor_changes": [
             "capital_flow removed duplicate mid/small turnover and top industry inflow scoring",
             "breadth added median and strong advancer/decliner placeholders when available",
             "crowding penalties changed from hard thresholds to gradients",
             "confidence now distinguishes core, important, and auxiliary missing fields",
+            "valuation now scores 5-year index PE/PB percentiles instead of a neutral placeholder",
+            "capital flow and mainline modules use rolling persistence features",
+            "volatility targeting reports a second-layer adjusted position range",
         ],
         "key_constraints": key_constraints,
         "data_quality": snapshot.get("data_quality", {}),

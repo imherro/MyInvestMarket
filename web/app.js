@@ -20,6 +20,7 @@ const moduleColors = {
 
 const chartColors = {
   position: "#047d73",
+  adjusted: "#6b7280",
   opportunity: "#2c68a0",
   shanghai: "#b7791f",
   penalty: "#bf3d2b",
@@ -111,6 +112,8 @@ function renderSummary() {
   if (!latest) {
     setText("modelLine", "暂无评分历史");
     ["positionScore", "opportunityScore", "crowdingPenalty", "marketRegime"].forEach((id) => setText(id, "--"));
+    setText("positionRange", "--");
+    setText("volAdjustedRange", "--");
     setMeter("positionMeter", 0, 100);
     setMeter("opportunityMeter", 0, 100);
     setMeter("crowdingMeter", 0, 30);
@@ -124,7 +127,8 @@ function renderSummary() {
   setText("marketRegime", latest.market_regime || "--");
   setText("basisDate", `基准日 ${latest.basis_trade_date || "--"}`);
   setText("confidence", `置信度 ${confidenceLabel(latest.confidence)}`);
-  setText("positionRange", `权益 ${latest.equity_position_range || "--"}`);
+  setText("positionRange", `基准权益 ${latest.base_equity_position_range || latest.equity_position_range || "--"}`);
+  setText("volAdjustedRange", `波动调整 ${latest.vol_adjusted_equity_position_range || "--"}`);
   setMeter("positionMeter", latest.market_position_score, 100);
   setMeter("opportunityMeter", latest.market_opportunity_score, 100);
   setMeter("crowdingMeter", latest.crowding_penalty, 30);
@@ -149,6 +153,12 @@ function renderOverviewChart() {
         color: chartColors.position,
         axis: "left",
         data: records.map((record, index) => point(labels[index], record.market_position_score)),
+      },
+      {
+        name: "波动调整分",
+        color: chartColors.adjusted,
+        axis: "left",
+        data: records.map((record, index) => point(labels[index], record.vol_adjusted_market_position_score)),
       },
       {
         name: "市场机会分",
@@ -325,7 +335,7 @@ function renderEvidence(module) {
 function renderHistoryTable() {
   const tbody = document.getElementById("historyRows");
   if (!state.records.length) {
-    tbody.innerHTML = `<tr><td colspan="8" class="empty-state">暂无评分历史</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="9" class="empty-state">暂无评分历史</td></tr>`;
     return;
   }
   tbody.innerHTML = [...state.records]
@@ -338,6 +348,7 @@ function renderHistoryTable() {
           <td class="score-up">${formatNumber(record.market_opportunity_score)}</td>
           <td class="score-risk">${formatNumber(record.crowding_penalty)}</td>
           <td class="score-up">${formatNumber(record.market_position_score)}</td>
+          <td>${escapeHtml(record.vol_adjusted_equity_position_range || "--")}</td>
           <td>${formatNumber(record.shanghai_composite)}</td>
           <td>${escapeHtml(record.equity_position_range || "--")}</td>
           <td>${escapeHtml(record.market_regime || "--")}</td>

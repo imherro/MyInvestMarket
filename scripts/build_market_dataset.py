@@ -87,6 +87,15 @@ def finite_int(value: Any) -> int | None:
         return None
 
 
+def percentile_rank(series: pd.Series, value: float | None) -> float | None:
+    if value is None:
+        return None
+    clean = pd.to_numeric(series, errors="coerce").dropna()
+    if clean.empty:
+        return None
+    return finite_float((clean <= value).sum() / len(clean) * 100, 2)
+
+
 def tushare_client() -> Any:
     token = os.environ.get("TUSHARE_TOKEN")
     if not token:
@@ -154,6 +163,112 @@ def index_metrics(pro: Any, trade_date: str, q: Quality) -> dict[str, Any]:
             "above_ma20": bool(close >= ma20) if math.isfinite(ma20) else None,
             "source": "Tushare.index_daily",
         }
+    return result
+
+
+def index_valuation(pro: Any, trade_date: str, q: Quality) -> dict[str, Any]:
+    start = (
+        datetime.strptime(trade_date, "%Y%m%d").date() - timedelta(days=365 * 5 + 30)
+    ).strftime("%Y%m%d")
+    result: dict[str, Any] = {
+        "trade_date": iso_date(trade_date),
+        "indices": {},
+        "market": {},
+    }
+
+    pe_scores: list[float] = []
+    pb_scores: list[float] = []
+    for code, meta in INDEXES.items():
+        try:
+            df = pro.index_dailybasic(ts_code=code, start_date=start, end_date=trade_date)
+            q.source("Tushare.index_dailybasic")
+        except Exception as exc:
+            q.missing(f"valuation.indices.{code}", str(exc))
+            continue
+
+        if df.empty:
+            q.missing(f"valuation.indices.{code}", "empty index_dailybasic")
+            continue
+
+        df = df.sort_values("trade_date").reset_index(drop=True)
+        latest = df.iloc[-1]
+        pe = finite_float(latest.get("pe_ttm") if "pe_ttm" in latest else latest.get("pe"))
+        pb = finite_float(latest.get("pb"))
+        pe_percentile = percentile_rank(df["pe_ttm"] if "pe_ttm" in df.columns else df.get("pe", pd.Series(dtype=float)), pe)
+        pb_percentile = percentile_rank(df["pb"] if "pb" in df.columns else pd.Series(dtype=float), pb)
+        if pe_percentile is not None:
+            pe_scores.append(100 - pe_percentile)
+        if pb_percentile is not None:
+            pb_scores.append(100 - pb_percentile)
+
+        result["indices"][code] = {
+            "name": meta["name"],
+            "trade_date": iso_date(str(latest.get("trade_date"))),
+            "pe_ttm": pe,
+            "pb": pb,
+            "pe_percentile_5y": pe_percentile,
+            "pb_percentile_5y": pb_percentile,
+            "source": "Tushare.index_dailybasic",
+        }
+
+    pe_score = finite_float(sum(pe_scores) / len(pe_scores), 2) if pe_scores else None
+    pb_score = finite_float(sum(pb_scores) / len(pb_scores), 2) if pb_scores else None
+    blended = None
+    if pe_score is not None and pb_score is not None:
+        blended = finite_float(pe_score * 0.6 + pb_score * 0.4, 2)
+    elif pe_score is not None:
+        blended = pe_score
+    elif pb_score is not None:
+        blended = pb_score
+
+    result["market"] = {
+        "index_pe_value_score": pe_score,
+        "index_pb_value_score": pb_score,
+        "valuation_score": blended,
+        "score_note": "Higher score means cheaper relative to the 5-year index_dailybasic history.",
+    }
+    return result
+
+
+def volatility_metrics(pro: Any, trade_date: str, q: Quality) -> dict[str, Any]:
+    start = (
+        datetime.strptime(trade_date, "%Y%m%d").date() - timedelta(days=180)
+    ).strftime("%Y%m%d")
+    result: dict[str, Any] = {"trade_date": iso_date(trade_date), "indices": {}, "market": {}}
+
+    market_vols: list[float] = []
+    for code, meta in INDEXES.items():
+        try:
+            df = pro.index_daily(ts_code=code, start_date=start, end_date=trade_date)
+            q.source("Tushare.index_daily")
+        except Exception as exc:
+            q.missing(f"volatility.indices.{code}", str(exc))
+            continue
+        if df.empty:
+            q.missing(f"volatility.indices.{code}", "empty index_daily")
+            continue
+        df = df.sort_values("trade_date").reset_index(drop=True)
+        returns = pd.to_numeric(df["close"], errors="coerce").pct_change().dropna()
+        vol_30 = finite_float(returns.tail(30).std() * math.sqrt(252), 4) if len(returns) >= 10 else None
+        vol_60 = finite_float(returns.tail(60).std() * math.sqrt(252), 4) if len(returns) >= 20 else None
+        max_close = pd.to_numeric(df["close"], errors="coerce").tail(60).max()
+        latest_close = finite_float(df.iloc[-1].get("close"))
+        drawdown_60 = finite_float((latest_close / max_close - 1) * 100, 4) if latest_close is not None and pd.notna(max_close) and max_close else None
+        if vol_30 is not None and code in ["000001.SH", "399001.SZ", "399006.SZ"]:
+            market_vols.append(vol_30)
+        result["indices"][code] = {
+            "name": meta["name"],
+            "realized_vol_30d": vol_30,
+            "realized_vol_60d": vol_60,
+            "drawdown_60d_pct": drawdown_60,
+            "source": "Tushare.index_daily",
+        }
+
+    result["market"] = {
+        "realized_vol_30d": finite_float(sum(market_vols) / len(market_vols), 4) if market_vols else None,
+        "target_annual_vol": 0.08,
+        "source_note": "Average 30-day annualized realized volatility of Shanghai, Shenzhen, and ChiNext when available.",
+    }
     return result
 
 
@@ -588,6 +703,8 @@ def build_dataset(as_of: date) -> dict[str, Any]:
     breadth = market_breadth(pro, trade_date, daily, sw_l1, q)
     cap_flow = capital_flow(pro, trade_date, daily, q)
     sectors = sector_rotation(pro, trade_date, sw_l1, q)
+    valuation = index_valuation(pro, trade_date, q)
+    volatility = volatility_metrics(pro, trade_date, q)
     macro = macro_data(pro, q)
     qmt = qmt_portfolio(q)
     baostock_cross_validation(trade_date, market, q)
@@ -598,6 +715,8 @@ def build_dataset(as_of: date) -> dict[str, Any]:
         "breadth": breadth,
         "capital_flow": cap_flow,
         "sector_rotation": sectors,
+        "valuation": valuation,
+        "volatility": volatility,
         "macro": macro,
         "qmt_portfolio": qmt,
         "data_quality": {

@@ -203,6 +203,82 @@
       }
     ]
   },
+  "valuation": {
+    "trade_date": "2026-06-18",
+    "indices": {
+      "000001.SH": {
+        "name": "上证指数",
+        "trade_date": "2026-06-18",
+        "pe_ttm": 17.14,
+        "pb": 1.5,
+        "pe_percentile_5y": 96.02,
+        "pb_percentile_5y": 81.49,
+        "source": "Tushare.index_dailybasic"
+      },
+      "399001.SZ": {
+        "name": "深证成指",
+        "trade_date": "2026-06-18",
+        "pe_ttm": 38.0,
+        "pb": 3.22,
+        "pe_percentile_5y": 100.0,
+        "pb_percentile_5y": 86.28,
+        "source": "Tushare.index_dailybasic"
+      },
+      "399006.SZ": {
+        "name": "创业板指",
+        "trade_date": "2026-06-18",
+        "pe_ttm": 53.54,
+        "pb": 7.19,
+        "pe_percentile_5y": 82.63,
+        "pb_percentile_5y": 85.96,
+        "source": "Tushare.index_dailybasic"
+      }
+    },
+    "market": {
+      "index_pe_value_score": 7.12,
+      "index_pb_value_score": 15.42,
+      "valuation_score": 10.44,
+      "score_note": "Higher score means cheaper relative to the 5-year index_dailybasic history."
+    }
+  },
+  "volatility": {
+    "trade_date": "2026-06-18",
+    "indices": {
+      "000001.SH": {
+        "name": "上证指数",
+        "realized_vol_30d": 0.1442,
+        "realized_vol_60d": 0.1609,
+        "drawdown_60d_pct": -3.5849,
+        "source": "Tushare.index_daily"
+      },
+      "399001.SZ": {
+        "name": "深证成指",
+        "realized_vol_30d": 0.2699,
+        "realized_vol_60d": 0.2656,
+        "drawdown_60d_pct": -0.367,
+        "source": "Tushare.index_daily"
+      },
+      "399006.SZ": {
+        "name": "创业板指",
+        "realized_vol_30d": 0.3596,
+        "realized_vol_60d": 0.3411,
+        "drawdown_60d_pct": 0.0,
+        "source": "Tushare.index_daily"
+      },
+      "899050.BJ": {
+        "name": "北证50",
+        "realized_vol_30d": 0.3236,
+        "realized_vol_60d": 0.3366,
+        "drawdown_60d_pct": -12.0478,
+        "source": "Tushare.index_daily"
+      }
+    },
+    "market": {
+      "realized_vol_30d": 0.2579,
+      "target_annual_vol": 0.08,
+      "source_note": "Average 30-day annualized realized volatility of Shanghai, Shenzhen, and ChiNext when available."
+    }
+  },
   "macro": {
     "us_10y_treasury_yield_pct": {
       "date": "2026-06-17",
@@ -211,7 +287,7 @@
     },
     "dxy": {
       "date": "2026-06-21",
-      "value": 100.81,
+      "value": 100.839,
       "source": "yfinance:DX-Y.NYB"
     },
     "usd_cny": {
@@ -256,6 +332,7 @@
   },
   "data_quality": {
     "missing_fields": [
+      "valuation.indices.899050.BJ",
       "macro.china_10y_government_bond_yield_pct.tushare_yc_cb",
       "qmt_portfolio.positions"
     ],
@@ -271,6 +348,7 @@
       "Tushare.moneyflow",
       "Tushare.daily_basic",
       "Tushare.moneyflow_ind_ths",
+      "Tushare.index_dailybasic",
       "FRED.DGS10",
       "yfinance.DX-Y.NYB",
       "yfinance.CNY=X",
@@ -281,9 +359,10 @@
       "FRED.PCEPI",
       "BaoStock.query_history_k_data_plus"
     ],
-    "generated_at": "2026-06-22T09:55:21+08:00",
+    "generated_at": "2026-06-22T10:09:18+08:00",
     "basis": "latest complete Tushare A-share trading day at or before as_of",
     "notes": [
+      "valuation.indices.899050.BJ: empty index_dailybasic",
       "macro.china_10y_government_bond_yield_pct.tushare_yc_cb: 抱歉，您没有接口(yc_cb)访问权限，权限的具体详情访问：https://tushare.pro/document/1?doc_id=108。",
       "qmt_portfolio.positions: xtquant is not installed in the active Python environment"
     ],

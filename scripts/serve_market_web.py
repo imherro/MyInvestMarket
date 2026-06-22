@@ -195,6 +195,10 @@ def homepage_index_result() -> dict[str, object]:
             "market_regime": latest.get("market_regime"),
             "confidence": latest.get("confidence"),
             "equity_position_range": latest.get("equity_position_range"),
+            "base_equity_position_range": latest.get("base_equity_position_range"),
+            "vol_adjusted_equity_position_range": latest.get("vol_adjusted_equity_position_range"),
+            "vol_adjusted_market_position_score": latest.get("vol_adjusted_market_position_score"),
+            "volatility_targeting": latest.get("volatility_targeting", {}),
             "cards": [
                 {
                     "id": "position_score",
@@ -218,6 +222,13 @@ def homepage_index_result() -> dict[str, object]:
                     "detail": "30分上限",
                 },
                 {
+                    "id": "vol_adjusted_position",
+                    "label": "波动调整分",
+                    "value": latest.get("vol_adjusted_market_position_score"),
+                    "max": 100,
+                    "detail": latest.get("vol_adjusted_equity_position_range"),
+                },
+                {
                     "id": "market_regime",
                     "label": "市场状态",
                     "value": latest.get("market_regime"),
@@ -238,6 +249,10 @@ def homepage_index_result() -> dict[str, object]:
             "series": {
                 "market_position_score": [
                     {"basis_trade_date": row.get("basis_trade_date"), "scored_at": row.get("scored_at"), "value": row.get("market_position_score")}
+                    for row in records
+                ],
+                "vol_adjusted_market_position_score": [
+                    {"basis_trade_date": row.get("basis_trade_date"), "scored_at": row.get("scored_at"), "value": row.get("vol_adjusted_market_position_score")}
                     for row in records
                 ],
                 "market_opportunity_score": [
@@ -275,8 +290,10 @@ def homepage_index_result() -> dict[str, object]:
                     "market_opportunity_score": row.get("market_opportunity_score"),
                     "crowding_penalty": row.get("crowding_penalty"),
                     "market_position_score": row.get("market_position_score"),
+                    "vol_adjusted_market_position_score": row.get("vol_adjusted_market_position_score"),
                     "shanghai_composite": row.get("shanghai_composite"),
                     "equity_position_range": row.get("equity_position_range"),
+                    "vol_adjusted_equity_position_range": row.get("vol_adjusted_equity_position_range"),
                     "market_regime": row.get("market_regime"),
                 }
                 for row in reversed(records)
