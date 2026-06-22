@@ -231,7 +231,7 @@ select {
 }
 
 .position-map-frame {
-  height: 360px;
+  height: 390px;
   overflow: hidden;
 }
 
@@ -265,10 +265,31 @@ select {
   stroke-linejoin: round;
 }
 
+.market-cycle-curve {
+  fill: none;
+  stroke: rgba(98, 112, 107, 0.48);
+  stroke-width: 2;
+  stroke-dasharray: 8 6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.position-curve.corrective {
+  stroke: var(--amber);
+}
+
+.market-cycle-curve.corrective {
+  stroke: rgba(191, 61, 43, 0.42);
+}
+
 .position-curve-node {
   fill: var(--surface);
   stroke: var(--teal);
   stroke-width: 2;
+}
+
+.position-curve-node.corrective {
+  stroke: var(--amber);
 }
 
 .wave-label {
@@ -277,10 +298,30 @@ select {
   font-weight: 700;
 }
 
+.wave-label.corrective {
+  fill: var(--amber);
+}
+
 .wave-phase-label {
   fill: var(--muted);
   font-size: 11px;
   font-weight: 600;
+}
+
+.cycle-callout-box {
+  fill: rgba(255, 255, 255, 0.95);
+  stroke: rgba(23, 33, 31, 0.16);
+}
+
+.cycle-callout-title {
+  fill: var(--ink);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.cycle-callout-text {
+  fill: var(--muted);
+  font-size: 11px;
 }
 
 .current-score-line {
@@ -312,6 +353,37 @@ select {
 .current-score-label.muted {
   fill: var(--muted);
   font-size: 12px;
+}
+
+.position-benchmark-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.position-benchmark-card {
+  min-height: 112px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-soft);
+}
+
+.position-benchmark-card span,
+.position-benchmark-card small {
+  display: block;
+  color: var(--muted);
+  font-size: 0.8rem;
+  line-height: 1.45;
+}
+
+.position-benchmark-card strong {
+  display: block;
+  margin: 8px 0;
+  color: var(--ink);
+  font-size: 0.94rem;
+  line-height: 1.35;
 }
 
 .chart-band {
@@ -580,6 +652,10 @@ td.score-risk {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .position-benchmark-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .detail-layout {
     grid-template-columns: 1fr;
   }
@@ -606,6 +682,7 @@ td.score-risk {
   .summary-grid,
   .api-grid,
   .module-grid,
+  .position-benchmark-grid,
   .metric-grid {
     grid-template-columns: 1fr;
   }

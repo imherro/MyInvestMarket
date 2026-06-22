@@ -27,22 +27,48 @@ const chartColors = {
 };
 
 const positionCurvePoints = [
-  { score: 0, position: 10, wave: "", label: "极弱防守" },
-  { score: 18, position: 28, wave: "1", label: "修复试探" },
-  { score: 30, position: 24, wave: "2", label: "回踩确认" },
-  { score: 52, position: 55, wave: "3", label: "主升扩散" },
-  { score: 64, position: 50, wave: "4", label: "分歧整理" },
-  { score: 82, position: 74, wave: "5", label: "健康趋势" },
-  { score: 100, position: 85, wave: "", label: "低拥挤强趋势" },
+  { stage: 0, cycle: 15, position: 12, wave: "", label: "熊末", waveType: "base" },
+  { stage: 14, cycle: 38, position: 40, wave: "1", label: "底部确认", waveType: "impulse" },
+  { stage: 26, cycle: 28, position: 28, wave: "2", label: "回踩", waveType: "impulse" },
+  { stage: 50, cycle: 76, position: 70, wave: "3", label: "健康主升", waveType: "impulse" },
+  { stage: 64, cycle: 58, position: 52, wave: "4", label: "分歧整理", waveType: "impulse" },
+  { stage: 78, cycle: 88, position: 42, wave: "5", label: "泡沫顶部", waveType: "impulse" },
+  { stage: 88, cycle: 54, position: 30, wave: "a", label: "下跌", waveType: "corrective" },
+  { stage: 94, cycle: 66, position: 40, wave: "b", label: "反抽", waveType: "corrective" },
+  { stage: 100, cycle: 22, position: 20, wave: "c", label: "出清底部", waveType: "corrective" },
 ];
 
 const marketRegimeBands = [
-  { from: 0, to: 20, label: "极弱防守", fill: "#f3ded7" },
-  { from: 20, to: 35, label: "弱修复", fill: "#f4ead4" },
-  { from: 35, to: 50, label: "震荡修复", fill: "#e8eee8" },
-  { from: 50, to: 65, label: "结构机会", fill: "#dcebe3" },
-  { from: 65, to: 80, label: "健康趋势", fill: "#d9e8f3" },
-  { from: 80, to: 100, label: "低拥挤强趋势", fill: "#e8e4f0" },
+  { from: 0, to: 14, label: "底部区", fill: "#f3ded7" },
+  { from: 14, to: 78, label: "推动浪 1-5", fill: "#dcebe3" },
+  { from: 78, to: 100, label: "调整浪 a-b-c", fill: "#f4ead4" },
+];
+
+const positionBenchmarks = [
+  {
+    title: "底部未确认",
+    netScore: "0-20",
+    position: "0%-20%",
+    note: "下跌趋势、波动高时只防守，不因便宜直接重仓。",
+  },
+  {
+    title: "底部确认",
+    netScore: "35-50",
+    position: "35%-45%",
+    note: "低估、宽度修复、波动回落后，开始把仓位抬起来。",
+  },
+  {
+    title: "健康主升",
+    netScore: "65-80",
+    position: "60%-75%",
+    note: "趋势、资金、宽度共振且拥挤不高，是模型最愿意给仓位的位置。",
+  },
+  {
+    title: "泡沫顶部",
+    netScore: "25-50",
+    position: "20%-45%",
+    note: "机会分可能高，但估值、拥挤、波动惩罚会把净分和仓位压下来。",
+  },
 ];
 
 const svgNs = "http://www.w3.org/2000/svg";
@@ -162,6 +188,7 @@ function renderPositionMap() {
   if (!latest) {
     setText("positionMapLabel", "--");
     renderEmpty(container, "暂无仓位映射");
+    renderPositionBenchmarks();
     return;
   }
 
@@ -170,6 +197,7 @@ function renderPositionMap() {
   const volRange = latest.vol_adjusted_equity_position_range || "--";
   setText("positionMapLabel", `净分 ${formatNumber(currentScore)} · 基准权益 ${baseRange}`);
   renderPositionCurve(container, currentScore, baseRange, volRange, latest.market_regime || "--");
+  renderPositionBenchmarks();
 }
 
 function renderPositionCurve(container, currentScore, baseRange, volRange, regimeText) {
@@ -180,13 +208,13 @@ function renderPositionCurve(container, currentScore, baseRange, volRange, regim
   }
 
   const width = 920;
-  const height = 360;
+  const height = 390;
   const margin = { top: 26, right: 44, bottom: 48, left: 52 };
   const plotWidth = width - margin.left - margin.right;
   const plotHeight = height - margin.top - margin.bottom;
   const xRange = { min: 0, max: 100 };
   const yRange = { min: 0, max: 90 };
-  const xForScore = (score) => margin.left + ((score - xRange.min) / (xRange.max - xRange.min)) * plotWidth;
+  const xForStage = (stage) => margin.left + ((stage - xRange.min) / (xRange.max - xRange.min)) * plotWidth;
   const yForPosition = (position) => yPos(position, yRange, margin, plotHeight);
 
   const svg = createSvg("svg", {
@@ -196,8 +224,8 @@ function renderPositionCurve(container, currentScore, baseRange, volRange, regim
   });
 
   marketRegimeBands.forEach((band) => {
-    const x = xForScore(band.from);
-    const bandWidth = xForScore(band.to) - x;
+    const x = xForStage(band.from);
+    const bandWidth = xForStage(band.to) - x;
     svg.appendChild(createSvg("rect", { x, y: margin.top, width: bandWidth, height: plotHeight, fill: band.fill }));
     svg.appendChild(
       createSvg(
@@ -214,39 +242,70 @@ function renderPositionCurve(container, currentScore, baseRange, volRange, regim
     svg.appendChild(createSvg("text", { class: "tick-label", x: 8, y: y + 4 }, `${value}%`));
   }
 
-  [0, 20, 35, 50, 65, 80, 100].forEach((score) => {
-    const x = xForScore(score);
+  positionCurvePoints.forEach((pointItem) => {
+    const x = xForStage(pointItem.stage);
     svg.appendChild(createSvg("line", { class: "position-map-tick", x1: x, y1: margin.top, x2: x, y2: height - margin.bottom }));
-    svg.appendChild(createSvg("text", { class: "tick-label", x, y: height - 18, "text-anchor": "middle" }, String(score)));
+    svg.appendChild(createSvg("text", { class: "tick-label", x, y: height - 18, "text-anchor": "middle" }, pointItem.wave || "底"));
   });
 
   svg.appendChild(createSvg("line", { class: "axis-line", x1: margin.left, y1: height - margin.bottom, x2: width - margin.right, y2: height - margin.bottom }));
   svg.appendChild(createSvg("line", { class: "axis-line", x1: margin.left, y1: margin.top, x2: margin.left, y2: height - margin.bottom }));
-  svg.appendChild(createSvg("text", { class: "axis-label", x: width / 2, y: height - 4, "text-anchor": "middle" }, "净市场分"));
-  svg.appendChild(createSvg("text", { class: "axis-label", x: 12, y: margin.top - 8 }, "基准权益仓位"));
+  svg.appendChild(createSvg("text", { class: "axis-label", x: width / 2, y: height - 4, "text-anchor": "middle" }, "市场循环阶段"));
+  svg.appendChild(createSvg("text", { class: "axis-label", x: 12, y: margin.top - 8 }, "仓位 / 周期强度"));
 
   svg.appendChild(
-    createSvg("text", { class: "position-map-note", x: width - margin.right, y: margin.top - 8, "text-anchor": "end" }, "高分代表低拥挤净吸引力，不代表泡沫越热"),
+    createSvg(
+      "text",
+      { class: "position-map-note", x: width - margin.right, y: margin.top - 8, "text-anchor": "end" },
+      "灰线是牛熊循环，绿线是模型仓位；顶部会因惩罚降净分",
+    ),
   );
 
-  const curvePoints = positionCurvePoints.map((pointItem) => ({
-    x: xForScore(pointItem.score),
+  const impulsePoints = positionCurvePoints.filter((pointItem) => ["base", "impulse"].includes(pointItem.waveType)).map((pointItem) => ({
+    x: xForStage(pointItem.stage),
     y: yForPosition(pointItem.position),
   }));
-  const curveD = smoothPath(curvePoints);
-  svg.appendChild(createSvg("path", { d: curveD, class: "position-curve" }));
+  const impulseCyclePoints = positionCurvePoints.filter((pointItem) => ["base", "impulse"].includes(pointItem.waveType)).map((pointItem) => ({
+    x: xForStage(pointItem.stage),
+    y: yForPosition(pointItem.cycle),
+  }));
+  const waveFive = positionCurvePoints.find((pointItem) => pointItem.wave === "5");
+  const correctivePoints = [waveFive, ...positionCurvePoints.filter((pointItem) => pointItem.waveType === "corrective")]
+    .filter(Boolean)
+    .map((pointItem) => ({
+      x: xForStage(pointItem.stage),
+      y: yForPosition(pointItem.position),
+    }));
+  const correctiveCyclePoints = [waveFive, ...positionCurvePoints.filter((pointItem) => pointItem.waveType === "corrective")]
+    .filter(Boolean)
+    .map((pointItem) => ({
+      x: xForStage(pointItem.stage),
+      y: yForPosition(pointItem.cycle),
+    }));
+  svg.appendChild(createSvg("path", { d: smoothPath(impulseCyclePoints), class: "market-cycle-curve impulse" }));
+  svg.appendChild(createSvg("path", { d: smoothPath(correctiveCyclePoints), class: "market-cycle-curve corrective" }));
+  svg.appendChild(createSvg("path", { d: smoothPath(impulsePoints), class: "position-curve impulse" }));
+  svg.appendChild(createSvg("path", { d: smoothPath(correctivePoints), class: "position-curve corrective" }));
+
   positionCurvePoints.forEach((pointItem) => {
-    const x = xForScore(pointItem.score);
+    const x = xForStage(pointItem.stage);
     const y = yForPosition(pointItem.position);
-    svg.appendChild(createSvg("circle", { cx: x, cy: y, r: 4, class: "position-curve-node" }));
+    const isCorrective = pointItem.waveType === "corrective";
+    const nodeClass = `position-curve-node ${pointItem.waveType}`;
+    const waveClass = `wave-label ${pointItem.waveType}`;
+    const phaseClass = `wave-phase-label ${pointItem.waveType}`;
+    svg.appendChild(createSvg("circle", { cx: x, cy: y, r: 4, class: nodeClass }));
     if (pointItem.wave) {
-      svg.appendChild(createSvg("text", { class: "wave-label", x, y: y - 12, "text-anchor": "middle" }, pointItem.wave));
+      svg.appendChild(createSvg("text", { class: waveClass, x, y: y + (isCorrective ? 18 : -12), "text-anchor": "middle" }, pointItem.wave));
     }
-    svg.appendChild(createSvg("text", { class: "wave-phase-label", x, y: y + 20, "text-anchor": "middle" }, pointItem.label));
+    svg.appendChild(createSvg("text", { class: phaseClass, x, y: y + (isCorrective ? -20 : 22), "text-anchor": "middle" }, pointItem.label));
   });
 
-  const markerX = xForScore(currentScore);
-  const markerY = yForPosition(interpolatePosition(currentScore));
+  addCycleCallout(svg, xForStage(14), yForPosition(40), "底部确认", "净分35-50", "仓位35%-45%");
+  addCycleCallout(svg, xForStage(78), yForPosition(42), "泡沫顶部", "净分25-50", "仓位20%-45%");
+
+  const markerX = xForStage(clamp(currentScore, 0, 100));
+  const markerY = yForPosition(positionFromRange(baseRange, currentScore));
   svg.appendChild(createSvg("line", { class: "current-score-line", x1: markerX, y1: margin.top, x2: markerX, y2: height - margin.bottom }));
   svg.appendChild(createSvg("circle", { cx: markerX, cy: markerY, r: 6.5, class: "current-score-dot" }));
 
@@ -261,6 +320,70 @@ function renderPositionCurve(container, currentScore, baseRange, volRange, regim
   svg.appendChild(createSvg("title", {}, `当前净市场分 ${formatNumber(currentScore)}，基准权益 ${baseRange}，波动调整 ${volRange}`));
 
   container.appendChild(svg);
+}
+
+function addCycleCallout(svg, x, y, title, scoreText, positionText) {
+  const boxWidth = 128;
+  const boxHeight = 58;
+  const boxX = clamp(x + 10, 58, 920 - 44 - boxWidth);
+  const boxY = clamp(y - boxHeight - 12, 34, 390 - 48 - boxHeight);
+  svg.appendChild(createSvg("rect", { class: "cycle-callout-box", x: boxX, y: boxY, width: boxWidth, height: boxHeight, rx: 6 }));
+  svg.appendChild(createSvg("text", { class: "cycle-callout-title", x: boxX + 10, y: boxY + 19 }, title));
+  svg.appendChild(createSvg("text", { class: "cycle-callout-text", x: boxX + 10, y: boxY + 36 }, scoreText));
+  svg.appendChild(createSvg("text", { class: "cycle-callout-text", x: boxX + 10, y: boxY + 51 }, positionText));
+}
+
+function renderPositionBenchmarks() {
+  const container = document.getElementById("positionBenchmarks");
+  if (!container) return;
+  container.innerHTML = positionBenchmarks
+    .map(
+      (item) => `
+        <article class="position-benchmark-card">
+          <span>${escapeHtml(item.title)}</span>
+          <strong>净分 ${escapeHtml(item.netScore)} · 权益 ${escapeHtml(item.position)}</strong>
+          <small>${escapeHtml(item.note)}</small>
+        </article>
+      `,
+    )
+    .join("");
+}
+
+function positionFromRange(rangeText, score) {
+  const parsedRange = parsePercentRange(rangeText);
+  if (parsedRange) return (parsedRange[0] + parsedRange[1]) / 2;
+  return fallbackPositionFromScore(score);
+}
+
+function parsePercentRange(rangeText) {
+  if (!rangeText || !String(rangeText).includes("-")) return null;
+  const [left, right] = String(rangeText).replaceAll("%", "").split("-");
+  const leftNumber = numeric(left);
+  const rightNumber = numeric(right);
+  if (leftNumber === null || rightNumber === null) return null;
+  return [leftNumber, rightNumber];
+}
+
+function fallbackPositionFromScore(score) {
+  const reference = [
+    { score: 0, position: 10 },
+    { score: 20, position: 20 },
+    { score: 35, position: 35 },
+    { score: 50, position: 45 },
+    { score: 65, position: 60 },
+    { score: 80, position: 75 },
+    { score: 100, position: 85 },
+  ];
+  const safeScore = clamp(score, 0, 100);
+  for (let index = 0; index < reference.length - 1; index += 1) {
+    const left = reference[index];
+    const right = reference[index + 1];
+    if (safeScore >= left.score && safeScore <= right.score) {
+      const ratio = (safeScore - left.score) / (right.score - left.score || 1);
+      return left.position + ratio * (right.position - left.position);
+    }
+  }
+  return reference[reference.length - 1].position;
 }
 
 function smoothPath(points) {
@@ -283,19 +406,6 @@ function smoothPath(points) {
     commands.push(`C ${controlOne.x} ${controlOne.y}, ${controlTwo.x} ${controlTwo.y}, ${next.x} ${next.y}`);
   }
   return commands.join(" ");
-}
-
-function interpolatePosition(score) {
-  const safeScore = clamp(score, 0, 100);
-  for (let index = 0; index < positionCurvePoints.length - 1; index += 1) {
-    const left = positionCurvePoints[index];
-    const right = positionCurvePoints[index + 1];
-    if (safeScore >= left.score && safeScore <= right.score) {
-      const ratio = (safeScore - left.score) / (right.score - left.score || 1);
-      return left.position + ratio * (right.position - left.position);
-    }
-  }
-  return positionCurvePoints[positionCurvePoints.length - 1].position;
 }
 
 function renderOverviewChart() {
