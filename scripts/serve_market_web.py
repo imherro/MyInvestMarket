@@ -21,6 +21,7 @@ from market_scoring import (
     ROOT,
     append_score,
     load_history,
+    score_record_is_current_schema,
 )
 
 
@@ -248,10 +249,7 @@ def current_version_filter() -> dict[str, object]:
 
 
 def record_matches_current_version(record: dict[str, object]) -> bool:
-    return (
-        record.get("model_version") == MODEL_VERSION
-        and record.get("position_policy_version") == POSITION_POLICY_VERSION
-    )
+    return score_record_is_current_schema(record)
 
 
 def filtered_history(history: dict[str, object], include_legacy: bool = False) -> dict[str, object]:

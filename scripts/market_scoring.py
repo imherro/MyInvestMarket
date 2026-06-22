@@ -1479,6 +1479,134 @@ def validate_score_record(record: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def score_record_is_current_schema(record: dict[str, Any]) -> bool:
+    if not isinstance(record, dict) or record.get("legacy_schema") is True:
+        return False
+    if record.get("model_version") != MODEL_VERSION or record.get("position_policy_version") != POSITION_POLICY_VERSION:
+        return False
+    try:
+        validate_score_record(record)
+    except ScoreRecordValidationError:
+        return False
+    return True
+
+
+def legacy_schema_reason(record: dict[str, Any]) -> str:
+    if not isinstance(record, dict):
+        return "invalid_record_type"
+    if record.get("legacy_schema") is True:
+        return str(record.get("legacy_reason") or "legacy_schema")
+    if record.get("model_version") != MODEL_VERSION:
+        return "legacy_model_version"
+    if record.get("position_policy_version") != POSITION_POLICY_VERSION:
+        return "legacy_position_policy_version"
+    try:
+        validate_score_record(record)
+    except ScoreRecordValidationError:
+        return "invalid_current_schema"
+    return "current_schema"
+
+
+def legacy_record_dedupe_key(record: dict[str, Any]) -> tuple[str, ...]:
+    return tuple(str(record.get(field) or "") for field in HISTORY_DEDUPE_KEY_FIELDS)
+
+
+def legacy_record_archive_id(record: dict[str, Any]) -> tuple[str, str]:
+    return (str(record.get("run_id") or ""), "|".join(legacy_record_dedupe_key(record)))
+
+
+def mark_legacy_record(record: dict[str, Any], migrated_at: str) -> dict[str, Any]:
+    legacy = dict(record)
+    legacy["legacy_schema"] = True
+    legacy.setdefault("legacy_reason", legacy_schema_reason(record))
+    legacy.setdefault("legacy_migrated_at", migrated_at)
+    legacy.setdefault("legacy_dedupe_key", history_dedupe_key_payload(record))
+    return legacy
+
+
+def migrate_history_legacy_records(
+    history: dict[str, Any],
+    *,
+    migrated_at: str | None = None,
+    archive_duplicates: bool = True,
+) -> dict[str, Any]:
+    migrated_at = migrated_at or datetime.now(TZ).isoformat(timespec="seconds")
+    source_records = history.get("records", [])
+    if not isinstance(source_records, list):
+        source_records = []
+    existing_archive = history.get("legacy_archive", [])
+    if not isinstance(existing_archive, list):
+        existing_archive = []
+
+    records: list[dict[str, Any]] = []
+    archive: list[dict[str, Any]] = list(existing_archive)
+    archived_ids = {legacy_record_archive_id(record) for record in archive if isinstance(record, dict)}
+    seen_legacy_keys: set[tuple[str, ...]] = set()
+    legacy_marked_count = 0
+    legacy_archived_count = 0
+    current_record_count = 0
+
+    for raw_record in source_records:
+        record = raw_record if isinstance(raw_record, dict) else {"raw_record": raw_record}
+        if score_record_is_current_schema(record):
+            records.append(record)
+            current_record_count += 1
+            continue
+
+        legacy = mark_legacy_record(record, migrated_at)
+        legacy_key = legacy_record_dedupe_key(legacy)
+        duplicate_legacy = archive_duplicates and legacy_key in seen_legacy_keys
+        if duplicate_legacy:
+            archived = dict(legacy)
+            archived["archived_reason"] = "duplicate_legacy_record"
+            archived.setdefault("legacy_archived_at", migrated_at)
+            archive_id = legacy_record_archive_id(archived)
+            if archive_id not in archived_ids:
+                archive.append(archived)
+                archived_ids.add(archive_id)
+                legacy_archived_count += 1
+            continue
+
+        was_legacy = isinstance(raw_record, dict) and raw_record.get("legacy_schema") is True
+        had_legacy_metadata = isinstance(raw_record, dict) and all(
+            key in raw_record for key in ["legacy_reason", "legacy_migrated_at", "legacy_dedupe_key"]
+        )
+        if not was_legacy or not had_legacy_metadata:
+            legacy_marked_count += 1
+        seen_legacy_keys.add(legacy_key)
+        records.append(legacy)
+
+    migrated_history = dict(history)
+    migrated_history["schema_version"] = HISTORY_SCHEMA_VERSION
+    migrated_history["model_version"] = MODEL_VERSION
+    migrated_history["position_policy_version"] = POSITION_POLICY_VERSION
+    migrated_history["dedupe_key_fields"] = list(HISTORY_DEDUPE_KEY_FIELDS)
+    migrated_history["records"] = records
+    migrated_history["record_count"] = len(records)
+    migrated_history["legacy_record_count"] = sum(1 for record in records if isinstance(record, dict) and record.get("legacy_schema") is True)
+    migrated_history["current_record_count"] = current_record_count
+    migrated_history["legacy_archive"] = archive
+    migrated_history["legacy_archive_count"] = len(archive)
+    if legacy_marked_count or legacy_archived_count:
+        migrated_history["updated_at"] = migrated_at
+        migrated_history["legacy_migration"] = {
+            "migrated_at": migrated_at,
+            "legacy_marked_count": legacy_marked_count,
+            "legacy_archived_count": legacy_archived_count,
+            "archive_duplicates": archive_duplicates,
+        }
+
+    return {
+        "history": migrated_history,
+        "changed": migrated_history != history,
+        "legacy_marked_count": legacy_marked_count,
+        "legacy_archived_count": legacy_archived_count,
+        "current_record_count": current_record_count,
+        "legacy_record_count": migrated_history["legacy_record_count"],
+        "legacy_archive_count": len(archive),
+    }
+
+
 def history_dedupe_key(record: dict[str, Any]) -> tuple[str, ...] | None:
     values = []
     for field in HISTORY_DEDUPE_KEY_FIELDS:

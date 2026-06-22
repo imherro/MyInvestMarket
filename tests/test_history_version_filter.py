@@ -15,14 +15,41 @@ import serve_market_web  # noqa: E402
 
 
 def record(run_id: str, model_version: str, position_policy_version: str) -> dict:
+    modules = {
+        key: {
+            "label": meta["label"],
+            "weight": meta["weight"],
+            "score": meta["weight"] * 0.5,
+            "score_pct": 50,
+            "summary": "test",
+            "evidence": [],
+            "metrics": {},
+        }
+        for key, meta in market_scoring.MODULES.items()
+    }
     return {
         "run_id": run_id,
         "scored_at": f"2026-06-22T16:00:0{run_id[-1]}+08:00",
         "basis_trade_date": "2026-06-18",
+        "snapshot_sha256": run_id,
         "model_version": model_version,
         "position_policy_version": position_policy_version,
+        "account_scope": "stock_account",
+        "market_regime": "中性震荡偏结构",
+        "market_opportunity_score": 50,
+        "opportunity_score": 50,
+        "crowding_penalty": 15,
+        "pre_cap_market_position_score": 35,
         "market_position_score": 35,
+        "base_market_position_score": 35,
         "recommended_equity_position_range": "20%-40%",
+        "base_equity_position_range": "20%-40%",
+        "equity_position_range": "20%-40%",
+        "confidence": "medium",
+        "risk_caps": [],
+        "modules": modules,
+        "crowding": {"penalty": 15, "items": []},
+        "data_quality": {"missing_fields": [], "warnings": []},
     }
 
 

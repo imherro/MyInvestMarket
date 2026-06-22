@@ -15,14 +15,36 @@ import serve_market_web  # noqa: E402
 
 
 def score_record(*, warnings: list[str] | None = None, risk_caps: list[dict] | None = None, confidence: str = "medium") -> dict:
+    modules = {
+        key: {
+            "label": meta["label"],
+            "weight": meta["weight"],
+            "score": meta["weight"] * 0.5,
+            "score_pct": 50,
+            "summary": "test",
+            "evidence": [],
+            "metrics": {},
+        }
+        for key, meta in market_scoring.MODULES.items()
+    }
     return {
         "run_id": "risk-overview-test",
         "scored_at": "2026-06-22T16:00:00+08:00",
         "basis_trade_date": "2026-06-18",
+        "snapshot_sha256": "risk-overview-test",
         "model_version": market_scoring.MODEL_VERSION,
         "position_policy_version": market_scoring.POSITION_POLICY_VERSION,
+        "account_scope": "stock_account",
+        "market_regime": "中性震荡偏结构",
+        "market_opportunity_score": 50,
+        "opportunity_score": 50,
+        "crowding_penalty": 15,
+        "pre_cap_market_position_score": 35,
         "market_position_score": 35,
+        "base_market_position_score": 35,
         "recommended_equity_position_range": "20%-40%",
+        "base_equity_position_range": "20%-40%",
+        "equity_position_range": "20%-40%",
         "confidence": confidence,
         "data_quality": {
             "warnings": warnings or [],
@@ -30,7 +52,8 @@ def score_record(*, warnings: list[str] | None = None, risk_caps: list[dict] | N
             "sources_used": ["Tushare.daily", "BaoStock.query_history_k_data_plus"],
         },
         "risk_caps": risk_caps or [],
-        "modules": {},
+        "modules": modules,
+        "crowding": {"penalty": 15, "items": []},
     }
 
 
