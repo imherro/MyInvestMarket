@@ -19,6 +19,7 @@ from market_scoring import (
     MODEL_VERSION,
     POSITION_POLICY_VERSION,
     ROOT,
+    STABLE_RISK_CAP_REASONS,
     append_score,
     load_history,
     score_record_is_current_schema,
@@ -30,6 +31,17 @@ PORT = 8011
 TZ = ZoneInfo("Asia/Shanghai")
 SERVICE_NAME = "MyInvestMarketWeb"
 SERVICE_API_VERSION = 1
+
+
+def stable_release_result() -> dict[str, object]:
+    return {
+        "model_version": MODEL_VERSION,
+        "status": "stable",
+        "core_rules_frozen": True,
+        "risk_cap_reasons": list(STABLE_RISK_CAP_REASONS),
+        "risk_cap_extension_policy": "v1.0_stable freezes risk_cap types; parameter tuning is allowed, new logical branches require a new model version.",
+        "position_policy_version": POSITION_POLICY_VERSION,
+    }
 
 POSITION_SCORE_BANDS = [
     {
@@ -140,6 +152,7 @@ def service_version_result() -> dict[str, object]:
         "model_version": MODEL_VERSION,
         "position_policy_version": POSITION_POLICY_VERSION,
         "history_schema_version": HISTORY_SCHEMA_VERSION,
+        "stable_release": stable_release_result(),
     }
 
 
@@ -419,6 +432,7 @@ def homepage_index_result() -> dict[str, object]:
         "model_version": latest.get("model_version", MODEL_VERSION) if latest else MODEL_VERSION,
         "account_scope": latest.get("account_scope", "stock_account") if latest else "stock_account",
         "position_policy_version": latest.get("position_policy_version", POSITION_POLICY_VERSION) if latest else POSITION_POLICY_VERSION,
+        "stable_release": stable_release_result(),
         "page": {
             "path": "/",
             "title": "A股市场评分",

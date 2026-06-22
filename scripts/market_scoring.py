@@ -17,7 +17,7 @@ DEFAULT_SNAPSHOT_PATH = DATA_DIR / "latest_market_snapshot.json"
 DEFAULT_HISTORY_PATH = DATA_DIR / "market_score_history.json"
 DEFAULT_AUDIT_LOG_PATH = DATA_DIR / "market_score_history_audit.jsonl"
 TZ = ZoneInfo("Asia/Shanghai")
-MODEL_VERSION = "a_share_market_score_v1_4"
+MODEL_VERSION = "v1.0_stable"
 SCORE_SCHEMA_VERSION = "1.4"
 FEATURE_SCHEMA_VERSION = "1.2"
 POSITION_POLICY_VERSION = "stock_account_position_policy_v2"
@@ -69,6 +69,23 @@ MODULES = {
     "valuation": {"label": "估值与再定价", "weight": 15},
     "macro": {"label": "宏观与外部环境", "weight": 10},
 }
+
+STABLE_RISK_CAP_REASONS = (
+    "high_crowding_extreme",
+    "high_crowding",
+    "volume_blowoff_top",
+    "sector_concentration_top",
+    "capital_outflow_combo",
+    "extreme_expensive_valuation",
+    "expensive_valuation",
+    "bubble_top_combo",
+    "extreme_high_volatility",
+    "high_volatility",
+    "missing_valuation_data_hot_market",
+    "missing_volatility_data_hot_market",
+    "missing_core_risk_data_hot_market",
+    "strong_index_weak_breadth",
+)
 
 
 class ScoreRecordValidationError(ValueError):
@@ -924,6 +941,8 @@ def volatility_data_missing(snapshot: dict[str, Any], data_quality: dict[str, An
 
 
 def risk_cap(reason: str, score_cap: float, severity: str, evidence_data: dict[str, Any], message: str) -> dict[str, Any]:
+    if reason not in STABLE_RISK_CAP_REASONS:
+        raise ValueError(f"risk_cap reason is frozen in v1.0_stable: {reason}")
     return {
         "reason": reason,
         "score_cap": round2(score_cap),
