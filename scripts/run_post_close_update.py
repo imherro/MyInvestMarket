@@ -151,6 +151,7 @@ def write_report(snapshot: dict[str, Any], record: dict[str, Any]) -> Path:
     content = f"""# A股市场研究结果
 
 - 生成时间: {now.strftime('%Y-%m-%d %H:%M:%S')}
+- 评分运行ID: {record.get('run_id')}
 - 数据基准日: {record.get('basis_trade_date')}
 - 输入数据: `data/latest_market_snapshot.json`
 - 评分模型: `{record.get('model_version')}`
@@ -211,6 +212,57 @@ def endpoint_json(path: str) -> dict[str, Any]:
         return json.loads(response.read().decode("utf-8-sig"))
 
 
+def require_api(condition: bool, message: str) -> None:
+    if not condition:
+        raise RuntimeError(message)
+
+
+def validate_api_payloads(payloads: dict[str, dict[str, Any]]) -> dict[str, Any]:
+    index = payloads.get("/api/index") or {}
+    score_payload = payloads.get("/api/research/latest/market-score") or {}
+    analysis_payload = payloads.get("/api/research/latest/market-analysis") or {}
+    latest_record = score_payload.get("record") or {}
+    index_summary = index.get("summary") or {}
+    policy_map = index.get("position_policy_map") or {}
+    binding = analysis_payload.get("binding") or {}
+
+    require_api(bool(index.get("available")), "/api/index is not available")
+    require_api(bool(index_summary.get("run_id")), "/api/index.summary.run_id is missing")
+    require_api(bool(index_summary.get("basis_trade_date")), "/api/index.summary.basis_trade_date is missing")
+    require_api(bool(index_summary.get("recommended_equity_position_range")), "/api/index.summary.recommended_equity_position_range is missing")
+    require_api(bool(policy_map.get("position_policy_version")), "/api/index.position_policy_map.position_policy_version is missing")
+    require_api(bool((policy_map.get("current") or {}).get("market_position_score") is not None), "/api/index.position_policy_map.current.market_position_score is missing")
+
+    require_api(bool(score_payload.get("available")), "/api/research/latest/market-score is not available")
+    require_api(bool(latest_record.get("run_id")), "latest market score run_id is missing")
+    require_api(bool(latest_record.get("basis_trade_date")), "latest market score basis_trade_date is missing")
+    require_api(bool(latest_record.get("recommended_equity_position_range")), "latest market score recommended_equity_position_range is missing")
+    require_api(index_summary.get("run_id") == latest_record.get("run_id"), "/api/index summary run_id does not match latest score")
+    require_api(
+        index_summary.get("basis_trade_date") == latest_record.get("basis_trade_date"),
+        "/api/index summary basis_trade_date does not match latest score",
+    )
+
+    require_api(bool(analysis_payload.get("available")), "/api/research/latest/market-analysis is not available")
+    require_api(bool(binding.get("consistent")), "latest analysis report binding is inconsistent")
+    require_api(binding.get("run_id") == latest_record.get("run_id"), "latest analysis run_id does not match latest score")
+    require_api(
+        binding.get("basis_trade_date") == latest_record.get("basis_trade_date"),
+        "latest analysis basis_trade_date does not match latest score",
+    )
+
+    return {
+        "ok": True,
+        "run_id": latest_record.get("run_id"),
+        "basis_trade_date": latest_record.get("basis_trade_date"),
+        "checked_endpoints": sorted(payloads.keys()),
+        "analysis_report": {
+            "file": ((analysis_payload.get("metadata") or {}).get("file")),
+            "binding": binding,
+        },
+    }
+
+
 def ensure_server() -> None:
     try:
         endpoint_json("/api/index")
@@ -240,9 +292,13 @@ def ensure_server() -> None:
 
 def verify_api() -> dict[str, Any]:
     ensure_server()
-    result: dict[str, Any] = {}
+    payloads: dict[str, dict[str, Any]] = {}
     for path in VERIFY_ENDPOINTS:
         payload = endpoint_json(path)
+        payloads[path] = payload
+    validation = validate_api_payloads(payloads)
+    result: dict[str, Any] = {"validation": validation}
+    for path, payload in payloads.items():
         result[path] = {
             "ok": True,
             "available": payload.get("available") if isinstance(payload, dict) else None,

@@ -144,6 +144,38 @@ def latest_market_score_result() -> dict[str, object]:
     return result
 
 
+def markdown_field(content: str, labels: list[str]) -> str | None:
+    for raw_line in content.splitlines():
+        line = raw_line.strip()
+        for label in labels:
+            prefix = f"- {label}:"
+            if line.startswith(prefix):
+                return line[len(prefix) :].strip().strip("`")
+    return None
+
+
+def analysis_report_binding(content: str, latest_record: dict[str, object] | None = None) -> dict[str, object]:
+    run_id = markdown_field(content, ["评分运行ID", "run_id"])
+    basis_trade_date = markdown_field(content, ["数据基准日", "basis_trade_date"])
+    expected_run_id = latest_record.get("run_id") if latest_record else None
+    expected_basis_trade_date = latest_record.get("basis_trade_date") if latest_record else None
+    consistent = bool(
+        run_id
+        and basis_trade_date
+        and expected_run_id
+        and expected_basis_trade_date
+        and run_id == expected_run_id
+        and basis_trade_date == expected_basis_trade_date
+    )
+    return {
+        "run_id": run_id,
+        "basis_trade_date": basis_trade_date,
+        "expected_run_id": expected_run_id,
+        "expected_basis_trade_date": expected_basis_trade_date,
+        "consistent": consistent,
+    }
+
+
 def latest_market_analysis_result() -> dict[str, object]:
     path = latest_matching_file("chatgpt_market_analysis_*.md")
     if not path:
@@ -151,15 +183,22 @@ def latest_market_analysis_result() -> dict[str, object]:
     content = path.read_text(encoding="utf-8-sig")
     lines = content.splitlines()
     title = next((line.lstrip("# ").strip() for line in lines if line.startswith("#")), path.stem)
-    return {
-        "available": True,
+    score_result = latest_market_score_result()
+    latest_record = score_result.get("record") if score_result.get("available") else None
+    binding = analysis_report_binding(content, latest_record if isinstance(latest_record, dict) else None)
+    result = {
+        "available": bool(binding.get("consistent")),
         "kind": "market_analysis",
         "endpoint": "/api/research/latest/market-analysis",
         "metadata": file_meta(path),
         "title": title,
         "format": "text/markdown",
+        "binding": binding,
         "content": content,
     }
+    if not binding.get("consistent"):
+        result["error"] = "latest analysis report does not match latest market score run_id/basis_trade_date"
+    return result
 
 
 def latest_research_bundle() -> dict[str, object]:
