@@ -28,6 +28,35 @@ HISTORY_DEDUPE_KEY_FIELDS = (
     "position_policy_version",
 )
 MIN_ROLLING_SAMPLE_COUNT = 4
+REQUIRED_SCORE_RECORD_STRING_FIELDS = (
+    "run_id",
+    "model_version",
+    "position_policy_version",
+    "account_scope",
+    "scored_at",
+    "basis_trade_date",
+    "snapshot_sha256",
+    "market_regime",
+    "confidence",
+    "recommended_equity_position_range",
+)
+REQUIRED_SCORE_RECORD_NUMERIC_RANGES = {
+    "market_opportunity_score": (0, 100),
+    "crowding_penalty": (0, 30),
+    "pre_cap_market_position_score": (0, 100),
+    "market_position_score": (0, 100),
+}
+OPTIONAL_SCORE_RECORD_NUMERIC_RANGES = {
+    "opportunity_score": (0, 100),
+    "base_market_position_score": (0, 100),
+    "legacy_vol_adjusted_market_position_score": (0, 100),
+}
+SCORE_RECORD_PERCENT_RANGE_FIELDS = (
+    "recommended_equity_position_range",
+    "base_equity_position_range",
+    "equity_position_range",
+    "legacy_vol_adjusted_equity_position_range",
+)
 
 MODULES = {
     "index_trend": {"label": "指数趋势", "weight": 20},
@@ -38,6 +67,10 @@ MODULES = {
     "valuation": {"label": "估值与再定价", "weight": 15},
     "macro": {"label": "宏观与外部环境", "weight": 10},
 }
+
+
+class ScoreRecordValidationError(ValueError):
+    pass
 
 
 def clamp(value: float, low: float, high: float) -> float:
@@ -1313,6 +1346,139 @@ def save_history(history: dict[str, Any], path: Path = DEFAULT_HISTORY_PATH) -> 
     path.write_text(json.dumps(history, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
 
+def add_validation_error(errors: list[str], field: str, message: str) -> None:
+    errors.append(f"{field}: {message}")
+
+
+def require_non_empty_string(record: dict[str, Any], field: str, errors: list[str]) -> None:
+    value = record.get(field)
+    if not isinstance(value, str) or not value.strip():
+        add_validation_error(errors, field, "required non-empty string")
+
+
+def require_numeric_range(record: dict[str, Any], field: str, low: float, high: float, errors: list[str], *, required: bool = True) -> None:
+    value = record.get(field)
+    if value is None:
+        if required:
+            add_validation_error(errors, field, "required number")
+        return
+    number = as_float(value)
+    if number is None:
+        add_validation_error(errors, field, "must be numeric")
+        return
+    if number < low or number > high:
+        add_validation_error(errors, field, f"must be between {low} and {high}")
+
+
+def validate_percent_range_field(record: dict[str, Any], field: str, errors: list[str], *, required: bool = False) -> None:
+    value = record.get(field)
+    if value in [None, ""]:
+        if required:
+            add_validation_error(errors, field, "required percent range")
+        return
+    if not isinstance(value, str):
+        add_validation_error(errors, field, "must be a percent range string")
+        return
+    bounds = parse_percent_range(value)
+    if bounds is None:
+        add_validation_error(errors, field, "must use a percent range such as 40%-60%")
+        return
+    lower, upper = bounds
+    if lower < 0 or upper > 100 or lower > upper:
+        add_validation_error(errors, field, "must stay within 0%-100% and lower must not exceed upper")
+
+
+def validate_score_modules(modules: Any, errors: list[str]) -> None:
+    if not isinstance(modules, dict):
+        add_validation_error(errors, "modules", "required object")
+        return
+    for key, meta in MODULES.items():
+        module = modules.get(key)
+        field = f"modules.{key}"
+        if not isinstance(module, dict):
+            add_validation_error(errors, field, "required object")
+            continue
+        weight = as_float(module.get("weight"))
+        expected_weight = as_float(meta.get("weight"))
+        if weight is None or weight <= 0:
+            add_validation_error(errors, f"{field}.weight", "must be a positive number")
+        elif expected_weight is not None and abs(weight - expected_weight) > 0.01:
+            add_validation_error(errors, f"{field}.weight", f"must equal configured weight {expected_weight}")
+        score = as_float(module.get("score"))
+        if score is None:
+            add_validation_error(errors, f"{field}.score", "required number")
+        elif weight is not None and (score < 0 or score > weight):
+            add_validation_error(errors, f"{field}.score", "must be between 0 and module weight")
+        score_pct = as_float(module.get("score_pct"))
+        if score_pct is None:
+            add_validation_error(errors, f"{field}.score_pct", "required number")
+        elif score_pct < 0 or score_pct > 100:
+            add_validation_error(errors, f"{field}.score_pct", "must be between 0 and 100")
+
+
+def validate_score_risk_caps(risk_caps: Any, errors: list[str]) -> None:
+    if not isinstance(risk_caps, list):
+        add_validation_error(errors, "risk_caps", "required list")
+        return
+    for index, cap in enumerate(risk_caps):
+        field = f"risk_caps[{index}]"
+        if not isinstance(cap, dict):
+            add_validation_error(errors, field, "must be an object")
+            continue
+        if not isinstance(cap.get("reason"), str) or not cap.get("reason"):
+            add_validation_error(errors, f"{field}.reason", "required non-empty string")
+        if not isinstance(cap.get("message"), str) or not cap.get("message"):
+            add_validation_error(errors, f"{field}.message", "required non-empty string")
+        severity = cap.get("severity")
+        if severity not in {"low", "medium", "high"}:
+            add_validation_error(errors, f"{field}.severity", "must be low, medium, or high")
+        score_cap = as_float(cap.get("score_cap"))
+        if score_cap is None or score_cap < 0 or score_cap > 100:
+            add_validation_error(errors, f"{field}.score_cap", "must be numeric and between 0 and 100")
+
+
+def validate_score_record(record: dict[str, Any]) -> dict[str, Any]:
+    errors: list[str] = []
+    if not isinstance(record, dict):
+        raise ScoreRecordValidationError("score record must be an object")
+
+    for field in REQUIRED_SCORE_RECORD_STRING_FIELDS:
+        require_non_empty_string(record, field, errors)
+    for field, (low, high) in REQUIRED_SCORE_RECORD_NUMERIC_RANGES.items():
+        require_numeric_range(record, field, low, high, errors)
+    for field, (low, high) in OPTIONAL_SCORE_RECORD_NUMERIC_RANGES.items():
+        require_numeric_range(record, field, low, high, errors, required=False)
+    for field in SCORE_RECORD_PERCENT_RANGE_FIELDS:
+        validate_percent_range_field(record, field, errors, required=field == "recommended_equity_position_range")
+
+    if record.get("confidence") not in {"high", "medium", "low"}:
+        add_validation_error(errors, "confidence", "must be high, medium, or low")
+    if parse_date_value(record.get("basis_trade_date")) is None:
+        add_validation_error(errors, "basis_trade_date", "must be parseable as a date")
+    scored_at = record.get("scored_at")
+    try:
+        datetime.fromisoformat(str(scored_at))
+    except Exception:
+        add_validation_error(errors, "scored_at", "must be ISO-8601 datetime")
+
+    validate_score_modules(record.get("modules"), errors)
+    validate_score_risk_caps(record.get("risk_caps"), errors)
+    if not isinstance(record.get("crowding"), dict):
+        add_validation_error(errors, "crowding", "required object")
+    if not isinstance(record.get("data_quality"), dict):
+        add_validation_error(errors, "data_quality", "required object")
+
+    if errors:
+        raise ScoreRecordValidationError("; ".join(errors))
+    return {
+        "ok": True,
+        "schema_version": SCORE_SCHEMA_VERSION,
+        "checked_required_fields": list(REQUIRED_SCORE_RECORD_STRING_FIELDS)
+        + list(REQUIRED_SCORE_RECORD_NUMERIC_RANGES.keys())
+        + ["modules", "risk_caps", "crowding", "data_quality"],
+    }
+
+
 def history_dedupe_key(record: dict[str, Any]) -> tuple[str, ...] | None:
     values = []
     for field in HISTORY_DEDUPE_KEY_FIELDS:
@@ -1341,6 +1507,7 @@ def find_duplicate_history_record(history: dict[str, Any], record: dict[str, Any
 
 
 def append_history_record(history: dict[str, Any], record: dict[str, Any]) -> dict[str, Any]:
+    schema_validation = validate_score_record(record)
     history["schema_version"] = HISTORY_SCHEMA_VERSION
     history["model_version"] = MODEL_VERSION
     history["position_policy_version"] = POSITION_POLICY_VERSION
@@ -1357,6 +1524,7 @@ def append_history_record(history: dict[str, Any], record: dict[str, Any]) -> di
             "candidate_record": record,
             "dedupe_key": history_dedupe_key_payload(record),
             "duplicate_of_run_id": duplicate.get("run_id"),
+            "schema_validation": schema_validation,
             "history": history,
         }
 
@@ -1369,6 +1537,7 @@ def append_history_record(history: dict[str, Any], record: dict[str, Any]) -> di
         "candidate_record": record,
         "dedupe_key": history_dedupe_key_payload(record),
         "duplicate_of_run_id": None,
+        "schema_validation": schema_validation,
         "history": history,
     }
 

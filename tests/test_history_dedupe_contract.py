@@ -23,6 +23,18 @@ def score_record(
     model_version: str | None = None,
     position_policy_version: str | None = None,
 ) -> dict:
+    modules = {
+        key: {
+            "label": meta["label"],
+            "weight": meta["weight"],
+            "score": meta["weight"] * 0.5,
+            "score_pct": 50,
+            "summary": "test",
+            "evidence": [],
+            "metrics": {},
+        }
+        for key, meta in market_scoring.MODULES.items()
+    }
     return {
         "run_id": run_id,
         "scored_at": f"2026-06-22T16:00:0{run_id[-1]}+08:00",
@@ -30,8 +42,22 @@ def score_record(
         "snapshot_sha256": snapshot_sha256,
         "model_version": model_version or market_scoring.MODEL_VERSION,
         "position_policy_version": position_policy_version or market_scoring.POSITION_POLICY_VERSION,
+        "account_scope": "stock_account",
+        "market_regime": "中性震荡偏结构",
+        "market_opportunity_score": 50,
+        "opportunity_score": 50,
+        "crowding_penalty": 15,
+        "pre_cap_market_position_score": 35,
         "market_position_score": 35,
+        "base_market_position_score": 35,
         "recommended_equity_position_range": "20%-40%",
+        "base_equity_position_range": "20%-40%",
+        "equity_position_range": "20%-40%",
+        "confidence": "medium",
+        "risk_caps": [],
+        "modules": modules,
+        "crowding": {"penalty": 15, "items": []},
+        "data_quality": {"missing_fields": [], "warnings": []},
     }
 
 
@@ -71,18 +97,19 @@ class HistoryDedupeContractTest(unittest.TestCase):
         self.assertTrue(new_policy["appended"])
         self.assertEqual([row["run_id"] for row in saved["records"]], ["run-1", "run-2", "run-3"])
 
-    def test_missing_key_fields_do_not_collapse_legacy_records(self) -> None:
+    def test_missing_key_fields_are_rejected_before_append(self) -> None:
         with tempfile.TemporaryDirectory() as tmp_dir:
             history_path = Path(tmp_dir) / "history.json"
-            legacy = score_record("run-1")
-            legacy.pop("position_policy_version")
-            first = market_scoring.append_score_record(legacy, history_path)
+            invalid = score_record("run-1")
+            invalid.pop("position_policy_version")
+            with self.assertRaisesRegex(market_scoring.ScoreRecordValidationError, "position_policy_version"):
+                market_scoring.append_score_record(invalid, history_path)
             second = market_scoring.append_score_record(score_record("run-2"), history_path)
             saved = json.loads(history_path.read_text(encoding="utf-8"))
 
-        self.assertTrue(first["appended"])
         self.assertTrue(second["appended"])
-        self.assertEqual(len(saved["records"]), 2)
+        self.assertEqual(len(saved["records"]), 1)
+        self.assertEqual(saved["records"][0]["run_id"], "run-2")
 
     def test_history_api_exposes_version_and_dedupe_contract(self) -> None:
         payload = serve_market_web.history_api_result()
