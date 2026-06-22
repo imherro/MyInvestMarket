@@ -26,55 +26,14 @@ const chartColors = {
   penalty: "#bf3d2b",
 };
 
-const positionCurvePoints = [
-  { stage: 0, cycle: 15, position: 12, wave: "", label: "熊末", waveType: "base" },
-  { stage: 14, cycle: 38, position: 50, wave: "1", label: "底部确认", waveType: "impulse" },
-  { stage: 26, cycle: 28, position: 35, wave: "2", label: "回踩", waveType: "impulse" },
-  { stage: 50, cycle: 76, position: 92, wave: "3", label: "低拥挤主升", waveType: "impulse" },
-  { stage: 64, cycle: 58, position: 75, wave: "4", label: "分歧整理", waveType: "impulse" },
-  { stage: 78, cycle: 88, position: 35, wave: "5", label: "泡沫顶部", waveType: "impulse" },
-  { stage: 88, cycle: 54, position: 25, wave: "a", label: "下跌", waveType: "corrective" },
-  { stage: 94, cycle: 66, position: 38, wave: "b", label: "反抽", waveType: "corrective" },
-  { stage: 100, cycle: 22, position: 20, wave: "c", label: "出清底部", waveType: "corrective" },
-];
-
-const marketRegimeBands = [
-  { from: 0, to: 14, label: "底部区", fill: "#f3ded7" },
-  { from: 14, to: 78, label: "推动浪 1-5", fill: "#dcebe3" },
-  { from: 78, to: 100, label: "调整浪 a-b-c", fill: "#f4ead4" },
-];
-
-const positionBenchmarks = [
-  {
-    title: "底部未确认",
-    netScore: "0-20",
-    position: "0%-20%",
-    note: "下跌趋势、波动高时只防守，不因便宜直接重仓。",
-  },
-  {
-    title: "底部确认",
-    netScore: "35-50",
-    position: "40%-60%",
-    note: "低估、宽度修复、波动回落后，开始把仓位抬起来。",
-  },
-  {
-    title: "健康主升",
-    netScore: "65-80",
-    position: "75%-90%",
-    note: "趋势、资金、宽度共振且拥挤不高，是模型最愿意给仓位的位置。",
-  },
-  {
-    title: "低拥挤强趋势",
-    netScore: "80-100",
-    position: "90%-100%",
-    note: "股票账户口径下允许接近或达到满仓，但前提是没有触发顶部惩罚。",
-  },
-  {
-    title: "泡沫顶部",
-    netScore: "25-50",
-    position: "20%-45%",
-    note: "机会分可能高，但估值、拥挤、波动惩罚会把净分和仓位压下来。",
-  },
+// Compatibility fallback only. The default page uses /api/index.position_policy_map.bands.
+const fallbackPositionScoreBands = [
+  { score_min: 0, score_max: 20, position_range: "0%-20%", label: "极弱 / 防守", description: "市场位置偏弱，股票账户以防守为主。" },
+  { score_min: 20, score_max: 35, position_range: "20%-40%", label: "弱修复 / 谨慎", description: "市场有修复迹象，但仍不适合高仓位。" },
+  { score_min: 35, score_max: 50, position_range: "40%-60%", label: "中性震荡", description: "市场处于中性区，仓位以均衡为主。" },
+  { score_min: 50, score_max: 65, position_range: "55%-75%", label: "结构性偏强", description: "市场有较明确结构性机会，可维持中高仓位。" },
+  { score_min: 65, score_max: 80, position_range: "75%-90%", label: "趋势偏强", description: "趋势和风险收益较好，可较高仓位参与。" },
+  { score_min: 80, score_max: 100, position_range: "90%-100%", label: "低拥挤强趋势", description: "市场健康且风险约束未触发时，股票账户可接近满仓。" },
 ];
 
 const svgNs = "http://www.w3.org/2000/svg";
@@ -83,6 +42,7 @@ let state = {
   history: null,
   records: [],
   latest: null,
+  index: null,
   selectedModule: "index_trend",
 };
 
@@ -98,10 +58,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
 async function loadHistory() {
   setStatus("读取历史");
-  const payload = await fetchJson("/api/history");
+  const [payload, indexPayload] = await Promise.all([fetchJson("/api/history"), fetchJson("/api/index")]);
   state.history = payload.history;
   state.records = normalizeRecords(payload.history.records || []);
   state.latest = state.records[state.records.length - 1] || null;
+  state.index = indexPayload;
   setStatus(state.latest ? "已更新" : "无评分记录");
   await loadResearchApiStatus();
   renderAll();
@@ -127,6 +88,7 @@ async function appendCurrentScore() {
     state.history = payload.history;
     state.records = normalizeRecords(payload.history.records || []);
     state.latest = state.records[state.records.length - 1] || null;
+    state.index = await fetchJson("/api/index");
     setStatus("已记录");
     renderAll();
   } catch (error) {
@@ -199,20 +161,24 @@ function renderPositionMap() {
   if (!latest) {
     setText("positionMapLabel", "--");
     renderEmpty(container, "暂无仓位映射");
-    renderPositionBenchmarks();
+    renderPositionBenchmarks(fallbackPositionScoreBands);
     return;
   }
 
-  const currentScore = numeric(latest.market_position_score);
-  const baseRange = officialPositionRange(latest);
-  const riskCapCount = (latest.risk_caps || []).length;
-  setText("positionMapLabel", `仓位分 ${formatNumber(currentScore)} · 官方推荐权益 ${baseRange}`);
-  renderPositionCurve(container, currentScore, baseRange, riskCapCount, latest.market_regime || "--");
-  renderPositionBenchmarks();
+  const policyMap = currentPositionPolicyMap();
+  const current = policyMap.current || {};
+  const currentScore = numeric(current.market_position_score ?? latest.market_position_score);
+  const recommendedRange = current.recommended_equity_position_range || officialPositionRange(latest);
+  setText("positionMapLabel", `仓位分 ${formatNumber(currentScore)} · 官方推荐权益 ${recommendedRange}`);
+  renderPositionCurve(container, policyMap);
+  renderPositionBenchmarks(policyMap.bands || fallbackPositionScoreBands);
 }
 
-function renderPositionCurve(container, currentScore, baseRange, riskCapCount, regimeText) {
+function renderPositionCurve(container, policyMap) {
   container.innerHTML = "";
+  const current = policyMap.current || {};
+  const bands = normalizePositionBands(policyMap.bands);
+  const currentScore = numeric(current.market_position_score);
   if (currentScore === null) {
     renderEmpty(container, "暂无仓位映射");
     return;
@@ -220,13 +186,19 @@ function renderPositionCurve(container, currentScore, baseRange, riskCapCount, r
 
   const width = 920;
   const height = 390;
-  const margin = { top: 26, right: 44, bottom: 48, left: 52 };
+  const margin = { top: 28, right: 46, bottom: 54, left: 56 };
   const plotWidth = width - margin.left - margin.right;
   const plotHeight = height - margin.top - margin.bottom;
-  const xRange = { min: 0, max: 100 };
-  const yRange = { min: 0, max: 90 };
-  const xForStage = (stage) => margin.left + ((stage - xRange.min) / (xRange.max - xRange.min)) * plotWidth;
-  const yForPosition = (position) => yPos(position, yRange, margin, plotHeight);
+  const xRange = { min: numeric(policyMap.score_min) ?? 0, max: numeric(policyMap.score_max) ?? 100 };
+  const yRange = { min: numeric(policyMap.position_min) ?? 0, max: numeric(policyMap.position_max) ?? 100 };
+  const xForScore = (score) => margin.left + ((clamp(score, xRange.min, xRange.max) - xRange.min) / (xRange.max - xRange.min)) * plotWidth;
+  const yForPosition = (position) => yPos(clamp(position, yRange.min, yRange.max), yRange, margin, plotHeight);
+  const currentRange = current.recommended_equity_position_range || officialPositionRange(state.latest);
+  const currentPosition = positionFromRange(currentRange, currentScore);
+  const preCapScoreValue = numeric(current.pre_cap_market_position_score);
+  const preCapRange = positionRangeForScore(preCapScoreValue, bands);
+  const preCapPosition = preCapScoreValue === null ? null : positionFromRange(preCapRange, preCapScoreValue);
+  const riskCaps = Array.isArray(current.risk_caps) ? current.risk_caps : [];
 
   const svg = createSvg("svg", {
     class: "position-map-svg",
@@ -234,10 +206,13 @@ function renderPositionCurve(container, currentScore, baseRange, riskCapCount, r
     role: "img",
   });
 
-  marketRegimeBands.forEach((band) => {
-    const x = xForStage(band.from);
-    const bandWidth = xForStage(band.to) - x;
-    svg.appendChild(createSvg("rect", { x, y: margin.top, width: bandWidth, height: plotHeight, fill: band.fill }));
+  const bandFills = ["#f3ded7", "#f4ead4", "#e8efe9", "#dcebe3", "#d7e5ec", "#eadff0"];
+  bands.forEach((band, index) => {
+    const x = xForScore(band.score_min);
+    const bandWidth = xForScore(band.score_max) - x;
+    const rangeMid = positionFromRange(band.position_range, (band.score_min + band.score_max) / 2);
+    const y = yForPosition(rangeMid);
+    svg.appendChild(createSvg("rect", { x, y: margin.top, width: bandWidth, height: plotHeight, fill: bandFills[index % bandFills.length] }));
     svg.appendChild(
       createSvg(
         "text",
@@ -245,119 +220,142 @@ function renderPositionCurve(container, currentScore, baseRange, riskCapCount, r
         band.label,
       ),
     );
+    svg.appendChild(
+      createSvg(
+        "text",
+        { class: "position-band-range-label", x: x + bandWidth / 2, y: margin.top + 36, "text-anchor": "middle" },
+        band.position_range,
+      ),
+    );
+    svg.appendChild(createSvg("line", { class: "position-score-band-line", x1: x + 6, y1: y, x2: x + bandWidth - 6, y2: y }));
   });
 
-  for (let value = 0; value <= 90; value += 15) {
+  for (let value = 0; value <= 100; value += 20) {
     const y = yForPosition(value);
     svg.appendChild(createSvg("line", { class: "grid-line", x1: margin.left, y1: y, x2: width - margin.right, y2: y }));
     svg.appendChild(createSvg("text", { class: "tick-label", x: 8, y: y + 4 }, `${value}%`));
   }
 
-  positionCurvePoints.forEach((pointItem) => {
-    const x = xForStage(pointItem.stage);
+  scoreTicksFromBands(bands).forEach((value) => {
+    const x = xForScore(value);
     svg.appendChild(createSvg("line", { class: "position-map-tick", x1: x, y1: margin.top, x2: x, y2: height - margin.bottom }));
-    svg.appendChild(createSvg("text", { class: "tick-label", x, y: height - 18, "text-anchor": "middle" }, pointItem.wave || "底"));
+    svg.appendChild(createSvg("text", { class: "tick-label", x, y: height - 22, "text-anchor": "middle" }, String(value)));
   });
 
   svg.appendChild(createSvg("line", { class: "axis-line", x1: margin.left, y1: height - margin.bottom, x2: width - margin.right, y2: height - margin.bottom }));
   svg.appendChild(createSvg("line", { class: "axis-line", x1: margin.left, y1: margin.top, x2: margin.left, y2: height - margin.bottom }));
-  svg.appendChild(createSvg("text", { class: "axis-label", x: width / 2, y: height - 4, "text-anchor": "middle" }, "市场循环阶段"));
-  svg.appendChild(createSvg("text", { class: "axis-label", x: 12, y: margin.top - 8 }, "股票账户仓位 / 周期强度"));
+  svg.appendChild(createSvg("text", { class: "axis-label", x: width / 2, y: height - 6, "text-anchor": "middle" }, policyMap.x_axis || "市场仓位分 / market_position_score"));
+  svg.appendChild(createSvg("text", { class: "axis-label", x: 12, y: margin.top - 10 }, policyMap.y_axis || "股票账户推荐权益仓位"));
 
   svg.appendChild(
     createSvg(
       "text",
       { class: "position-map-note", x: width - margin.right, y: margin.top - 8, "text-anchor": "end" },
-      "股票账户口径：低拥挤强趋势可满仓，泡沫顶部降净分降仓",
+      riskCaps.length ? `风险上限已将仓位分从 ${formatNumber(preCapScoreValue)} 压至 ${formatNumber(currentScore)}` : "未触发风险上限，最终仓位分等于扣上限前分",
     ),
   );
 
-  const impulsePoints = positionCurvePoints.filter((pointItem) => ["base", "impulse"].includes(pointItem.waveType)).map((pointItem) => ({
-    x: xForStage(pointItem.stage),
-    y: yForPosition(pointItem.position),
-  }));
-  const impulseCyclePoints = positionCurvePoints.filter((pointItem) => ["base", "impulse"].includes(pointItem.waveType)).map((pointItem) => ({
-    x: xForStage(pointItem.stage),
-    y: yForPosition(pointItem.cycle),
-  }));
-  const waveFive = positionCurvePoints.find((pointItem) => pointItem.wave === "5");
-  const correctivePoints = [waveFive, ...positionCurvePoints.filter((pointItem) => pointItem.waveType === "corrective")]
-    .filter(Boolean)
-    .map((pointItem) => ({
-      x: xForStage(pointItem.stage),
-      y: yForPosition(pointItem.position),
-    }));
-  const correctiveCyclePoints = [waveFive, ...positionCurvePoints.filter((pointItem) => pointItem.waveType === "corrective")]
-    .filter(Boolean)
-    .map((pointItem) => ({
-      x: xForStage(pointItem.stage),
-      y: yForPosition(pointItem.cycle),
-    }));
-  svg.appendChild(createSvg("path", { d: smoothPath(impulseCyclePoints), class: "market-cycle-curve impulse" }));
-  svg.appendChild(createSvg("path", { d: smoothPath(correctiveCyclePoints), class: "market-cycle-curve corrective" }));
-  svg.appendChild(createSvg("path", { d: smoothPath(impulsePoints), class: "position-curve impulse" }));
-  svg.appendChild(createSvg("path", { d: smoothPath(correctivePoints), class: "position-curve corrective" }));
-
-  positionCurvePoints.forEach((pointItem) => {
-    const x = xForStage(pointItem.stage);
-    const y = yForPosition(pointItem.position);
-    const isCorrective = pointItem.waveType === "corrective";
-    const nodeClass = `position-curve-node ${pointItem.waveType}`;
-    const waveClass = `wave-label ${pointItem.waveType}`;
-    const phaseClass = `wave-phase-label ${pointItem.waveType}`;
-    svg.appendChild(createSvg("circle", { cx: x, cy: y, r: 4, class: nodeClass }));
-    if (pointItem.wave) {
-      svg.appendChild(createSvg("text", { class: waveClass, x, y: y + (isCorrective ? 18 : -12), "text-anchor": "middle" }, pointItem.wave));
+  const markerX = xForScore(currentScore);
+  const markerY = yForPosition(currentPosition);
+  if (preCapScoreValue !== null) {
+    const preCapX = xForScore(preCapScoreValue);
+    const preCapY = yForPosition(preCapPosition);
+    if (Math.abs(preCapScoreValue - currentScore) >= 0.01) {
+      svg.appendChild(createSvg("line", { class: "risk-cap-link", x1: preCapX, y1: preCapY, x2: markerX, y2: markerY }));
     }
-    svg.appendChild(createSvg("text", { class: phaseClass, x, y: y + (isCorrective ? -20 : 22), "text-anchor": "middle" }, pointItem.label));
-  });
-
-  addCycleCallout(svg, xForStage(14), yForPosition(50), "底部确认", "净分35-50", "仓位40%-60%");
-  addCycleCallout(svg, xForStage(78), yForPosition(42), "泡沫顶部", "净分25-50", "仓位20%-45%");
-
-  const markerX = xForStage(clamp(currentScore, 0, 100));
-  const markerY = yForPosition(positionFromRange(baseRange, currentScore));
+    svg.appendChild(createSvg("circle", { cx: preCapX, cy: preCapY, r: 5, class: "pre-cap-score-dot" }));
+    svg.appendChild(createSvg("text", { class: "pre-cap-score-label", x: preCapX + 8, y: preCapY - 8 }, `扣上限前 ${formatNumber(preCapScoreValue)}`));
+  }
   svg.appendChild(createSvg("line", { class: "current-score-line", x1: markerX, y1: margin.top, x2: markerX, y2: height - margin.bottom }));
   svg.appendChild(createSvg("circle", { cx: markerX, cy: markerY, r: 6.5, class: "current-score-dot" }));
 
-  const labelWidth = 228;
-  const labelHeight = 72;
+  const labelWidth = 270;
+  const labelHeight = 86;
   const labelX = clamp(markerX + 14, margin.left + 4, width - margin.right - labelWidth);
   const labelY = clamp(markerY - labelHeight - 12, margin.top + 10, height - margin.bottom - labelHeight - 8);
   svg.appendChild(createSvg("rect", { class: "current-score-label-box", x: labelX, y: labelY, width: labelWidth, height: labelHeight, rx: 6 }));
   svg.appendChild(createSvg("text", { class: "current-score-label strong", x: labelX + 12, y: labelY + 22 }, `当前仓位分 ${formatNumber(currentScore)}`));
-  svg.appendChild(createSvg("text", { class: "current-score-label", x: labelX + 12, y: labelY + 42 }, `官方推荐权益 ${baseRange}`));
-  svg.appendChild(createSvg("text", { class: "current-score-label muted", x: labelX + 12, y: labelY + 61 }, `${riskCapCount ? `风险上限 ${riskCapCount} 项` : "无风险上限"} · ${regimeText}`));
-  svg.appendChild(createSvg("title", {}, `当前股票账户仓位分 ${formatNumber(currentScore)}，官方推荐权益 ${baseRange}，风险上限 ${riskCapCount} 项`));
+  svg.appendChild(createSvg("text", { class: "current-score-label", x: labelX + 12, y: labelY + 42 }, `官方推荐权益 ${currentRange}`));
+  svg.appendChild(createSvg("text", { class: "current-score-label muted", x: labelX + 12, y: labelY + 61 }, `扣上限前 ${formatNumber(preCapScoreValue)} · 风险上限 ${riskCaps.length} 项`));
+  svg.appendChild(createSvg("text", { class: "current-score-label muted", x: labelX + 12, y: labelY + 78 }, current.market_regime || state.latest?.market_regime || "--"));
+  svg.appendChild(createSvg("title", {}, `当前股票账户仓位分 ${formatNumber(currentScore)}，官方推荐权益 ${currentRange}，风险上限 ${riskCaps.length} 项`));
 
   container.appendChild(svg);
 }
 
-function addCycleCallout(svg, x, y, title, scoreText, positionText) {
-  const boxWidth = 128;
-  const boxHeight = 58;
-  const boxX = clamp(x + 10, 58, 920 - 44 - boxWidth);
-  const boxY = clamp(y - boxHeight - 12, 34, 390 - 48 - boxHeight);
-  svg.appendChild(createSvg("rect", { class: "cycle-callout-box", x: boxX, y: boxY, width: boxWidth, height: boxHeight, rx: 6 }));
-  svg.appendChild(createSvg("text", { class: "cycle-callout-title", x: boxX + 10, y: boxY + 19 }, title));
-  svg.appendChild(createSvg("text", { class: "cycle-callout-text", x: boxX + 10, y: boxY + 36 }, scoreText));
-  svg.appendChild(createSvg("text", { class: "cycle-callout-text", x: boxX + 10, y: boxY + 51 }, positionText));
-}
-
-function renderPositionBenchmarks() {
+function renderPositionBenchmarks(bands) {
   const container = document.getElementById("positionBenchmarks");
   if (!container) return;
-  container.innerHTML = positionBenchmarks
+  container.innerHTML = normalizePositionBands(bands)
     .map(
       (item) => `
         <article class="position-benchmark-card">
-          <span>${escapeHtml(item.title)}</span>
-          <strong>净分 ${escapeHtml(item.netScore)} · 权益 ${escapeHtml(item.position)}</strong>
-          <small>${escapeHtml(item.note)}</small>
+          <span>${escapeHtml(item.label)}</span>
+          <strong>净分 ${escapeHtml(scoreRangeText(item))} · 权益 ${escapeHtml(item.position_range)}</strong>
+          <small>${escapeHtml(item.description || "")}</small>
         </article>
       `,
     )
     .join("");
+}
+
+function currentPositionPolicyMap() {
+  const map = state.index?.position_policy_map;
+  if (map && Array.isArray(map.bands) && map.bands.length) return map;
+  const latest = state.latest || {};
+  return {
+    title: "股票账户净分-推荐权益仓位映射",
+    account_scope: "stock_account",
+    position_policy_version: latest.position_policy_version || "stock_account_position_policy_v2",
+    x_axis: "市场仓位分 / market_position_score",
+    y_axis: "股票账户推荐权益仓位",
+    score_min: 0,
+    score_max: 100,
+    position_min: 0,
+    position_max: 100,
+    bands: fallbackPositionScoreBands,
+    current: {
+      market_position_score: latest.market_position_score,
+      pre_cap_market_position_score: preCapScore(latest),
+      recommended_equity_position_range: officialPositionRange(latest),
+      risk_caps: latest.risk_caps || [],
+      market_regime: latest.market_regime,
+    },
+  };
+}
+
+function normalizePositionBands(bands) {
+  const source = Array.isArray(bands) && bands.length ? bands : fallbackPositionScoreBands;
+  return source
+    .map((band) => ({
+      score_min: numeric(band.score_min),
+      score_max: numeric(band.score_max),
+      position_range: band.position_range || "--",
+      label: band.label || "",
+      description: band.description || "",
+    }))
+    .filter((band) => band.score_min !== null && band.score_max !== null && band.score_max > band.score_min);
+}
+
+function scoreTicksFromBands(bands) {
+  return [...new Set([0, 100, ...bands.flatMap((band) => [band.score_min, band.score_max])])]
+    .map(numeric)
+    .filter((value) => value !== null)
+    .sort((a, b) => a - b);
+}
+
+function scoreRangeText(band) {
+  return `${formatNumber(band.score_min, 0)}-${formatNumber(band.score_max, 0)}`;
+}
+
+function positionRangeForScore(score, bands) {
+  const scoreNumber = numeric(score);
+  if (scoreNumber === null) return "--";
+  const band = normalizePositionBands(bands).find((item, index, list) => {
+    const isLast = index === list.length - 1;
+    return scoreNumber >= item.score_min && (scoreNumber < item.score_max || (isLast && scoreNumber <= item.score_max));
+  });
+  return band?.position_range || fallbackPositionRangeFromScore(scoreNumber);
 }
 
 function positionFromRange(rangeText, score) {
@@ -397,26 +395,12 @@ function fallbackPositionFromScore(score) {
   return reference[reference.length - 1].position;
 }
 
-function smoothPath(points) {
-  if (!points.length) return "";
-  if (points.length === 1) return `M ${points[0].x} ${points[0].y}`;
-  const commands = [`M ${points[0].x} ${points[0].y}`];
-  for (let index = 0; index < points.length - 1; index += 1) {
-    const current = points[index];
-    const next = points[index + 1];
-    const previous = points[index - 1] || current;
-    const afterNext = points[index + 2] || next;
-    const controlOne = {
-      x: current.x + (next.x - previous.x) / 6,
-      y: current.y + (next.y - previous.y) / 6,
-    };
-    const controlTwo = {
-      x: next.x - (afterNext.x - current.x) / 6,
-      y: next.y - (afterNext.y - current.y) / 6,
-    };
-    commands.push(`C ${controlOne.x} ${controlOne.y}, ${controlTwo.x} ${controlTwo.y}, ${next.x} ${next.y}`);
-  }
-  return commands.join(" ");
+function fallbackPositionRangeFromScore(score) {
+  const band = fallbackPositionScoreBands.find((item, index, list) => {
+    const isLast = index === list.length - 1;
+    return score >= item.score_min && (score < item.score_max || (isLast && score <= item.score_max));
+  });
+  return band?.position_range || "--";
 }
 
 function renderOverviewChart() {

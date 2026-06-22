@@ -26,54 +26,48 @@ WEB_DIR = ROOT / "web"
 PORT = 8011
 TZ = ZoneInfo("Asia/Shanghai")
 
-POSITION_CURVE_POINTS = [
-    {"stage": 0, "cycle_strength_pct": 15, "base_equity_midpoint_pct": 12, "wave": "", "label": "熊末", "wave_type": "base"},
-    {"stage": 14, "cycle_strength_pct": 38, "base_equity_midpoint_pct": 50, "wave": "1", "label": "底部确认", "wave_type": "impulse"},
-    {"stage": 26, "cycle_strength_pct": 28, "base_equity_midpoint_pct": 35, "wave": "2", "label": "回踩", "wave_type": "impulse"},
-    {"stage": 50, "cycle_strength_pct": 76, "base_equity_midpoint_pct": 92, "wave": "3", "label": "低拥挤主升", "wave_type": "impulse"},
-    {"stage": 64, "cycle_strength_pct": 58, "base_equity_midpoint_pct": 75, "wave": "4", "label": "分歧整理", "wave_type": "impulse"},
-    {"stage": 78, "cycle_strength_pct": 88, "base_equity_midpoint_pct": 35, "wave": "5", "label": "泡沫顶部", "wave_type": "impulse"},
-    {"stage": 88, "cycle_strength_pct": 54, "base_equity_midpoint_pct": 25, "wave": "a", "label": "下跌", "wave_type": "corrective"},
-    {"stage": 94, "cycle_strength_pct": 66, "base_equity_midpoint_pct": 38, "wave": "b", "label": "反抽", "wave_type": "corrective"},
-    {"stage": 100, "cycle_strength_pct": 22, "base_equity_midpoint_pct": 20, "wave": "c", "label": "出清底部", "wave_type": "corrective"},
-]
-
-MARKET_REGIME_BANDS = [
-    {"from": 0, "to": 14, "label": "底部区"},
-    {"from": 14, "to": 78, "label": "推动浪 1-5"},
-    {"from": 78, "to": 100, "label": "调整浪 a-b-c"},
-]
-
-POSITION_BENCHMARKS = [
+POSITION_SCORE_BANDS = [
     {
-        "title": "底部未确认",
-        "net_score_range": "0-20",
-        "base_equity_position_range": "0%-20%",
-        "note": "下跌趋势、波动高时只防守，不因便宜直接重仓。",
+        "score_min": 0,
+        "score_max": 20,
+        "position_range": "0%-20%",
+        "label": "极弱 / 防守",
+        "description": "市场位置偏弱，股票账户以防守为主。",
     },
     {
-        "title": "底部确认",
-        "net_score_range": "35-50",
-        "base_equity_position_range": "40%-60%",
-        "note": "低估、宽度修复、波动回落后，开始把仓位抬起来。",
+        "score_min": 20,
+        "score_max": 35,
+        "position_range": "20%-40%",
+        "label": "弱修复 / 谨慎",
+        "description": "市场有修复迹象，但仍不适合高仓位。",
     },
     {
-        "title": "健康主升",
-        "net_score_range": "65-80",
-        "base_equity_position_range": "75%-90%",
-        "note": "趋势、资金、宽度共振且拥挤不高，是模型最愿意给仓位的位置。",
+        "score_min": 35,
+        "score_max": 50,
+        "position_range": "40%-60%",
+        "label": "中性震荡",
+        "description": "市场处于中性区，仓位以均衡为主。",
     },
     {
-        "title": "低拥挤强趋势",
-        "net_score_range": "80-100",
-        "base_equity_position_range": "90%-100%",
-        "note": "股票账户口径下允许接近或达到满仓，但前提是估值、拥挤和波动没有触发顶部惩罚。",
+        "score_min": 50,
+        "score_max": 65,
+        "position_range": "55%-75%",
+        "label": "结构性偏强",
+        "description": "市场有较明确结构性机会，可维持中高仓位。",
     },
     {
-        "title": "泡沫顶部",
-        "net_score_range": "25-50",
-        "base_equity_position_range": "20%-45%",
-        "note": "机会分可能高，但估值、拥挤、波动惩罚会把净分和仓位压下来。",
+        "score_min": 65,
+        "score_max": 80,
+        "position_range": "75%-90%",
+        "label": "趋势偏强",
+        "description": "趋势和风险收益较好，可较高仓位参与。",
+    },
+    {
+        "score_min": 80,
+        "score_max": 100,
+        "position_range": "90%-100%",
+        "label": "低拥挤强趋势",
+        "description": "市场健康且风险约束未触发时，股票账户可接近满仓。",
     },
 ]
 
@@ -195,6 +189,36 @@ def score_records() -> list[dict[str, object]]:
     return sorted(records, key=lambda row: str(row.get("scored_at", "")))
 
 
+def recommended_equity_position_range(record: dict[str, object]) -> object:
+    return (
+        record.get("recommended_equity_position_range")
+        or record.get("base_equity_position_range")
+        or record.get("equity_position_range")
+    )
+
+
+def position_policy_map_result(latest: dict[str, object]) -> dict[str, object]:
+    return {
+        "title": "股票账户净分-推荐权益仓位映射",
+        "account_scope": "stock_account",
+        "position_policy_version": latest.get("position_policy_version", POSITION_POLICY_VERSION),
+        "x_axis": "市场仓位分 / market_position_score",
+        "y_axis": "股票账户推荐权益仓位",
+        "score_min": 0,
+        "score_max": 100,
+        "position_min": 0,
+        "position_max": 100,
+        "bands": POSITION_SCORE_BANDS,
+        "current": {
+            "market_position_score": latest.get("market_position_score"),
+            "pre_cap_market_position_score": latest.get("pre_cap_market_position_score"),
+            "recommended_equity_position_range": recommended_equity_position_range(latest),
+            "risk_caps": latest.get("risk_caps", []),
+            "market_regime": latest.get("market_regime"),
+        },
+    }
+
+
 def homepage_index_result() -> dict[str, object]:
     records = score_records()
     latest = records[-1] if records else {}
@@ -207,6 +231,7 @@ def homepage_index_result() -> dict[str, object]:
         key: bool(value.get("available")) if isinstance(value, dict) else False
         for key, value in api_results.items()
     }
+    policy_map = position_policy_map_result(latest)
 
     module_cards = []
     for key, module in modules.items():
@@ -309,28 +334,8 @@ def homepage_index_result() -> dict[str, object]:
             "items": api_available,
             "endpoints": latest_research.get("endpoints", {}),
         },
-        "position_map": {
-            "title": "股票账户市场循环、净分与仓位对应",
-            "account_scope": "stock_account",
-            "x_axis": "市场循环阶段",
-            "y_axis": "股票账户仓位 / 周期强度",
-            "curve_style": "elliott_8_wave_with_position_benchmarks",
-            "curve_points": POSITION_CURVE_POINTS,
-            "regime_bands": MARKET_REGIME_BANDS,
-            "benchmarks": POSITION_BENCHMARKS,
-            "current": {
-                "market_position_score": latest.get("market_position_score"),
-                "pre_cap_market_position_score": latest.get("pre_cap_market_position_score"),
-                "recommended_equity_position_range": latest.get("recommended_equity_position_range")
-                or latest.get("base_equity_position_range")
-                or latest.get("equity_position_range"),
-                "base_equity_position_range": latest.get("recommended_equity_position_range")
-                or latest.get("base_equity_position_range")
-                or latest.get("equity_position_range"),
-                "risk_caps": latest.get("risk_caps", []),
-                "market_regime": latest.get("market_regime"),
-            },
-        },
+        "position_policy_map": policy_map,
+        "position_map": {**policy_map, "legacy_alias_of": "position_policy_map"},
         "overview_chart": {
             "title": "总分与上证指数",
             "record_count": len(records),
