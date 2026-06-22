@@ -20,6 +20,13 @@ MODEL_VERSION = "a_share_market_score_v1_4"
 SCORE_SCHEMA_VERSION = "1.4"
 FEATURE_SCHEMA_VERSION = "1.2"
 POSITION_POLICY_VERSION = "stock_account_position_policy_v2"
+HISTORY_SCHEMA_VERSION = 2
+HISTORY_DEDUPE_KEY_FIELDS = (
+    "basis_trade_date",
+    "snapshot_sha256",
+    "model_version",
+    "position_policy_version",
+)
 
 MODULES = {
     "index_trend": {"label": "指数趋势", "weight": 20},
@@ -1098,22 +1105,32 @@ def load_json(path: Path) -> dict[str, Any]:
 def load_history(path: Path = DEFAULT_HISTORY_PATH) -> dict[str, Any]:
     if not path.exists():
         return {
-            "schema_version": 1,
+            "schema_version": HISTORY_SCHEMA_VERSION,
             "model_version": MODEL_VERSION,
+            "position_policy_version": POSITION_POLICY_VERSION,
+            "dedupe_key_fields": list(HISTORY_DEDUPE_KEY_FIELDS),
             "updated_at": None,
             "records": [],
         }
     payload = load_json(path)
     if isinstance(payload, list):
         payload = {
-            "schema_version": 1,
+            "schema_version": HISTORY_SCHEMA_VERSION,
             "model_version": MODEL_VERSION,
+            "position_policy_version": POSITION_POLICY_VERSION,
+            "dedupe_key_fields": list(HISTORY_DEDUPE_KEY_FIELDS),
             "updated_at": None,
             "records": payload,
         }
-    payload.setdefault("schema_version", 1)
+    try:
+        payload["schema_version"] = max(int(payload.get("schema_version", 1)), HISTORY_SCHEMA_VERSION)
+    except (TypeError, ValueError):
+        payload["schema_version"] = HISTORY_SCHEMA_VERSION
     payload.setdefault("model_version", MODEL_VERSION)
-    payload.setdefault("records", [])
+    payload.setdefault("position_policy_version", POSITION_POLICY_VERSION)
+    payload["dedupe_key_fields"] = list(HISTORY_DEDUPE_KEY_FIELDS)
+    if not isinstance(payload.get("records"), list):
+        payload["records"] = []
     return payload
 
 
@@ -1122,16 +1139,79 @@ def save_history(history: dict[str, Any], path: Path = DEFAULT_HISTORY_PATH) -> 
     path.write_text(json.dumps(history, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
 
+def history_dedupe_key(record: dict[str, Any]) -> tuple[str, ...] | None:
+    values = []
+    for field in HISTORY_DEDUPE_KEY_FIELDS:
+        value = record.get(field)
+        if value is None or value == "":
+            return None
+        values.append(str(value))
+    return tuple(values)
+
+
+def history_dedupe_key_payload(record: dict[str, Any]) -> dict[str, Any]:
+    return {field: record.get(field) for field in HISTORY_DEDUPE_KEY_FIELDS}
+
+
+def find_duplicate_history_record(history: dict[str, Any], record: dict[str, Any]) -> dict[str, Any] | None:
+    candidate_key = history_dedupe_key(record)
+    if candidate_key is None:
+        return None
+    records = history.get("records", [])
+    if not isinstance(records, list):
+        return None
+    for existing in records:
+        if isinstance(existing, dict) and history_dedupe_key(existing) == candidate_key:
+            return existing
+    return None
+
+
+def append_history_record(history: dict[str, Any], record: dict[str, Any]) -> dict[str, Any]:
+    history["schema_version"] = HISTORY_SCHEMA_VERSION
+    history["model_version"] = MODEL_VERSION
+    history["position_policy_version"] = POSITION_POLICY_VERSION
+    history["dedupe_key_fields"] = list(HISTORY_DEDUPE_KEY_FIELDS)
+    if not isinstance(history.get("records"), list):
+        history["records"] = []
+
+    duplicate = find_duplicate_history_record(history, record)
+    if duplicate is not None:
+        return {
+            "appended": False,
+            "duplicate": True,
+            "record": duplicate,
+            "candidate_record": record,
+            "dedupe_key": history_dedupe_key_payload(record),
+            "duplicate_of_run_id": duplicate.get("run_id"),
+            "history": history,
+        }
+
+    history["updated_at"] = datetime.now(TZ).isoformat(timespec="seconds")
+    history["records"].append(record)
+    return {
+        "appended": True,
+        "duplicate": False,
+        "record": record,
+        "candidate_record": record,
+        "dedupe_key": history_dedupe_key_payload(record),
+        "duplicate_of_run_id": None,
+        "history": history,
+    }
+
+
+def append_score_record(record: dict[str, Any], history_path: Path = DEFAULT_HISTORY_PATH) -> dict[str, Any]:
+    history = load_history(history_path)
+    result = append_history_record(history, record)
+    if result["appended"]:
+        save_history(history, history_path)
+    return {"history_path": str(history_path), **result}
+
+
 def append_score(snapshot_path: Path = DEFAULT_SNAPSHOT_PATH, history_path: Path = DEFAULT_HISTORY_PATH) -> dict[str, Any]:
     snapshot_bytes = snapshot_path.read_bytes()
     snapshot = json.loads(snapshot_bytes.decode("utf-8-sig"))
     record = score_snapshot(snapshot, snapshot_path=snapshot_path, snapshot_bytes=snapshot_bytes)
-    history = load_history(history_path)
-    history["model_version"] = MODEL_VERSION
-    history["updated_at"] = datetime.now(TZ).isoformat(timespec="seconds")
-    history["records"].append(record)
-    save_history(history, history_path)
-    return {"history_path": str(history_path), "record": record, "history": history}
+    return append_score_record(record, history_path)
 
 
 def parse_args() -> argparse.Namespace:

@@ -99,12 +99,7 @@ def latest_record(history: dict[str, Any] | None) -> dict[str, Any] | None:
 
 def append_score(snapshot: dict[str, Any], snapshot_path: Path, snapshot_bytes: bytes) -> dict[str, Any]:
     record = market_scoring.score_snapshot(snapshot, snapshot_path=snapshot_path, snapshot_bytes=snapshot_bytes)
-    history = market_scoring.load_history(market_scoring.DEFAULT_HISTORY_PATH)
-    history["model_version"] = market_scoring.MODEL_VERSION
-    history["updated_at"] = datetime.now(TZ).isoformat(timespec="seconds")
-    history["records"].append(record)
-    market_scoring.save_history(history, market_scoring.DEFAULT_HISTORY_PATH)
-    return {"record": record, "history": history}
+    return market_scoring.append_score_record(record, market_scoring.DEFAULT_HISTORY_PATH)
 
 
 def fmt(value: Any, default: str = "--") -> str:
@@ -342,6 +337,10 @@ def main() -> None:
         {
             "status": "updated",
             "run_id": record.get("run_id"),
+            "score_appended": score_result.get("appended"),
+            "score_duplicate": score_result.get("duplicate"),
+            "duplicate_of_run_id": score_result.get("duplicate_of_run_id"),
+            "history_dedupe_key": score_result.get("dedupe_key"),
             "market_opportunity_score": record.get("market_opportunity_score"),
             "crowding_penalty": record.get("crowding_penalty"),
             "pre_cap_market_position_score": record.get("pre_cap_market_position_score"),

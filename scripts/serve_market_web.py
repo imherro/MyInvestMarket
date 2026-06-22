@@ -14,6 +14,8 @@ from market_scoring import (
     DATA_DIR,
     DEFAULT_HISTORY_PATH,
     DEFAULT_SNAPSHOT_PATH,
+    HISTORY_DEDUPE_KEY_FIELDS,
+    HISTORY_SCHEMA_VERSION,
     MODEL_VERSION,
     POSITION_POLICY_VERSION,
     ROOT,
@@ -216,6 +218,19 @@ def position_policy_map_result(latest: dict[str, object]) -> dict[str, object]:
             "risk_caps": latest.get("risk_caps", []),
             "market_regime": latest.get("market_regime"),
         },
+    }
+
+
+def history_api_result() -> dict[str, object]:
+    history = load_history(DEFAULT_HISTORY_PATH)
+    return {
+        "api_version": 2,
+        "history_schema_version": HISTORY_SCHEMA_VERSION,
+        "model_version": MODEL_VERSION,
+        "position_policy_version": POSITION_POLICY_VERSION,
+        "dedupe_key_fields": list(HISTORY_DEDUPE_KEY_FIELDS),
+        "history": history,
+        "snapshot_exists": DEFAULT_SNAPSHOT_PATH.exists(),
     }
 
 
@@ -438,13 +453,7 @@ class MarketWebHandler(BaseHTTPRequestHandler):
                 self.send_json(latest_market_analysis_result())
                 return
             if path == "/api/history":
-                self.send_json(
-                    {
-                        "model_version": MODEL_VERSION,
-                        "history": load_history(DEFAULT_HISTORY_PATH),
-                        "snapshot_exists": DEFAULT_SNAPSHOT_PATH.exists(),
-                    }
-                )
+                self.send_json(history_api_result())
                 return
             if path == "/api/snapshot":
                 if not DEFAULT_SNAPSHOT_PATH.exists():
@@ -473,10 +482,15 @@ class MarketWebHandler(BaseHTTPRequestHandler):
             self.send_json(
                 {
                     "model_version": MODEL_VERSION,
+                    "position_policy_version": POSITION_POLICY_VERSION,
+                    "appended": result.get("appended"),
+                    "duplicate": result.get("duplicate"),
+                    "dedupe_key": result.get("dedupe_key"),
+                    "duplicate_of_run_id": result.get("duplicate_of_run_id"),
                     "record": result["record"],
                     "history": result["history"],
                 },
-                status=201,
+                status=201 if result.get("appended") else 200,
             )
         except Exception as exc:
             self.send_json(
