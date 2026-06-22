@@ -29,6 +29,7 @@ HISTORY_DEDUPE_KEY_FIELDS = (
     "position_policy_version",
 )
 MIN_ROLLING_SAMPLE_COUNT = 4
+RISK_CAP_SEVERITY_RANK = {"low": 1, "medium": 2, "high": 3}
 REQUIRED_SCORE_RECORD_STRING_FIELDS = (
     "run_id",
     "model_version",
@@ -932,6 +933,37 @@ def risk_cap(reason: str, score_cap: float, severity: str, evidence_data: dict[s
     }
 
 
+def risk_cap_strictness_key(indexed_cap: tuple[int, dict[str, Any]]) -> tuple[float, int, int, str]:
+    index, cap = indexed_cap
+    score_cap = as_float(cap.get("score_cap"))
+    severity_rank = RISK_CAP_SEVERITY_RANK.get(str(cap.get("severity")), 0)
+    return (score_cap if score_cap is not None else 101, -severity_rank, index, str(cap.get("reason") or ""))
+
+
+def resolve_risk_caps(caps: list[dict[str, Any]]) -> tuple[dict[str, Any] | None, list[dict[str, Any]]]:
+    indexed_caps = [
+        (index, cap)
+        for index, cap in enumerate(caps)
+        if isinstance(cap, dict) and as_float(cap.get("score_cap")) is not None
+    ]
+    if not indexed_caps:
+        return None, []
+
+    applied_index, applied_cap = sorted(indexed_caps, key=risk_cap_strictness_key)[0]
+    applied = dict(applied_cap)
+    applied["applied"] = True
+    applied["priority_basis"] = "lowest_score_cap_then_highest_severity"
+    discarded: list[dict[str, Any]] = []
+    for index, cap in indexed_caps:
+        if index == applied_index:
+            continue
+        item = dict(cap)
+        item["discarded_by"] = applied.get("reason")
+        item["priority_basis"] = "covered_by_stricter_score_cap_or_severity_tie_break"
+        discarded.append(item)
+    return applied, discarded
+
+
 def evaluate_risk_caps(
     pre_cap_score: float,
     opportunity_score: float,
@@ -1209,8 +1241,9 @@ def apply_position_policy(
     crowding_penalty_value = as_float(crowding.get("penalty")) or 0
     pre_cap_score = round2(clamp(opportunity_score - crowding_penalty_value, 0, 100)) or 0
     caps = evaluate_risk_caps(pre_cap_score, opportunity_score, crowding_penalty_value, modules, snapshot, data_quality)
-    cap_values = [as_float(cap.get("score_cap")) for cap in caps if as_float(cap.get("score_cap")) is not None]
-    final_score = round2(clamp(min([pre_cap_score, *cap_values]) if cap_values else pre_cap_score, 0, 100)) or 0
+    applied_cap, discarded_caps = resolve_risk_caps(caps)
+    applied_cap_value = as_float((applied_cap or {}).get("score_cap"))
+    final_score = round2(clamp(min(pre_cap_score, applied_cap_value) if applied_cap_value is not None else pre_cap_score, 0, 100)) or 0
     recommended_range = position_range(final_score)
     return {
         "account_scope": "stock_account",
@@ -1218,6 +1251,8 @@ def apply_position_policy(
         "pre_cap_market_position_score": pre_cap_score,
         "market_position_score": final_score,
         "risk_caps": caps,
+        "applied_cap": applied_cap,
+        "discarded_caps": discarded_caps,
         "recommended_equity_position_range": recommended_range,
         "base_equity_position_range": recommended_range,
         "equity_position_range": recommended_range,
@@ -1510,6 +1545,8 @@ def score_snapshot(snapshot: dict[str, Any], snapshot_path: Path | None = None, 
         "equity_position_range": recommended_range,
         "base_equity_position_range": recommended_range,
         "risk_caps": position_policy["risk_caps"],
+        "applied_cap": position_policy["applied_cap"],
+        "discarded_caps": position_policy["discarded_caps"],
         "volatility_policy": vol_policy,
         "vol_adjusted_market_position_score": None,
         "vol_adjusted_equity_position_range": None,
@@ -1524,6 +1561,7 @@ def score_snapshot(snapshot: dict[str, Any], snapshot_path: Path | None = None, 
         "volatility_targeting": legacy_vol_targeting,
         "factor_changes": [
             "stock account position policy v2 uses recommended_equity_position_range as the official position output",
+            "risk_caps are resolved by lowest score_cap with severity as tie-breaker, and records expose applied_cap plus discarded_caps for conflict review",
             "risk_caps can cap final market_position_score for bubble, blowoff volume, sector concentration, high volatility, crowding, missing risk data, and strong-index weak-breadth regimes",
             "8% target-volatility scaling is deprecated and no longer changes the official stock-account position range",
             "position ranges now use stock-account exposure and can reach 90%-100% in low-crowding strong trends",
