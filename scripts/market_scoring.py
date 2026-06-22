@@ -4,7 +4,7 @@ import argparse
 import hashlib
 import json
 import math
-from datetime import datetime
+from datetime import date, datetime
 from pathlib import Path
 from typing import Any
 from uuid import uuid4
@@ -80,6 +80,22 @@ def round2(value: float | None) -> float | None:
     if value is None or not math.isfinite(value):
         return None
     return round(value, 2)
+
+
+def parse_date_value(value: Any) -> date | None:
+    if value is None:
+        return None
+    try:
+        if isinstance(value, datetime):
+            return value.date()
+        if isinstance(value, date):
+            return value
+        text = str(value).strip()
+        if len(text) == 8 and text.isdigit():
+            return datetime.strptime(text, "%Y%m%d").date()
+        return datetime.fromisoformat(text[:10]).date()
+    except Exception:
+        return None
 
 
 def pct(value: float | None) -> float | None:
@@ -539,13 +555,63 @@ def valuation(snapshot: dict[str, Any]) -> dict[str, Any]:
     return module_result("valuation", score, summary, evidences, metrics)
 
 
+def snapshot_basis_date(snapshot: dict[str, Any]) -> date | None:
+    return parse_date_value(snapshot.get("date") or (snapshot.get("market", {}) or {}).get("as_of_trade_date"))
+
+
+def dated_feature_is_future(snapshot: dict[str, Any], row: dict[str, Any] | None) -> bool:
+    if not isinstance(row, dict):
+        return False
+    basis = snapshot_basis_date(snapshot)
+    observation_date = parse_date_value(row.get("date") or row.get("trade_date") or row.get("observation_date"))
+    return bool(basis and observation_date and observation_date > basis)
+
+
+def macro_value_for_scoring(snapshot: dict[str, Any], row: dict[str, Any] | None, *keys: str) -> float | None:
+    if not isinstance(row, dict) or dated_feature_is_future(snapshot, row):
+        return None
+    for key in keys:
+        value = as_float(row.get(key))
+        if value is not None:
+            return value
+    return None
+
+
+def future_dated_feature_warnings(snapshot: dict[str, Any]) -> list[str]:
+    basis = snapshot_basis_date(snapshot)
+    if basis is None:
+        return []
+    macro_data = snapshot.get("macro", {}) or {}
+    rows: list[tuple[str, Any]] = [
+        ("macro.us_10y_treasury_yield_pct", macro_data.get("us_10y_treasury_yield_pct")),
+        ("macro.dxy", macro_data.get("dxy")),
+        ("macro.usd_cny", macro_data.get("usd_cny")),
+        ("macro.china_10y_government_bond_yield_pct", macro_data.get("china_10y_government_bond_yield_pct")),
+    ]
+    fred_rows = macro_data.get("fred_key_indicators", {}) or {}
+    if isinstance(fred_rows, dict):
+        rows.extend((f"macro.fred_key_indicators.{key}", value) for key, value in fred_rows.items())
+
+    warnings = []
+    for field_name, row in rows:
+        if not isinstance(row, dict):
+            continue
+        observation_date = parse_date_value(row.get("date") or row.get("trade_date") or row.get("observation_date"))
+        if observation_date and observation_date > basis:
+            warnings.append(
+                f"{field_name}: observation date {observation_date.isoformat()} is after "
+                f"basis_trade_date {basis.isoformat()}; excluded from scoring"
+            )
+    return warnings
+
+
 def macro(snapshot: dict[str, Any]) -> dict[str, Any]:
     macro_data = snapshot.get("macro", {}) or {}
-    us10 = as_float((macro_data.get("us_10y_treasury_yield_pct") or {}).get("value"))
-    dxy = as_float((macro_data.get("dxy") or {}).get("value"))
-    usd_cny = as_float((macro_data.get("usd_cny") or {}).get("value"))
+    us10 = macro_value_for_scoring(snapshot, macro_data.get("us_10y_treasury_yield_pct"), "value", "value_pct")
+    dxy = macro_value_for_scoring(snapshot, macro_data.get("dxy"), "value", "value_pct")
+    usd_cny = macro_value_for_scoring(snapshot, macro_data.get("usd_cny"), "value", "value_pct")
     cn10_row = macro_data.get("china_10y_government_bond_yield_pct") or {}
-    cn10 = as_float(cn10_row.get("value_pct") if "value_pct" in cn10_row else cn10_row.get("value"))
+    cn10 = macro_value_for_scoring(snapshot, cn10_row, "value_pct", "value")
 
     cn_score = scale(cn10, 3.0, 1.7, 4)
     us_score = scale(us10, 5.0, 3.5, 2.5)
@@ -1008,6 +1074,9 @@ def confidence(snapshot: dict[str, Any]) -> str:
 
 def score_snapshot(snapshot: dict[str, Any], snapshot_path: Path | None = None, snapshot_bytes: bytes | None = None) -> dict[str, Any]:
     rolling = rolling_market_features(snapshot)
+    quality = data_quality_with_warnings(snapshot.get("data_quality", {}))
+    for warning in future_dated_feature_warnings(snapshot):
+        add_quality_warning(quality, warning)
     modules = {
         "index_trend": index_trend(snapshot),
         "breadth": market_breadth(snapshot),
@@ -1019,7 +1088,6 @@ def score_snapshot(snapshot: dict[str, Any], snapshot_path: Path | None = None, 
     }
     opportunity = round2(sum(as_float(module["score"]) or 0 for module in modules.values())) or 0
     crowding = crowding_penalty(snapshot, modules)
-    quality = data_quality_with_warnings(snapshot.get("data_quality", {}))
     position_policy = apply_position_policy(opportunity, crowding, modules, snapshot, quality)
     final_score = position_policy["market_position_score"]
     pre_cap_score = position_policy["pre_cap_market_position_score"]

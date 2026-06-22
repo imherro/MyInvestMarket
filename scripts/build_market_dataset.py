@@ -31,6 +31,8 @@ INDEXES = {
 class Quality:
     missing_fields: list[str] = field(default_factory=list)
     sources_used: list[str] = field(default_factory=list)
+    warnings: list[str] = field(default_factory=list)
+    feature_freshness: dict[str, Any] = field(default_factory=dict)
     notes: list[str] = field(default_factory=list)
     cross_validation: dict[str, Any] = field(default_factory=dict)
 
@@ -45,6 +47,29 @@ class Quality:
             note = f"{field_name}: {reason}"
             if note not in self.notes:
                 self.notes.append(note)
+
+    def warning(self, message: str) -> None:
+        if message not in self.warnings:
+            self.warnings.append(message)
+
+    def freshness(
+        self,
+        field_name: str,
+        basis_date: date,
+        observation_date: date | None,
+        source: str,
+        status: str,
+        ignored_future_observations: int = 0,
+    ) -> None:
+        lag_days = (basis_date - observation_date).days if observation_date else None
+        self.feature_freshness[field_name] = {
+            "basis_date": basis_date.isoformat(),
+            "observation_date": observation_date.isoformat() if observation_date else None,
+            "lag_days": lag_days,
+            "source": source,
+            "status": status,
+            "ignored_future_observations": ignored_future_observations,
+        }
 
 
 def load_dotenv(path: Path) -> None:
@@ -64,6 +89,22 @@ def yyyymmdd(value: date) -> str:
 
 def iso_date(value: str) -> str:
     return f"{value[:4]}-{value[4:6]}-{value[6:8]}"
+
+
+def parse_observation_date(value: Any) -> date | None:
+    if value is None:
+        return None
+    try:
+        if isinstance(value, datetime):
+            return value.date()
+        if isinstance(value, date):
+            return value
+        parsed = pd.to_datetime(value, errors="coerce")
+        if pd.isna(parsed):
+            return None
+        return parsed.date()
+    except Exception:
+        return None
 
 
 def finite_float(value: Any, digits: int | None = 4) -> float | None:
@@ -467,13 +508,53 @@ def sector_rotation(pro: Any, trade_date: str, sw_l1: pd.DataFrame, q: Quality) 
     return result
 
 
-def yf_latest(ticker: str, field_name: str, q: Quality) -> dict[str, Any] | None:
+def latest_series_value_at_or_before(
+    series: pd.Series,
+    field_name: str,
+    q: Quality,
+    basis_date: date,
+    source: str,
+    value_key: str = "value",
+) -> dict[str, Any] | None:
+    rows: list[tuple[date, float]] = []
+    ignored_future = 0
+    for index_value, raw_value in series.items():
+        observation_date = parse_observation_date(index_value)
+        value = finite_float(raw_value)
+        if observation_date is None or value is None:
+            continue
+        if observation_date > basis_date:
+            ignored_future += 1
+            continue
+        rows.append((observation_date, value))
+
+    if ignored_future:
+        q.warning(f"{field_name}: ignored {ignored_future} future-dated observations after {basis_date.isoformat()}")
+
+    if not rows:
+        status = "missing_after_cutoff" if ignored_future else "missing"
+        q.missing(field_name, f"no observation at or before {basis_date.isoformat()}")
+        q.freshness(field_name, basis_date, None, source, status, ignored_future)
+        return None
+
+    observation_date, value = sorted(rows, key=lambda item: item[0])[-1]
+    q.source(source.replace(":", "."))
+    q.freshness(field_name, basis_date, observation_date, source, "available", ignored_future)
+    return {
+        "date": observation_date.isoformat(),
+        value_key: value,
+        "source": source,
+    }
+
+
+def yf_latest(ticker: str, field_name: str, q: Quality, basis_date: date) -> dict[str, Any] | None:
     try:
         import yfinance as yf
 
         df = yf.download(
             ticker,
-            period="15d",
+            start=(basis_date - timedelta(days=30)).isoformat(),
+            end=(basis_date + timedelta(days=1)).isoformat(),
             progress=False,
             auto_adjust=False,
             threads=False,
@@ -489,18 +570,19 @@ def yf_latest(ticker: str, field_name: str, q: Quality) -> dict[str, Any] | None
         if close.empty:
             q.missing(field_name, f"no close from yfinance result for {ticker}")
             return None
-        q.source(f"yfinance.{ticker}")
-        return {
-            "date": close.index[-1].strftime("%Y-%m-%d"),
-            "value": finite_float(close.iloc[-1]),
-            "source": f"yfinance:{ticker}",
-        }
+        return latest_series_value_at_or_before(close, field_name, q, basis_date, f"yfinance:{ticker}")
     except Exception as exc:
         q.missing(field_name, str(exc))
         return None
 
 
-def fred_latest(series_id: str, field_name: str, q: Quality, observation_start: str = "2025-01-01") -> dict[str, Any] | None:
+def fred_latest(
+    series_id: str,
+    field_name: str,
+    q: Quality,
+    basis_date: date,
+    observation_start: str = "2025-01-01",
+) -> dict[str, Any] | None:
     try:
         from fredapi import Fred
 
@@ -513,36 +595,42 @@ def fred_latest(series_id: str, field_name: str, q: Quality, observation_start: 
         if series.empty:
             q.missing(field_name, f"empty FRED series {series_id}")
             return None
-        q.source(f"FRED.{series_id}")
-        return {
-            "date": series.index[-1].strftime("%Y-%m-%d"),
-            "value": finite_float(series.iloc[-1]),
-            "source": f"FRED:{series_id}",
-        }
+        return latest_series_value_at_or_before(series, field_name, q, basis_date, f"FRED:{series_id}")
     except Exception as exc:
         q.missing(field_name, str(exc))
         return None
 
 
-def china_10y_yield(pro: Any, q: Quality) -> dict[str, Any] | None:
+def china_10y_yield(pro: Any, q: Quality, basis_date: date) -> dict[str, Any] | None:
     try:
         df = pro.yc_cb(
-            start_date=(datetime.now(TZ).date() - timedelta(days=20)).strftime("%Y%m%d"),
-            end_date=datetime.now(TZ).strftime("%Y%m%d"),
+            start_date=(basis_date - timedelta(days=20)).strftime("%Y%m%d"),
+            end_date=basis_date.strftime("%Y%m%d"),
         )
         q.source("Tushare.yc_cb")
         if not df.empty:
             candidates = df[
                 df.astype(str).apply(lambda col: col.str.contains("10", na=False)).any(axis=1)
-            ]
+            ].copy()
+            candidates["_observation_date"] = candidates.get("trade_date", pd.Series(dtype=str)).map(parse_observation_date)
+            candidates = candidates[candidates["_observation_date"].notna()]
+            candidates = candidates[candidates["_observation_date"] <= basis_date]
             if not candidates.empty:
-                row = candidates.iloc[0]
+                row = candidates.sort_values("_observation_date").iloc[-1]
                 for key in ["yield", "yield_rate", "yld", "close"]:
                     if key in row:
                         value = finite_float(row[key])
                         if value is not None:
+                            observation_date = row["_observation_date"]
+                            q.freshness(
+                                "macro.china_10y_government_bond_yield_pct",
+                                basis_date,
+                                observation_date,
+                                "Tushare:yc_cb",
+                                "available",
+                            )
                             return {
-                                "date": iso_date(str(row.get("trade_date"))),
+                                "date": observation_date.isoformat(),
                                 "value_pct": value,
                                 "source": "Tushare.yc_cb",
                             }
@@ -558,7 +646,7 @@ def china_10y_yield(pro: Any, q: Quality) -> dict[str, Any] | None:
             "sortTypes": "-1",
             "token": "894050c76af8597a853f5b408b759f5d",
             "pageNumber": "1",
-            "pageSize": "5",
+            "pageSize": "50",
         }
         response = requests.get(
             url,
@@ -574,10 +662,44 @@ def china_10y_yield(pro: Any, q: Quality) -> dict[str, Any] | None:
         if not data:
             q.missing("macro.china_10y_government_bond_yield_pct", "empty Eastmoney response")
             return None
-        row = data[0]
+        future_count = 0
+        valid_rows: list[tuple[date, dict[str, Any]]] = []
+        for row in data:
+            observation_date = parse_observation_date(str(row.get("SOLAR_DATE"))[:10])
+            if observation_date is None:
+                continue
+            if observation_date > basis_date:
+                future_count += 1
+                continue
+            valid_rows.append((observation_date, row))
+        if future_count:
+            q.warning(
+                "macro.china_10y_government_bond_yield_pct: "
+                f"ignored {future_count} future-dated observations after {basis_date.isoformat()}"
+            )
+        if not valid_rows:
+            q.missing("macro.china_10y_government_bond_yield_pct", f"no observation at or before {basis_date.isoformat()}")
+            q.freshness(
+                "macro.china_10y_government_bond_yield_pct",
+                basis_date,
+                None,
+                "Eastmoney:RPTA_WEB_TREASURYYIELD",
+                "missing_after_cutoff" if future_count else "missing",
+                future_count,
+            )
+            return None
+        observation_date, row = sorted(valid_rows, key=lambda item: item[0])[-1]
         q.source("Eastmoney.RPTA_WEB_TREASURYYIELD")
+        q.freshness(
+            "macro.china_10y_government_bond_yield_pct",
+            basis_date,
+            observation_date,
+            "Eastmoney:RPTA_WEB_TREASURYYIELD",
+            "available",
+            future_count,
+        )
         return {
-            "date": str(row["SOLAR_DATE"])[:10],
+            "date": observation_date.isoformat(),
             "value_pct": finite_float(row.get("EMM00166466")),
             "source": "Eastmoney:RPTA_WEB_TREASURYYIELD",
         }
@@ -586,17 +708,18 @@ def china_10y_yield(pro: Any, q: Quality) -> dict[str, Any] | None:
         return None
 
 
-def macro_data(pro: Any, q: Quality) -> dict[str, Any]:
+def macro_data(pro: Any, q: Quality, trade_date: str) -> dict[str, Any]:
+    basis_date = datetime.strptime(trade_date, "%Y%m%d").date()
     result = {
-        "us_10y_treasury_yield_pct": fred_latest("DGS10", "macro.us_10y_treasury_yield_pct", q),
-        "dxy": yf_latest("DX-Y.NYB", "macro.dxy", q),
-        "usd_cny": yf_latest("CNY=X", "macro.usd_cny", q),
-        "china_10y_government_bond_yield_pct": china_10y_yield(pro, q),
+        "us_10y_treasury_yield_pct": fred_latest("DGS10", "macro.us_10y_treasury_yield_pct", q, basis_date),
+        "dxy": yf_latest("DX-Y.NYB", "macro.dxy", q, basis_date),
+        "usd_cny": yf_latest("CNY=X", "macro.usd_cny", q, basis_date),
+        "china_10y_government_bond_yield_pct": china_10y_yield(pro, q, basis_date),
         "fred_key_indicators": {
-            "FEDFUNDS": fred_latest("FEDFUNDS", "macro.fred_key_indicators.FEDFUNDS", q),
-            "DFF": fred_latest("DFF", "macro.fred_key_indicators.DFF", q),
-            "CPIAUCSL": fred_latest("CPIAUCSL", "macro.fred_key_indicators.CPIAUCSL", q),
-            "PCEPI": fred_latest("PCEPI", "macro.fred_key_indicators.PCEPI", q),
+            "FEDFUNDS": fred_latest("FEDFUNDS", "macro.fred_key_indicators.FEDFUNDS", q, basis_date),
+            "DFF": fred_latest("DFF", "macro.fred_key_indicators.DFF", q, basis_date),
+            "CPIAUCSL": fred_latest("CPIAUCSL", "macro.fred_key_indicators.CPIAUCSL", q, basis_date),
+            "PCEPI": fred_latest("PCEPI", "macro.fred_key_indicators.PCEPI", q, basis_date),
         },
     }
     return result
@@ -705,7 +828,7 @@ def build_dataset(as_of: date) -> dict[str, Any]:
     sectors = sector_rotation(pro, trade_date, sw_l1, q)
     valuation = index_valuation(pro, trade_date, q)
     volatility = volatility_metrics(pro, trade_date, q)
-    macro = macro_data(pro, q)
+    macro = macro_data(pro, q, trade_date)
     qmt = qmt_portfolio(q)
     baostock_cross_validation(trade_date, market, q)
 
@@ -722,6 +845,8 @@ def build_dataset(as_of: date) -> dict[str, Any]:
         "data_quality": {
             "missing_fields": q.missing_fields,
             "sources_used": q.sources_used,
+            "warnings": q.warnings,
+            "feature_freshness": q.feature_freshness,
             "generated_at": datetime.now(TZ).isoformat(timespec="seconds"),
             "basis": "latest complete Tushare A-share trading day at or before as_of",
             "notes": q.notes,
