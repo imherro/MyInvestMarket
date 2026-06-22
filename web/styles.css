@@ -229,9 +229,12 @@ select {
 }
 
 .chart-frame {
+  display: flex;
+  flex-direction: column;
   min-height: 340px;
   height: 42vh;
   max-height: 520px;
+  overflow: hidden;
 }
 
 .chart-legend {
@@ -258,8 +261,18 @@ select {
 .chart-svg {
   display: block;
   width: 100%;
-  height: calc(100% - 28px);
+  flex: 1 1 auto;
+  min-height: 0;
+  height: auto;
+}
+
+.chart-frame .chart-svg {
   min-height: 280px;
+}
+
+.chart-svg.compact {
+  height: 100%;
+  min-height: 0;
 }
 
 .axis-label,
@@ -375,6 +388,7 @@ select {
 
 .metric-chart {
   height: 118px;
+  overflow: hidden;
 }
 
 .evidence-table {
@@ -411,6 +425,7 @@ select {
 }
 
 .history-section {
+  margin-top: 24px;
   padding: 18px;
 }
 

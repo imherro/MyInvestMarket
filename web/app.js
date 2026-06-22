@@ -411,7 +411,7 @@ function renderLineChart(container, series, options = {}) {
   const labels = widestLabels(activeSeries);
 
   const svg = createSvg("svg", {
-    class: "chart-svg",
+    class: options.compact ? "chart-svg compact" : "chart-svg",
     viewBox: `0 0 ${width} ${height}`,
     role: "img",
   });
