@@ -15,6 +15,7 @@ from market_scoring import (
     DEFAULT_HISTORY_PATH,
     DEFAULT_SNAPSHOT_PATH,
     MODEL_VERSION,
+    POSITION_POLICY_VERSION,
     ROOT,
     append_score,
     load_history,
@@ -232,8 +233,12 @@ def homepage_index_result() -> dict[str, object]:
         )
 
     return {
+        "available": bool(latest),
         "schema_version": 1,
         "generated_at": now_iso(),
+        "model_version": latest.get("model_version", MODEL_VERSION) if latest else MODEL_VERSION,
+        "account_scope": latest.get("account_scope", "stock_account") if latest else "stock_account",
+        "position_policy_version": latest.get("position_policy_version", POSITION_POLICY_VERSION) if latest else POSITION_POLICY_VERSION,
         "page": {
             "path": "/",
             "title": "A股市场评分",
@@ -247,16 +252,26 @@ def homepage_index_result() -> dict[str, object]:
             "confidence": latest.get("confidence"),
             "equity_position_range": latest.get("equity_position_range"),
             "base_equity_position_range": latest.get("base_equity_position_range"),
-            "vol_adjusted_equity_position_range": latest.get("vol_adjusted_equity_position_range"),
-            "vol_adjusted_market_position_score": latest.get("vol_adjusted_market_position_score"),
-            "volatility_targeting": latest.get("volatility_targeting", {}),
+            "recommended_equity_position_range": latest.get("recommended_equity_position_range")
+            or latest.get("base_equity_position_range")
+            or latest.get("equity_position_range"),
+            "pre_cap_market_position_score": latest.get("pre_cap_market_position_score"),
+            "risk_caps": latest.get("risk_caps", []),
+            "account_scope": latest.get("account_scope", "stock_account"),
+            "position_policy_version": latest.get("position_policy_version", POSITION_POLICY_VERSION),
+            "volatility_policy": latest.get("volatility_policy", {}),
+            "legacy_vol_adjusted_equity_position_range": latest.get("legacy_vol_adjusted_equity_position_range"),
+            "legacy_vol_adjusted_market_position_score": latest.get("legacy_vol_adjusted_market_position_score"),
+            "legacy_vol_adjusted_deprecated": latest.get("legacy_vol_adjusted_deprecated"),
             "cards": [
                 {
                     "id": "position_score",
-                    "label": "仓位参考分",
+                    "label": "股票账户仓位分",
                     "value": latest.get("market_position_score"),
                     "max": 100,
-                    "detail": latest.get("equity_position_range"),
+                    "detail": latest.get("recommended_equity_position_range")
+                    or latest.get("base_equity_position_range")
+                    or latest.get("equity_position_range"),
                 },
                 {
                     "id": "opportunity_score",
@@ -273,11 +288,11 @@ def homepage_index_result() -> dict[str, object]:
                     "detail": "30分上限",
                 },
                 {
-                    "id": "vol_adjusted_position",
-                    "label": "波动调整分",
-                    "value": latest.get("vol_adjusted_market_position_score"),
+                    "id": "pre_cap_position",
+                    "label": "扣上限前分",
+                    "value": latest.get("pre_cap_market_position_score"),
                     "max": 100,
-                    "detail": latest.get("vol_adjusted_equity_position_range"),
+                    "detail": f"{len(latest.get('risk_caps', []) or [])} 项风险上限",
                 },
                 {
                     "id": "market_regime",
@@ -305,8 +320,14 @@ def homepage_index_result() -> dict[str, object]:
             "benchmarks": POSITION_BENCHMARKS,
             "current": {
                 "market_position_score": latest.get("market_position_score"),
-                "base_equity_position_range": latest.get("base_equity_position_range") or latest.get("equity_position_range"),
-                "vol_adjusted_equity_position_range": latest.get("vol_adjusted_equity_position_range"),
+                "pre_cap_market_position_score": latest.get("pre_cap_market_position_score"),
+                "recommended_equity_position_range": latest.get("recommended_equity_position_range")
+                or latest.get("base_equity_position_range")
+                or latest.get("equity_position_range"),
+                "base_equity_position_range": latest.get("recommended_equity_position_range")
+                or latest.get("base_equity_position_range")
+                or latest.get("equity_position_range"),
+                "risk_caps": latest.get("risk_caps", []),
                 "market_regime": latest.get("market_regime"),
             },
         },
@@ -318,8 +339,14 @@ def homepage_index_result() -> dict[str, object]:
                     {"basis_trade_date": row.get("basis_trade_date"), "scored_at": row.get("scored_at"), "value": row.get("market_position_score")}
                     for row in records
                 ],
-                "vol_adjusted_market_position_score": [
-                    {"basis_trade_date": row.get("basis_trade_date"), "scored_at": row.get("scored_at"), "value": row.get("vol_adjusted_market_position_score")}
+                "pre_cap_market_position_score": [
+                    {
+                        "basis_trade_date": row.get("basis_trade_date"),
+                        "scored_at": row.get("scored_at"),
+                        "value": row.get("pre_cap_market_position_score")
+                        or row.get("base_market_position_score")
+                        or row.get("market_position_score"),
+                    }
                     for row in records
                 ],
                 "market_opportunity_score": [
@@ -356,11 +383,17 @@ def homepage_index_result() -> dict[str, object]:
                     "basis_trade_date": row.get("basis_trade_date"),
                     "market_opportunity_score": row.get("market_opportunity_score"),
                     "crowding_penalty": row.get("crowding_penalty"),
+                    "pre_cap_market_position_score": row.get("pre_cap_market_position_score")
+                    or row.get("base_market_position_score")
+                    or row.get("market_position_score"),
                     "market_position_score": row.get("market_position_score"),
-                    "vol_adjusted_market_position_score": row.get("vol_adjusted_market_position_score"),
                     "shanghai_composite": row.get("shanghai_composite"),
                     "equity_position_range": row.get("equity_position_range"),
-                    "vol_adjusted_equity_position_range": row.get("vol_adjusted_equity_position_range"),
+                    "recommended_equity_position_range": row.get("recommended_equity_position_range")
+                    or row.get("base_equity_position_range")
+                    or row.get("equity_position_range"),
+                    "risk_cap_count": len(row.get("risk_caps", []) or []),
+                    "position_policy_version": row.get("position_policy_version"),
                     "market_regime": row.get("market_regime"),
                 }
                 for row in reversed(records)

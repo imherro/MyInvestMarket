@@ -164,7 +164,7 @@ def write_report(snapshot: dict[str, Any], record: dict[str, Any]) -> Path:
 
 ## 结论
 
-当前市场状态为“{record.get('market_regime')}”。模型按股票账户口径输出仓位：基准权益区间用于判断市场区制，波动调整区间用于执行层控制回撤。
+当前市场状态为“{record.get('market_regime')}”。模型按股票账户口径输出官方推荐权益仓位；波动率只用于风险扣分、风险上限和提示，不再按8%年化目标波动率缩放股票账户仓位。
 
 ## 评分摘要
 
@@ -172,10 +172,11 @@ def write_report(snapshot: dict[str, Any], record: dict[str, Any]) -> Path:
 |---|---:|
 | 市场机会分 | {fmt(record.get('market_opportunity_score'))} |
 | 拥挤惩罚 | {fmt(record.get('crowding_penalty'))} |
-| 基准仓位参考分 | {fmt(record.get('market_position_score'))} |
-| 波动调整分 | {fmt(record.get('vol_adjusted_market_position_score'))} |
-| 股票账户基准权益区间 | {fmt(record.get('base_equity_position_range') or record.get('equity_position_range'))} |
-| 波动调整权益区间 | {fmt(record.get('vol_adjusted_equity_position_range'))} |
+| 扣上限前仓位分 | {fmt(record.get('pre_cap_market_position_score'))} |
+| 股票账户仓位分 | {fmt(record.get('market_position_score'))} |
+| 官方推荐权益区间 | {fmt(record.get('recommended_equity_position_range') or record.get('base_equity_position_range') or record.get('equity_position_range'))} |
+| 风险上限数量 | {len(record.get('risk_caps', []) or [])} |
+| 仓位策略版本 | {record.get('position_policy_version')} |
 | 市场状态 | {record.get('market_regime')} |
 | 置信度 | {record.get('confidence')} |
 
@@ -343,9 +344,12 @@ def main() -> None:
             "run_id": record.get("run_id"),
             "market_opportunity_score": record.get("market_opportunity_score"),
             "crowding_penalty": record.get("crowding_penalty"),
+            "pre_cap_market_position_score": record.get("pre_cap_market_position_score"),
             "market_position_score": record.get("market_position_score"),
-            "base_equity_position_range": record.get("base_equity_position_range") or record.get("equity_position_range"),
-            "vol_adjusted_equity_position_range": record.get("vol_adjusted_equity_position_range"),
+            "recommended_equity_position_range": record.get("recommended_equity_position_range")
+            or record.get("base_equity_position_range")
+            or record.get("equity_position_range"),
+            "risk_cap_count": len(record.get("risk_caps", []) or []),
             "market_regime": record.get("market_regime"),
             "report": str(report_path.relative_to(ROOT)),
             "api": api,

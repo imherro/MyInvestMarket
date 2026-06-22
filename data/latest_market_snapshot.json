@@ -275,8 +275,8 @@
     },
     "market": {
       "realized_vol_30d": 0.2579,
-      "target_annual_vol": 0.08,
-      "source_note": "Average 30-day annualized realized volatility of Shanghai, Shenzhen, and ChiNext when available."
+      "target_annual_vol": null,
+      "source_note": "Average 30-day annualized realized volatility of Shanghai, Shenzhen, and ChiNext when available; stock-account position policy uses volatility as a risk indicator only."
     }
   },
   "macro": {

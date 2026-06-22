@@ -20,7 +20,7 @@ const moduleColors = {
 
 const chartColors = {
   position: "#047d73",
-  adjusted: "#6b7280",
+  preCap: "#6b7280",
   opportunity: "#2c68a0",
   shanghai: "#b7791f",
   penalty: "#bf3d2b",
@@ -179,8 +179,13 @@ function renderSummary() {
   setText("marketRegime", latest.market_regime || "--");
   setText("basisDate", `基准日 ${latest.basis_trade_date || "--"}`);
   setText("confidence", `置信度 ${confidenceLabel(latest.confidence)}`);
-  setText("positionRange", `股票账户基准权益 ${latest.base_equity_position_range || latest.equity_position_range || "--"}`);
-  setText("volAdjustedRange", `波动调整 ${latest.vol_adjusted_equity_position_range || "--"}`);
+  const recommendedRange = officialPositionRange(latest);
+  const riskCapCount = (latest.risk_caps || []).length;
+  setText("positionRange", `官方推荐权益 ${recommendedRange}`);
+  setText(
+    "volAdjustedRange",
+    `${latest.position_policy_version || "stock_account_position_policy_v2"} · ${riskCapCount ? `已触发${riskCapCount}项风险上限` : "未触发风险上限"}`,
+  );
   setMeter("positionMeter", latest.market_position_score, 100);
   setMeter("opportunityMeter", latest.market_opportunity_score, 100);
   setMeter("crowdingMeter", latest.crowding_penalty, 30);
@@ -199,14 +204,14 @@ function renderPositionMap() {
   }
 
   const currentScore = numeric(latest.market_position_score);
-  const baseRange = latest.base_equity_position_range || latest.equity_position_range || "--";
-  const volRange = latest.vol_adjusted_equity_position_range || "--";
-  setText("positionMapLabel", `净分 ${formatNumber(currentScore)} · 股票账户权益 ${baseRange}`);
-  renderPositionCurve(container, currentScore, baseRange, volRange, latest.market_regime || "--");
+  const baseRange = officialPositionRange(latest);
+  const riskCapCount = (latest.risk_caps || []).length;
+  setText("positionMapLabel", `仓位分 ${formatNumber(currentScore)} · 官方推荐权益 ${baseRange}`);
+  renderPositionCurve(container, currentScore, baseRange, riskCapCount, latest.market_regime || "--");
   renderPositionBenchmarks();
 }
 
-function renderPositionCurve(container, currentScore, baseRange, volRange, regimeText) {
+function renderPositionCurve(container, currentScore, baseRange, riskCapCount, regimeText) {
   container.innerHTML = "";
   if (currentScore === null) {
     renderEmpty(container, "暂无仓位映射");
@@ -320,10 +325,10 @@ function renderPositionCurve(container, currentScore, baseRange, volRange, regim
   const labelX = clamp(markerX + 14, margin.left + 4, width - margin.right - labelWidth);
   const labelY = clamp(markerY - labelHeight - 12, margin.top + 10, height - margin.bottom - labelHeight - 8);
   svg.appendChild(createSvg("rect", { class: "current-score-label-box", x: labelX, y: labelY, width: labelWidth, height: labelHeight, rx: 6 }));
-  svg.appendChild(createSvg("text", { class: "current-score-label strong", x: labelX + 12, y: labelY + 22 }, `当前净分 ${formatNumber(currentScore)}`));
-  svg.appendChild(createSvg("text", { class: "current-score-label", x: labelX + 12, y: labelY + 42 }, `股票账户权益 ${baseRange}`));
-  svg.appendChild(createSvg("text", { class: "current-score-label muted", x: labelX + 12, y: labelY + 61 }, `波动后 ${volRange} · ${regimeText}`));
-  svg.appendChild(createSvg("title", {}, `当前净市场分 ${formatNumber(currentScore)}，股票账户基准权益 ${baseRange}，波动调整 ${volRange}`));
+  svg.appendChild(createSvg("text", { class: "current-score-label strong", x: labelX + 12, y: labelY + 22 }, `当前仓位分 ${formatNumber(currentScore)}`));
+  svg.appendChild(createSvg("text", { class: "current-score-label", x: labelX + 12, y: labelY + 42 }, `官方推荐权益 ${baseRange}`));
+  svg.appendChild(createSvg("text", { class: "current-score-label muted", x: labelX + 12, y: labelY + 61 }, `${riskCapCount ? `风险上限 ${riskCapCount} 项` : "无风险上限"} · ${regimeText}`));
+  svg.appendChild(createSvg("title", {}, `当前股票账户仓位分 ${formatNumber(currentScore)}，官方推荐权益 ${baseRange}，风险上限 ${riskCapCount} 项`));
 
   container.appendChild(svg);
 }
@@ -427,16 +432,16 @@ function renderOverviewChart() {
     container,
     [
       {
-        name: "仓位参考分",
+        name: "股票账户仓位分",
         color: chartColors.position,
         axis: "left",
         data: records.map((record, index) => point(labels[index], record.market_position_score)),
       },
       {
-        name: "波动调整分",
-        color: chartColors.adjusted,
+        name: "扣上限前分",
+        color: chartColors.preCap,
         axis: "left",
-        data: records.map((record, index) => point(labels[index], record.vol_adjusted_market_position_score)),
+        data: records.map((record, index) => point(labels[index], preCapScore(record))),
       },
       {
         name: "市场机会分",
@@ -613,7 +618,7 @@ function renderEvidence(module) {
 function renderHistoryTable() {
   const tbody = document.getElementById("historyRows");
   if (!state.records.length) {
-    tbody.innerHTML = `<tr><td colspan="9" class="empty-state">暂无评分历史</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="10" class="empty-state">暂无评分历史</td></tr>`;
     return;
   }
   tbody.innerHTML = [...state.records]
@@ -625,10 +630,11 @@ function renderHistoryTable() {
           <td>${escapeHtml(record.basis_trade_date || "--")}</td>
           <td class="score-up">${formatNumber(record.market_opportunity_score)}</td>
           <td class="score-risk">${formatNumber(record.crowding_penalty)}</td>
+          <td>${formatNumber(preCapScore(record))}</td>
           <td class="score-up">${formatNumber(record.market_position_score)}</td>
-          <td>${escapeHtml(record.vol_adjusted_equity_position_range || "--")}</td>
+          <td>${escapeHtml(officialPositionRange(record))}</td>
           <td>${formatNumber(record.shanghai_composite)}</td>
-          <td>${escapeHtml(record.equity_position_range || "--")}</td>
+          <td>${escapeHtml(record.position_policy_version || "--")}</td>
           <td>${escapeHtml(record.market_regime || "--")}</td>
         </tr>
       `,
@@ -878,6 +884,14 @@ function widestLabels(series) {
 
 function point(label, value) {
   return { label, value: numeric(value) };
+}
+
+function officialPositionRange(record) {
+  return record?.recommended_equity_position_range || record?.base_equity_position_range || record?.equity_position_range || "--";
+}
+
+function preCapScore(record) {
+  return record?.pre_cap_market_position_score ?? record?.base_market_position_score ?? record?.market_position_score;
 }
 
 function recordLabel(record) {

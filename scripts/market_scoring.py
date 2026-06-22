@@ -16,9 +16,10 @@ DATA_DIR = ROOT / "data"
 DEFAULT_SNAPSHOT_PATH = DATA_DIR / "latest_market_snapshot.json"
 DEFAULT_HISTORY_PATH = DATA_DIR / "market_score_history.json"
 TZ = ZoneInfo("Asia/Shanghai")
-MODEL_VERSION = "a_share_market_score_v1_3"
-SCORE_SCHEMA_VERSION = "1.3"
+MODEL_VERSION = "a_share_market_score_v1_4"
+SCORE_SCHEMA_VERSION = "1.4"
 FEATURE_SCHEMA_VERSION = "1.2"
+POSITION_POLICY_VERSION = "stock_account_position_policy_v2"
 
 MODULES = {
     "index_trend": {"label": "指数趋势", "weight": 20},
@@ -93,7 +94,11 @@ def parse_percent_range(value: str | None) -> tuple[float, float] | None:
 def format_percent_range(bounds: tuple[float, float] | None) -> str | None:
     if bounds is None:
         return None
-    return f"{round(bounds[0])}%-{round(bounds[1])}%"
+    lower = clamp(bounds[0], 0, 100)
+    upper = clamp(bounds[1], 0, 100)
+    if lower > upper:
+        lower, upper = upper, lower
+    return f"{round(lower)}%-{round(upper)}%"
 
 
 def metric(label: str, value: Any, unit: str = "", higher_is_better: bool | None = None) -> dict[str, Any]:
@@ -645,18 +650,269 @@ def position_range(score: float) -> str:
     return "90%-100%"
 
 
-def volatility_targeting(snapshot: dict[str, Any], base_score: float, base_range: str) -> dict[str, Any]:
+def normalize_annual_vol(value: Any) -> float | None:
+    number = as_float(value)
+    if number is None:
+        return None
+    if number > 1:
+        return number / 100
+    return number
+
+
+def data_quality_with_warnings(data_quality: dict[str, Any] | None) -> dict[str, Any]:
+    result = dict(data_quality or {})
+    warnings = result.get("warnings", [])
+    if isinstance(warnings, list):
+        result["warnings"] = list(warnings)
+    elif warnings:
+        result["warnings"] = [str(warnings)]
+    else:
+        result["warnings"] = []
+    return result
+
+
+def add_quality_warning(data_quality: dict[str, Any], warning: str) -> None:
+    warnings = data_quality.setdefault("warnings", [])
+    if warning not in warnings:
+        warnings.append(warning)
+
+
+def module_score_pct(modules: dict[str, Any], key: str) -> float | None:
+    module = modules.get(key, {}) or {}
+    score_pct = as_float(module.get("score_pct"))
+    if score_pct is not None:
+        return score_pct / 100 if score_pct > 1 else score_pct
+    score = as_float(module.get("score"))
+    weight = as_float(module.get("weight")) or as_float(MODULES.get(key, {}).get("weight"))
+    if score is None or not weight:
+        return None
+    return clamp(score / weight, 0, 1)
+
+
+def valuation_data_missing(snapshot: dict[str, Any], data_quality: dict[str, Any]) -> bool:
+    valuation_market = ((snapshot.get("valuation") or snapshot.get("repricing") or {}).get("market", {}) or {})
+    return as_float(valuation_market.get("valuation_score")) is None
+
+
+def volatility_data_missing(snapshot: dict[str, Any], data_quality: dict[str, Any]) -> bool:
+    volatility_market = (snapshot.get("volatility", {}) or {}).get("market", {}) or {}
+    return normalize_annual_vol(volatility_market.get("realized_vol_30d")) is None
+
+
+def risk_cap(reason: str, score_cap: float, severity: str, evidence_data: dict[str, Any], message: str) -> dict[str, Any]:
+    return {
+        "reason": reason,
+        "score_cap": round2(score_cap),
+        "severity": severity,
+        "evidence": evidence_data,
+        "message": message,
+    }
+
+
+def evaluate_risk_caps(
+    pre_cap_score: float,
+    opportunity_score: float,
+    crowding_penalty_value: float,
+    modules: dict[str, Any],
+    snapshot: dict[str, Any],
+    data_quality: dict[str, Any],
+) -> list[dict[str, Any]]:
+    caps: list[dict[str, Any]] = []
+    valuation_score_pct = module_score_pct(modules, "valuation")
+    realized_volatility = normalize_annual_vol(((snapshot.get("volatility", {}) or {}).get("market", {}) or {}).get("realized_vol_30d"))
+    valuation_missing = valuation_data_missing(snapshot, data_quality)
+    volatility_missing = volatility_data_missing(snapshot, data_quality)
+    index_trend_score_pct = module_score_pct(modules, "index_trend")
+    breadth_score_pct = module_score_pct(modules, "breadth")
+
+    evidence_base = {
+        "pre_cap_market_position_score": round2(pre_cap_score),
+        "opportunity_score": round2(opportunity_score),
+        "crowding_penalty": round2(crowding_penalty_value),
+        "valuation_score_pct": round2(valuation_score_pct),
+        "realized_volatility_30d": round2(realized_volatility),
+    }
+
+    if crowding_penalty_value >= 20:
+        caps.append(
+            risk_cap(
+                "high_crowding_extreme",
+                50,
+                "high",
+                evidence_base,
+                "拥挤惩罚达到极高区间，股票账户仓位分上限限制为50。",
+            )
+        )
+    elif crowding_penalty_value >= 15:
+        caps.append(
+            risk_cap(
+                "high_crowding",
+                60,
+                "medium",
+                evidence_base,
+                "拥挤惩罚偏高，股票账户仓位分上限限制为60。",
+            )
+        )
+
+    if valuation_score_pct is not None and valuation_score_pct <= 0.15:
+        caps.append(
+            risk_cap(
+                "extreme_expensive_valuation",
+                50,
+                "high",
+                evidence_base,
+                "估值模块得分极低，泡沫估值风险触发仓位分上限。",
+            )
+        )
+    elif valuation_score_pct is not None and valuation_score_pct <= 0.25:
+        caps.append(
+            risk_cap(
+                "expensive_valuation",
+                55,
+                "medium",
+                evidence_base,
+                "估值模块得分偏低，股票账户仓位分上限限制为55。",
+            )
+        )
+
+    if valuation_score_pct is not None and valuation_score_pct <= 0.25 and realized_volatility is not None and realized_volatility >= 0.25:
+        caps.append(
+            risk_cap(
+                "bubble_top_combo",
+                35,
+                "high",
+                evidence_base,
+                "估值极贵且波动率偏高，泡沫顶部风险触发强仓位上限。",
+            )
+        )
+
+    if realized_volatility is not None and realized_volatility >= 0.40:
+        caps.append(
+            risk_cap(
+                "extreme_high_volatility",
+                35,
+                "high",
+                evidence_base,
+                "30日年化波动率进入极高区间，股票账户仓位分上限限制为35。",
+            )
+        )
+    elif realized_volatility is not None and realized_volatility >= 0.30:
+        caps.append(
+            risk_cap(
+                "high_volatility",
+                55,
+                "medium",
+                evidence_base,
+                "30日年化波动率偏高，股票账户仓位分上限限制为55。",
+            )
+        )
+
+    if opportunity_score >= 70 and valuation_missing:
+        add_quality_warning(data_quality, "valuation data missing; stock account position capped")
+        caps.append(
+            risk_cap(
+                "missing_valuation_data_hot_market",
+                65,
+                "medium",
+                evidence_base,
+                "高机会分行情缺少估值数据，股票账户仓位分上限限制为65。",
+            )
+        )
+    if opportunity_score >= 70 and volatility_missing:
+        add_quality_warning(data_quality, "volatility data missing; stock account position capped")
+        caps.append(
+            risk_cap(
+                "missing_volatility_data_hot_market",
+                65,
+                "medium",
+                evidence_base,
+                "高机会分行情缺少波动率数据，股票账户仓位分上限限制为65。",
+            )
+        )
+    if opportunity_score >= 65 and valuation_missing and volatility_missing:
+        add_quality_warning(data_quality, "valuation and volatility data missing; stock account position capped")
+        caps.append(
+            risk_cap(
+                "missing_core_risk_data_hot_market",
+                50,
+                "high",
+                evidence_base,
+                "高机会分行情同时缺少估值和波动率，股票账户仓位分上限限制为50。",
+            )
+        )
+
+    if (
+        index_trend_score_pct is not None
+        and breadth_score_pct is not None
+        and index_trend_score_pct >= 0.75
+        and breadth_score_pct <= 0.40
+    ):
+        caps.append(
+            risk_cap(
+                "strong_index_weak_breadth",
+                60,
+                "medium",
+                {
+                    **evidence_base,
+                    "index_trend_score_pct": round2(index_trend_score_pct),
+                    "breadth_score_pct": round2(breadth_score_pct),
+                },
+                "指数趋势强但市场宽度弱，局部抱团风险触发仓位分上限。",
+            )
+        )
+
+    return caps
+
+
+def apply_position_policy(
+    opportunity_score: float,
+    crowding: dict[str, Any],
+    modules: dict[str, Any],
+    snapshot: dict[str, Any],
+    data_quality: dict[str, Any],
+) -> dict[str, Any]:
+    crowding_penalty_value = as_float(crowding.get("penalty")) or 0
+    pre_cap_score = round2(clamp(opportunity_score - crowding_penalty_value, 0, 100)) or 0
+    caps = evaluate_risk_caps(pre_cap_score, opportunity_score, crowding_penalty_value, modules, snapshot, data_quality)
+    cap_values = [as_float(cap.get("score_cap")) for cap in caps if as_float(cap.get("score_cap")) is not None]
+    final_score = round2(clamp(min([pre_cap_score, *cap_values]) if cap_values else pre_cap_score, 0, 100)) or 0
+    recommended_range = position_range(final_score)
+    return {
+        "account_scope": "stock_account",
+        "position_policy_version": POSITION_POLICY_VERSION,
+        "pre_cap_market_position_score": pre_cap_score,
+        "market_position_score": final_score,
+        "risk_caps": caps,
+        "recommended_equity_position_range": recommended_range,
+        "base_equity_position_range": recommended_range,
+        "equity_position_range": recommended_range,
+    }
+
+
+def volatility_policy(snapshot: dict[str, Any]) -> dict[str, Any]:
     market = (snapshot.get("volatility", {}) or {}).get("market", {}) or {}
-    realized_vol = as_float(market.get("realized_vol_30d"))
+    realized_vol = normalize_annual_vol(market.get("realized_vol_30d"))
+    return {
+        "mode": "risk_indicator_only",
+        "target_annual_vol": None,
+        "realized_volatility_30d": round2(realized_vol),
+        "status": "available" if realized_vol is not None else "unavailable",
+        "note": "股票账户仓位不再按8%年化目标波动率缩放；波动率仅用于风险扣分、风险上限和提示。",
+    }
+
+
+def legacy_volatility_targeting(snapshot: dict[str, Any], base_score: float, base_range: str) -> dict[str, Any]:
+    market = (snapshot.get("volatility", {}) or {}).get("market", {}) or {}
+    realized_vol = normalize_annual_vol(market.get("realized_vol_30d"))
     target_vol = as_float(market.get("target_annual_vol")) or 0.08
     if realized_vol is None or realized_vol <= 0:
         scale_factor = 1.0
         status = "unavailable"
-        note = "缺少30日已实现波动率，暂不缩放股票账户基准仓位。"
+        note = "旧版8%目标波动率字段，仅供历史兼容，不作为股票账户官方仓位建议。"
     else:
         scale_factor = clamp(target_vol / realized_vol, 0.25, 1.15)
         status = "active"
-        note = "以目标年化波动率缩放股票账户基准权益仓位，波动越高仓位越低。"
+        note = "旧版8%目标波动率缩放结果已废弃，仅供历史兼容，不作为股票账户官方仓位建议。"
 
     parsed_range = parse_percent_range(base_range)
     adjusted_range = None
@@ -672,6 +928,7 @@ def volatility_targeting(snapshot: dict[str, Any], base_score: float, base_range
         "adjusted_position_score": round2(clamp(base_score * scale_factor, 0, 100)),
         "base_equity_position_range": base_range,
         "adjusted_equity_position_range": format_percent_range(adjusted_range),
+        "deprecated": True,
         "note": note,
     }
 
@@ -755,9 +1012,13 @@ def score_snapshot(snapshot: dict[str, Any], snapshot_path: Path | None = None, 
     }
     opportunity = round2(sum(as_float(module["score"]) or 0 for module in modules.values())) or 0
     crowding = crowding_penalty(snapshot, modules)
-    final_score = round2(clamp(opportunity - (crowding["penalty"] or 0), 0, 100)) or 0
-    base_range = position_range(final_score)
-    vol_targeting = volatility_targeting(snapshot, final_score, base_range)
+    quality = data_quality_with_warnings(snapshot.get("data_quality", {}))
+    position_policy = apply_position_policy(opportunity, crowding, modules, snapshot, quality)
+    final_score = position_policy["market_position_score"]
+    pre_cap_score = position_policy["pre_cap_market_position_score"]
+    recommended_range = position_policy["recommended_equity_position_range"]
+    vol_policy = volatility_policy(snapshot)
+    legacy_vol_targeting = legacy_volatility_targeting(snapshot, final_score, recommended_range)
     shanghai = (snapshot.get("market", {}).get("indices", {}) or {}).get("000001.SH", {})
     now = datetime.now(TZ).isoformat(timespec="seconds")
     if snapshot_bytes is None and snapshot_path and snapshot_path.exists():
@@ -774,35 +1035,48 @@ def score_snapshot(snapshot: dict[str, Any], snapshot_path: Path | None = None, 
     key_constraints = [
         "上涨家数和行业上涨占比不足时，不把指数强势直接等同于全面加仓。",
         "主力资金持续流出时，进攻仓只做主线，不扩散到弱势行业。",
-        "估值分位偏贵时，即使趋势强也要用拥挤惩罚约束泡沫风险。",
-        "波动率目标缩放只调整执行仓位，不覆盖原始市场机会分，便于复盘归因。",
+        "估值分位偏贵时，即使趋势强也要用拥挤惩罚和风险上限约束泡沫风险。",
+        "股票账户官方仓位不再按8%目标波动率缩放，波动率仅作为风险扣分、上限和提示。",
     ]
     record = {
         "run_id": f"{datetime.now(TZ).strftime('%Y%m%dT%H%M%S')}-{uuid4().hex[:8]}",
         "model_version": MODEL_VERSION,
         "score_schema_version": SCORE_SCHEMA_VERSION,
         "feature_schema_version": FEATURE_SCHEMA_VERSION,
+        "account_scope": position_policy["account_scope"],
+        "position_policy_version": position_policy["position_policy_version"],
         "scored_at": now,
         "basis_trade_date": snapshot.get("date") or (snapshot.get("market", {}) or {}).get("as_of_trade_date"),
         "snapshot_file": snapshot_label,
         "snapshot_sha256": snapshot_hash,
         "market_regime": regime(opportunity, final_score, modules, crowding),
         "market_opportunity_score": opportunity,
+        "opportunity_score": opportunity,
         "crowding_penalty": crowding["penalty"],
+        "pre_cap_market_position_score": pre_cap_score,
         "market_position_score": final_score,
         "base_market_position_score": final_score,
-        "vol_adjusted_market_position_score": vol_targeting.get("adjusted_position_score"),
+        "recommended_equity_position_range": recommended_range,
         "confidence": confidence(snapshot),
-        "equity_position_range": base_range,
-        "base_equity_position_range": base_range,
-        "vol_adjusted_equity_position_range": vol_targeting.get("adjusted_equity_position_range"),
+        "equity_position_range": recommended_range,
+        "base_equity_position_range": recommended_range,
+        "risk_caps": position_policy["risk_caps"],
+        "volatility_policy": vol_policy,
+        "vol_adjusted_market_position_score": None,
+        "vol_adjusted_equity_position_range": None,
+        "legacy_vol_adjusted_market_position_score": legacy_vol_targeting.get("adjusted_position_score"),
+        "legacy_vol_adjusted_equity_position_range": legacy_vol_targeting.get("adjusted_equity_position_range"),
+        "legacy_vol_adjusted_deprecated": True,
         "sleeve_mix": sleeve_mix(final_score, modules, crowding),
         "shanghai_composite": round2(as_float(shanghai.get("close"))),
         "modules": modules,
         "crowding": crowding,
         "rolling_features": rolling,
-        "volatility_targeting": vol_targeting,
+        "volatility_targeting": legacy_vol_targeting,
         "factor_changes": [
+            "stock account position policy v2 uses recommended_equity_position_range as the official position output",
+            "risk_caps can cap final market_position_score for bubble, high volatility, crowding, missing risk data, and strong-index weak-breadth regimes",
+            "8% target-volatility scaling is deprecated and no longer changes the official stock-account position range",
             "position ranges now use stock-account exposure and can reach 90%-100% in low-crowding strong trends",
             "capital_flow removed duplicate mid/small turnover and top industry inflow scoring",
             "breadth added median and strong advancer/decliner placeholders when available",
@@ -810,10 +1084,9 @@ def score_snapshot(snapshot: dict[str, Any], snapshot_path: Path | None = None, 
             "confidence now distinguishes core, important, and auxiliary missing fields",
             "valuation now scores 5-year index PE/PB percentiles instead of a neutral placeholder",
             "capital flow and mainline modules use rolling persistence features",
-            "volatility targeting reports a second-layer adjusted position range",
         ],
         "key_constraints": key_constraints,
-        "data_quality": snapshot.get("data_quality", {}),
+        "data_quality": quality,
     }
     return record
 
@@ -880,8 +1153,10 @@ def main() -> None:
                 "basis_trade_date": record["basis_trade_date"],
                 "market_opportunity_score": record["market_opportunity_score"],
                 "crowding_penalty": record["crowding_penalty"],
+                "pre_cap_market_position_score": record["pre_cap_market_position_score"],
                 "market_position_score": record["market_position_score"],
-                "equity_position_range": record["equity_position_range"],
+                "recommended_equity_position_range": record["recommended_equity_position_range"],
+                "risk_cap_count": len(record.get("risk_caps", [])),
             },
             ensure_ascii=False,
             indent=2,

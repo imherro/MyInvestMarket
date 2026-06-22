@@ -266,8 +266,8 @@ def volatility_metrics(pro: Any, trade_date: str, q: Quality) -> dict[str, Any]:
 
     result["market"] = {
         "realized_vol_30d": finite_float(sum(market_vols) / len(market_vols), 4) if market_vols else None,
-        "target_annual_vol": 0.08,
-        "source_note": "Average 30-day annualized realized volatility of Shanghai, Shenzhen, and ChiNext when available.",
+        "target_annual_vol": None,
+        "source_note": "Average 30-day annualized realized volatility of Shanghai, Shenzhen, and ChiNext when available; stock-account position policy uses volatility as a risk indicator only.",
     }
     return result
 
