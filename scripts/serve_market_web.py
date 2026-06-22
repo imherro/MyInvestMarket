@@ -27,6 +27,8 @@ from market_scoring import (
 WEB_DIR = ROOT / "web"
 PORT = 8011
 TZ = ZoneInfo("Asia/Shanghai")
+SERVICE_NAME = "MyInvestMarketWeb"
+SERVICE_API_VERSION = 1
 
 POSITION_SCORE_BANDS = [
     {
@@ -126,6 +128,20 @@ def latest_market_snapshot_result() -> dict[str, object]:
     }
 
 
+def service_version_result() -> dict[str, object]:
+    return {
+        "available": True,
+        "kind": "service_version",
+        "endpoint": "/api/service",
+        "service": SERVICE_NAME,
+        "api_version": SERVICE_API_VERSION,
+        "generated_at": now_iso(),
+        "model_version": MODEL_VERSION,
+        "position_policy_version": POSITION_POLICY_VERSION,
+        "history_schema_version": HISTORY_SCHEMA_VERSION,
+    }
+
+
 def latest_market_score_result() -> dict[str, object]:
     records = score_records(include_legacy=False)
     if not records:
@@ -206,6 +222,7 @@ def latest_research_bundle() -> dict[str, object]:
         "generated_at": now_iso(),
         "model_version": MODEL_VERSION,
         "endpoints": {
+            "service": "/api/service",
             "index": "/api/index",
             "all_latest": "/api/research/latest",
             "market_snapshot": "/api/research/latest/market-snapshot",
@@ -215,6 +232,7 @@ def latest_research_bundle() -> dict[str, object]:
             "score_history_with_legacy": "/api/history?include_legacy=true",
         },
         "results": {
+            "service": service_version_result(),
             "market_snapshot": latest_market_snapshot_result(),
             "market_score": latest_market_score_result(),
             "market_analysis": latest_market_analysis_result(),
@@ -499,6 +517,7 @@ def homepage_index_result() -> dict[str, object]:
         },
         "source_endpoints": {
             "page": "/",
+            "service": "/api/service",
             "index": "/api/index",
             "history": "/api/history",
             "history_with_legacy": "/api/history?include_legacy=true",
@@ -518,6 +537,9 @@ class MarketWebHandler(BaseHTTPRequestHandler):
             parsed = urlparse(self.path)
             path = unquote(parsed.path)
             query = parse_qs(parsed.query)
+            if path == "/api/service":
+                self.send_json(service_version_result())
+                return
             if path == "/api/index":
                 self.send_json(homepage_index_result())
                 return

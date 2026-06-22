@@ -13,6 +13,7 @@ SCRIPTS = ROOT / "scripts"
 sys.path.insert(0, str(SCRIPTS))
 
 import run_post_close_update  # noqa: E402
+import market_scoring  # noqa: E402
 import serve_market_web  # noqa: E402
 
 
@@ -20,8 +21,8 @@ def score_record() -> dict:
     return {
         "run_id": "20260622T170000-test",
         "basis_trade_date": "2026-06-18",
-        "model_version": "a_share_market_score_v1_4",
-        "position_policy_version": "stock_account_position_policy_v2",
+        "model_version": market_scoring.MODEL_VERSION,
+        "position_policy_version": market_scoring.POSITION_POLICY_VERSION,
         "market_regime": "中性震荡偏结构",
         "market_opportunity_score": 57.37,
         "crowding_penalty": 19.91,
@@ -48,8 +49,15 @@ def snapshot() -> dict:
 def valid_api_payloads() -> dict:
     record = score_record()
     return {
+        "/api/service": {
+            "available": True,
+            "model_version": record["model_version"],
+            "position_policy_version": record["position_policy_version"],
+        },
         "/api/index": {
             "available": True,
+            "model_version": record["model_version"],
+            "position_policy_version": record["position_policy_version"],
             "summary": {
                 "run_id": record["run_id"],
                 "basis_trade_date": record["basis_trade_date"],
@@ -105,6 +113,7 @@ class PostCloseApiContractTest(unittest.TestCase):
 
         self.assertTrue(result["ok"])
         self.assertEqual(result["run_id"], "20260622T170000-test")
+        self.assertEqual(result["service_version"]["model_version"], market_scoring.MODEL_VERSION)
         self.assertEqual(result["analysis_report"]["binding"]["consistent"], True)
 
     def test_validate_api_payloads_rejects_mismatched_analysis(self) -> None:
@@ -114,6 +123,27 @@ class PostCloseApiContractTest(unittest.TestCase):
 
         with self.assertRaisesRegex(RuntimeError, "binding is inconsistent"):
             run_post_close_update.validate_api_payloads(payloads)
+
+    def test_validate_api_payloads_rejects_service_model_version_mismatch(self) -> None:
+        payloads = copy.deepcopy(valid_api_payloads())
+        payloads["/api/service"]["model_version"] = "stale_model"
+
+        with self.assertRaisesRegex(RuntimeError, "MODEL_VERSION"):
+            run_post_close_update.validate_api_payloads(payloads)
+
+    def test_validate_api_payloads_rejects_index_policy_version_mismatch(self) -> None:
+        payloads = copy.deepcopy(valid_api_payloads())
+        payloads["/api/index"]["position_policy_version"] = "stale_policy"
+
+        with self.assertRaisesRegex(RuntimeError, "POSITION_POLICY_VERSION"):
+            run_post_close_update.validate_api_payloads(payloads)
+
+    def test_service_version_result_exposes_local_versions(self) -> None:
+        payload = serve_market_web.service_version_result()
+
+        self.assertTrue(payload["available"])
+        self.assertEqual(payload["model_version"], market_scoring.MODEL_VERSION)
+        self.assertEqual(payload["position_policy_version"], market_scoring.POSITION_POLICY_VERSION)
 
 
 if __name__ == "__main__":

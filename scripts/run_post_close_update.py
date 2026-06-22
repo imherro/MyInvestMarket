@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import argparse
+import atexit
 import copy
 import hashlib
 import json
+import os
 import subprocess
 import sys
 import time
@@ -11,6 +13,7 @@ import urllib.request
 from datetime import datetime
 from pathlib import Path
 from typing import Any
+from uuid import uuid4
 from zoneinfo import ZoneInfo
 
 import build_market_dataset
@@ -21,7 +24,10 @@ ROOT = Path(__file__).resolve().parents[1]
 DATA_DIR = ROOT / "data"
 TZ = ZoneInfo("Asia/Shanghai")
 PORT = 8011
+LOCK_PATH = ROOT / "temp" / "runtime" / "post_close_update.lock"
+LOCK_STALE_SECONDS = 6 * 60 * 60
 VERIFY_ENDPOINTS = [
+    "/api/service",
     "/api/index",
     "/api/research/latest/market-score",
     "/api/research/latest/market-analysis",
@@ -52,6 +58,81 @@ def load_json(path: Path) -> dict[str, Any] | None:
     if not path.exists():
         return None
     return json.loads(path.read_text(encoding="utf-8-sig"))
+
+
+def display_path(path: Path) -> str:
+    try:
+        return str(path.resolve().relative_to(ROOT))
+    except ValueError:
+        return str(path)
+
+
+def read_lock_payload(path: Path) -> dict[str, Any]:
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8-sig"))
+    except Exception:
+        return {}
+    return payload if isinstance(payload, dict) else {}
+
+
+def acquire_post_close_lock(path: Path = LOCK_PATH, stale_seconds: int = LOCK_STALE_SECONDS) -> dict[str, Any]:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    token = uuid4().hex
+    payload = {
+        "token": token,
+        "pid": os.getpid(),
+        "started_at": datetime.now(TZ).isoformat(timespec="seconds"),
+    }
+
+    for _ in range(2):
+        try:
+            fd = os.open(str(path), os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+        except FileExistsError:
+            try:
+                age_seconds = time.time() - path.stat().st_mtime
+            except FileNotFoundError:
+                continue
+            existing = read_lock_payload(path)
+            if age_seconds > stale_seconds:
+                try:
+                    path.unlink()
+                except FileNotFoundError:
+                    pass
+                continue
+            return {
+                "acquired": False,
+                "reason": "post-close update already running",
+                "lock_path": display_path(path),
+                "existing_pid": existing.get("pid"),
+                "existing_started_at": existing.get("started_at"),
+                "age_seconds": round(age_seconds, 3),
+            }
+        with os.fdopen(fd, "w", encoding="utf-8") as handle:
+            json.dump(payload, handle, ensure_ascii=False, indent=2)
+            handle.write("\n")
+        return {
+            "acquired": True,
+            "path": path,
+            "token": token,
+            "lock_path": display_path(path),
+            "started_at": payload["started_at"],
+        }
+
+    return acquire_post_close_lock(path=path, stale_seconds=stale_seconds)
+
+
+def release_post_close_lock(lock: dict[str, Any]) -> None:
+    if not lock.get("acquired"):
+        return
+    path = Path(lock["path"])
+    token = lock.get("token")
+    existing = read_lock_payload(path)
+    if existing.get("token") != token:
+        return
+    try:
+        path.unlink()
+    except FileNotFoundError:
+        pass
 
 
 def stable_snapshot(snapshot: dict[str, Any] | None) -> dict[str, Any] | None:
@@ -218,6 +299,7 @@ def require_api(condition: bool, message: str) -> None:
 
 
 def validate_api_payloads(payloads: dict[str, dict[str, Any]]) -> dict[str, Any]:
+    service_payload = payloads.get("/api/service") or {}
     index = payloads.get("/api/index") or {}
     score_payload = payloads.get("/api/research/latest/market-score") or {}
     analysis_payload = payloads.get("/api/research/latest/market-analysis") or {}
@@ -225,17 +307,42 @@ def validate_api_payloads(payloads: dict[str, dict[str, Any]]) -> dict[str, Any]
     index_summary = index.get("summary") or {}
     policy_map = index.get("position_policy_map") or {}
     binding = analysis_payload.get("binding") or {}
+    local_model_version = market_scoring.MODEL_VERSION
+    local_position_policy_version = market_scoring.POSITION_POLICY_VERSION
 
+    require_api(bool(service_payload.get("available")), "/api/service is not available")
+    require_api(
+        service_payload.get("model_version") == local_model_version,
+        "/api/service MODEL_VERSION does not match local MODEL_VERSION",
+    )
+    require_api(
+        service_payload.get("position_policy_version") == local_position_policy_version,
+        "/api/service POSITION_POLICY_VERSION does not match local POSITION_POLICY_VERSION",
+    )
     require_api(bool(index.get("available")), "/api/index is not available")
+    require_api(index.get("model_version") == local_model_version, "/api/index MODEL_VERSION does not match local MODEL_VERSION")
+    require_api(
+        index.get("position_policy_version") == local_position_policy_version,
+        "/api/index POSITION_POLICY_VERSION does not match local POSITION_POLICY_VERSION",
+    )
     require_api(bool(index_summary.get("run_id")), "/api/index.summary.run_id is missing")
     require_api(bool(index_summary.get("basis_trade_date")), "/api/index.summary.basis_trade_date is missing")
     require_api(bool(index_summary.get("recommended_equity_position_range")), "/api/index.summary.recommended_equity_position_range is missing")
     require_api(bool(policy_map.get("position_policy_version")), "/api/index.position_policy_map.position_policy_version is missing")
+    require_api(
+        policy_map.get("position_policy_version") == local_position_policy_version,
+        "/api/index.position_policy_map.position_policy_version does not match local POSITION_POLICY_VERSION",
+    )
     require_api(bool((policy_map.get("current") or {}).get("market_position_score") is not None), "/api/index.position_policy_map.current.market_position_score is missing")
 
     require_api(bool(score_payload.get("available")), "/api/research/latest/market-score is not available")
     require_api(bool(latest_record.get("run_id")), "latest market score run_id is missing")
     require_api(bool(latest_record.get("basis_trade_date")), "latest market score basis_trade_date is missing")
+    require_api(latest_record.get("model_version") == local_model_version, "latest market score MODEL_VERSION does not match local MODEL_VERSION")
+    require_api(
+        latest_record.get("position_policy_version") == local_position_policy_version,
+        "latest market score POSITION_POLICY_VERSION does not match local POSITION_POLICY_VERSION",
+    )
     require_api(bool(latest_record.get("recommended_equity_position_range")), "latest market score recommended_equity_position_range is missing")
     require_api(index_summary.get("run_id") == latest_record.get("run_id"), "/api/index summary run_id does not match latest score")
     require_api(
@@ -253,6 +360,10 @@ def validate_api_payloads(payloads: dict[str, dict[str, Any]]) -> dict[str, Any]
 
     return {
         "ok": True,
+        "service_version": {
+            "model_version": service_payload.get("model_version"),
+            "position_policy_version": service_payload.get("position_policy_version"),
+        },
         "run_id": latest_record.get("run_id"),
         "basis_trade_date": latest_record.get("basis_trade_date"),
         "checked_endpoints": sorted(payloads.keys()),
@@ -342,6 +453,22 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> None:
     args = parse_args()
+    lock = acquire_post_close_lock()
+    if not lock.get("acquired"):
+        print(
+            json.dumps(
+                {
+                    "status": "skipped",
+                    "reason": lock.get("reason"),
+                    "lock": lock,
+                },
+                ensure_ascii=False,
+                indent=2,
+            )
+        )
+        return
+    atexit.register(release_post_close_lock, lock)
+
     initial_status = git_status()
     if initial_status and not args.allow_dirty:
         raise RuntimeError("Git worktree is dirty before update; rerun after committing/stashing or pass --allow-dirty for manual testing.")
