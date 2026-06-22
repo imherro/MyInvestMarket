@@ -16,8 +16,8 @@ DATA_DIR = ROOT / "data"
 DEFAULT_SNAPSHOT_PATH = DATA_DIR / "latest_market_snapshot.json"
 DEFAULT_HISTORY_PATH = DATA_DIR / "market_score_history.json"
 TZ = ZoneInfo("Asia/Shanghai")
-MODEL_VERSION = "a_share_market_score_v1_2"
-SCORE_SCHEMA_VERSION = "1.2"
+MODEL_VERSION = "a_share_market_score_v1_3"
+SCORE_SCHEMA_VERSION = "1.3"
 FEATURE_SCHEMA_VERSION = "1.2"
 
 MODULES = {
@@ -635,14 +635,14 @@ def position_range(score: float) -> str:
     if score <= 20:
         return "0%-20%"
     if score <= 35:
-        return "20%-35%"
+        return "20%-40%"
     if score <= 50:
-        return "35%-45%"
+        return "40%-60%"
     if score <= 65:
-        return "45%-60%"
+        return "55%-75%"
     if score <= 80:
-        return "60%-75%"
-    return "75%-85%"
+        return "75%-90%"
+    return "90%-100%"
 
 
 def volatility_targeting(snapshot: dict[str, Any], base_score: float, base_range: str) -> dict[str, Any]:
@@ -652,11 +652,11 @@ def volatility_targeting(snapshot: dict[str, Any], base_score: float, base_range
     if realized_vol is None or realized_vol <= 0:
         scale_factor = 1.0
         status = "unavailable"
-        note = "缺少30日已实现波动率，暂不缩放基准仓位。"
+        note = "缺少30日已实现波动率，暂不缩放股票账户基准仓位。"
     else:
         scale_factor = clamp(target_vol / realized_vol, 0.25, 1.15)
         status = "active"
-        note = "以目标年化波动率缩放基准权益仓位，波动越高仓位越低。"
+        note = "以目标年化波动率缩放股票账户基准权益仓位，波动越高仓位越低。"
 
     parsed_range = parse_percent_range(base_range)
     adjusted_range = None
@@ -803,6 +803,7 @@ def score_snapshot(snapshot: dict[str, Any], snapshot_path: Path | None = None, 
         "rolling_features": rolling,
         "volatility_targeting": vol_targeting,
         "factor_changes": [
+            "position ranges now use stock-account exposure and can reach 90%-100% in low-crowding strong trends",
             "capital_flow removed duplicate mid/small turnover and top industry inflow scoring",
             "breadth added median and strong advancer/decliner placeholders when available",
             "crowding penalties changed from hard thresholds to gradients",

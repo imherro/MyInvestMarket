@@ -164,7 +164,7 @@ def write_report(snapshot: dict[str, Any], record: dict[str, Any]) -> Path:
 
 ## 结论
 
-当前市场状态为“{record.get('market_regime')}”。模型保留两层仓位口径：基准权益区间用于判断市场区制，波动调整区间用于执行层控制回撤。
+当前市场状态为“{record.get('market_regime')}”。模型按股票账户口径输出仓位：基准权益区间用于判断市场区制，波动调整区间用于执行层控制回撤。
 
 ## 评分摘要
 
@@ -174,7 +174,7 @@ def write_report(snapshot: dict[str, Any], record: dict[str, Any]) -> Path:
 | 拥挤惩罚 | {fmt(record.get('crowding_penalty'))} |
 | 基准仓位参考分 | {fmt(record.get('market_position_score'))} |
 | 波动调整分 | {fmt(record.get('vol_adjusted_market_position_score'))} |
-| 基准权益区间 | {fmt(record.get('base_equity_position_range') or record.get('equity_position_range'))} |
+| 股票账户基准权益区间 | {fmt(record.get('base_equity_position_range') or record.get('equity_position_range'))} |
 | 波动调整权益区间 | {fmt(record.get('vol_adjusted_equity_position_range'))} |
 | 市场状态 | {record.get('market_regime')} |
 | 置信度 | {record.get('confidence')} |

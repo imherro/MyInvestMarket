@@ -28,13 +28,13 @@ const chartColors = {
 
 const positionCurvePoints = [
   { stage: 0, cycle: 15, position: 12, wave: "", label: "熊末", waveType: "base" },
-  { stage: 14, cycle: 38, position: 40, wave: "1", label: "底部确认", waveType: "impulse" },
-  { stage: 26, cycle: 28, position: 28, wave: "2", label: "回踩", waveType: "impulse" },
-  { stage: 50, cycle: 76, position: 70, wave: "3", label: "健康主升", waveType: "impulse" },
-  { stage: 64, cycle: 58, position: 52, wave: "4", label: "分歧整理", waveType: "impulse" },
-  { stage: 78, cycle: 88, position: 42, wave: "5", label: "泡沫顶部", waveType: "impulse" },
-  { stage: 88, cycle: 54, position: 30, wave: "a", label: "下跌", waveType: "corrective" },
-  { stage: 94, cycle: 66, position: 40, wave: "b", label: "反抽", waveType: "corrective" },
+  { stage: 14, cycle: 38, position: 50, wave: "1", label: "底部确认", waveType: "impulse" },
+  { stage: 26, cycle: 28, position: 35, wave: "2", label: "回踩", waveType: "impulse" },
+  { stage: 50, cycle: 76, position: 92, wave: "3", label: "低拥挤主升", waveType: "impulse" },
+  { stage: 64, cycle: 58, position: 75, wave: "4", label: "分歧整理", waveType: "impulse" },
+  { stage: 78, cycle: 88, position: 35, wave: "5", label: "泡沫顶部", waveType: "impulse" },
+  { stage: 88, cycle: 54, position: 25, wave: "a", label: "下跌", waveType: "corrective" },
+  { stage: 94, cycle: 66, position: 38, wave: "b", label: "反抽", waveType: "corrective" },
   { stage: 100, cycle: 22, position: 20, wave: "c", label: "出清底部", waveType: "corrective" },
 ];
 
@@ -54,14 +54,20 @@ const positionBenchmarks = [
   {
     title: "底部确认",
     netScore: "35-50",
-    position: "35%-45%",
+    position: "40%-60%",
     note: "低估、宽度修复、波动回落后，开始把仓位抬起来。",
   },
   {
     title: "健康主升",
     netScore: "65-80",
-    position: "60%-75%",
+    position: "75%-90%",
     note: "趋势、资金、宽度共振且拥挤不高，是模型最愿意给仓位的位置。",
+  },
+  {
+    title: "低拥挤强趋势",
+    netScore: "80-100",
+    position: "90%-100%",
+    note: "股票账户口径下允许接近或达到满仓，但前提是没有触发顶部惩罚。",
   },
   {
     title: "泡沫顶部",
@@ -173,7 +179,7 @@ function renderSummary() {
   setText("marketRegime", latest.market_regime || "--");
   setText("basisDate", `基准日 ${latest.basis_trade_date || "--"}`);
   setText("confidence", `置信度 ${confidenceLabel(latest.confidence)}`);
-  setText("positionRange", `基准权益 ${latest.base_equity_position_range || latest.equity_position_range || "--"}`);
+  setText("positionRange", `股票账户基准权益 ${latest.base_equity_position_range || latest.equity_position_range || "--"}`);
   setText("volAdjustedRange", `波动调整 ${latest.vol_adjusted_equity_position_range || "--"}`);
   setMeter("positionMeter", latest.market_position_score, 100);
   setMeter("opportunityMeter", latest.market_opportunity_score, 100);
@@ -195,7 +201,7 @@ function renderPositionMap() {
   const currentScore = numeric(latest.market_position_score);
   const baseRange = latest.base_equity_position_range || latest.equity_position_range || "--";
   const volRange = latest.vol_adjusted_equity_position_range || "--";
-  setText("positionMapLabel", `净分 ${formatNumber(currentScore)} · 基准权益 ${baseRange}`);
+  setText("positionMapLabel", `净分 ${formatNumber(currentScore)} · 股票账户权益 ${baseRange}`);
   renderPositionCurve(container, currentScore, baseRange, volRange, latest.market_regime || "--");
   renderPositionBenchmarks();
 }
@@ -251,13 +257,13 @@ function renderPositionCurve(container, currentScore, baseRange, volRange, regim
   svg.appendChild(createSvg("line", { class: "axis-line", x1: margin.left, y1: height - margin.bottom, x2: width - margin.right, y2: height - margin.bottom }));
   svg.appendChild(createSvg("line", { class: "axis-line", x1: margin.left, y1: margin.top, x2: margin.left, y2: height - margin.bottom }));
   svg.appendChild(createSvg("text", { class: "axis-label", x: width / 2, y: height - 4, "text-anchor": "middle" }, "市场循环阶段"));
-  svg.appendChild(createSvg("text", { class: "axis-label", x: 12, y: margin.top - 8 }, "仓位 / 周期强度"));
+  svg.appendChild(createSvg("text", { class: "axis-label", x: 12, y: margin.top - 8 }, "股票账户仓位 / 周期强度"));
 
   svg.appendChild(
     createSvg(
       "text",
       { class: "position-map-note", x: width - margin.right, y: margin.top - 8, "text-anchor": "end" },
-      "灰线是牛熊循环，绿线是模型仓位；顶部会因惩罚降净分",
+      "股票账户口径：低拥挤强趋势可满仓，泡沫顶部降净分降仓",
     ),
   );
 
@@ -301,7 +307,7 @@ function renderPositionCurve(container, currentScore, baseRange, volRange, regim
     svg.appendChild(createSvg("text", { class: phaseClass, x, y: y + (isCorrective ? -20 : 22), "text-anchor": "middle" }, pointItem.label));
   });
 
-  addCycleCallout(svg, xForStage(14), yForPosition(40), "底部确认", "净分35-50", "仓位35%-45%");
+  addCycleCallout(svg, xForStage(14), yForPosition(50), "底部确认", "净分35-50", "仓位40%-60%");
   addCycleCallout(svg, xForStage(78), yForPosition(42), "泡沫顶部", "净分25-50", "仓位20%-45%");
 
   const markerX = xForStage(clamp(currentScore, 0, 100));
@@ -315,9 +321,9 @@ function renderPositionCurve(container, currentScore, baseRange, volRange, regim
   const labelY = clamp(markerY - labelHeight - 12, margin.top + 10, height - margin.bottom - labelHeight - 8);
   svg.appendChild(createSvg("rect", { class: "current-score-label-box", x: labelX, y: labelY, width: labelWidth, height: labelHeight, rx: 6 }));
   svg.appendChild(createSvg("text", { class: "current-score-label strong", x: labelX + 12, y: labelY + 22 }, `当前净分 ${formatNumber(currentScore)}`));
-  svg.appendChild(createSvg("text", { class: "current-score-label", x: labelX + 12, y: labelY + 42 }, `基准权益 ${baseRange}`));
+  svg.appendChild(createSvg("text", { class: "current-score-label", x: labelX + 12, y: labelY + 42 }, `股票账户权益 ${baseRange}`));
   svg.appendChild(createSvg("text", { class: "current-score-label muted", x: labelX + 12, y: labelY + 61 }, `波动后 ${volRange} · ${regimeText}`));
-  svg.appendChild(createSvg("title", {}, `当前净市场分 ${formatNumber(currentScore)}，基准权益 ${baseRange}，波动调整 ${volRange}`));
+  svg.appendChild(createSvg("title", {}, `当前净市场分 ${formatNumber(currentScore)}，股票账户基准权益 ${baseRange}，波动调整 ${volRange}`));
 
   container.appendChild(svg);
 }
@@ -368,11 +374,11 @@ function fallbackPositionFromScore(score) {
   const reference = [
     { score: 0, position: 10 },
     { score: 20, position: 20 },
-    { score: 35, position: 35 },
-    { score: 50, position: 45 },
-    { score: 65, position: 60 },
-    { score: 80, position: 75 },
-    { score: 100, position: 85 },
+    { score: 35, position: 40 },
+    { score: 50, position: 60 },
+    { score: 65, position: 75 },
+    { score: 80, position: 90 },
+    { score: 100, position: 100 },
   ];
   const safeScore = clamp(score, 0, 100);
   for (let index = 0; index < reference.length - 1; index += 1) {

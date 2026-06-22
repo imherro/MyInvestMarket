@@ -27,13 +27,13 @@ TZ = ZoneInfo("Asia/Shanghai")
 
 POSITION_CURVE_POINTS = [
     {"stage": 0, "cycle_strength_pct": 15, "base_equity_midpoint_pct": 12, "wave": "", "label": "熊末", "wave_type": "base"},
-    {"stage": 14, "cycle_strength_pct": 38, "base_equity_midpoint_pct": 40, "wave": "1", "label": "底部确认", "wave_type": "impulse"},
-    {"stage": 26, "cycle_strength_pct": 28, "base_equity_midpoint_pct": 28, "wave": "2", "label": "回踩", "wave_type": "impulse"},
-    {"stage": 50, "cycle_strength_pct": 76, "base_equity_midpoint_pct": 70, "wave": "3", "label": "健康主升", "wave_type": "impulse"},
-    {"stage": 64, "cycle_strength_pct": 58, "base_equity_midpoint_pct": 52, "wave": "4", "label": "分歧整理", "wave_type": "impulse"},
-    {"stage": 78, "cycle_strength_pct": 88, "base_equity_midpoint_pct": 42, "wave": "5", "label": "泡沫顶部", "wave_type": "impulse"},
-    {"stage": 88, "cycle_strength_pct": 54, "base_equity_midpoint_pct": 30, "wave": "a", "label": "下跌", "wave_type": "corrective"},
-    {"stage": 94, "cycle_strength_pct": 66, "base_equity_midpoint_pct": 40, "wave": "b", "label": "反抽", "wave_type": "corrective"},
+    {"stage": 14, "cycle_strength_pct": 38, "base_equity_midpoint_pct": 50, "wave": "1", "label": "底部确认", "wave_type": "impulse"},
+    {"stage": 26, "cycle_strength_pct": 28, "base_equity_midpoint_pct": 35, "wave": "2", "label": "回踩", "wave_type": "impulse"},
+    {"stage": 50, "cycle_strength_pct": 76, "base_equity_midpoint_pct": 92, "wave": "3", "label": "低拥挤主升", "wave_type": "impulse"},
+    {"stage": 64, "cycle_strength_pct": 58, "base_equity_midpoint_pct": 75, "wave": "4", "label": "分歧整理", "wave_type": "impulse"},
+    {"stage": 78, "cycle_strength_pct": 88, "base_equity_midpoint_pct": 35, "wave": "5", "label": "泡沫顶部", "wave_type": "impulse"},
+    {"stage": 88, "cycle_strength_pct": 54, "base_equity_midpoint_pct": 25, "wave": "a", "label": "下跌", "wave_type": "corrective"},
+    {"stage": 94, "cycle_strength_pct": 66, "base_equity_midpoint_pct": 38, "wave": "b", "label": "反抽", "wave_type": "corrective"},
     {"stage": 100, "cycle_strength_pct": 22, "base_equity_midpoint_pct": 20, "wave": "c", "label": "出清底部", "wave_type": "corrective"},
 ]
 
@@ -53,14 +53,20 @@ POSITION_BENCHMARKS = [
     {
         "title": "底部确认",
         "net_score_range": "35-50",
-        "base_equity_position_range": "35%-45%",
+        "base_equity_position_range": "40%-60%",
         "note": "低估、宽度修复、波动回落后，开始把仓位抬起来。",
     },
     {
         "title": "健康主升",
         "net_score_range": "65-80",
-        "base_equity_position_range": "60%-75%",
+        "base_equity_position_range": "75%-90%",
         "note": "趋势、资金、宽度共振且拥挤不高，是模型最愿意给仓位的位置。",
+    },
+    {
+        "title": "低拥挤强趋势",
+        "net_score_range": "80-100",
+        "base_equity_position_range": "90%-100%",
+        "note": "股票账户口径下允许接近或达到满仓，但前提是估值、拥挤和波动没有触发顶部惩罚。",
     },
     {
         "title": "泡沫顶部",
@@ -289,9 +295,10 @@ def homepage_index_result() -> dict[str, object]:
             "endpoints": latest_research.get("endpoints", {}),
         },
         "position_map": {
-            "title": "市场循环、净分与仓位对应",
+            "title": "股票账户市场循环、净分与仓位对应",
+            "account_scope": "stock_account",
             "x_axis": "市场循环阶段",
-            "y_axis": "仓位 / 周期强度",
+            "y_axis": "股票账户仓位 / 周期强度",
             "curve_style": "elliott_8_wave_with_position_benchmarks",
             "curve_points": POSITION_CURVE_POINTS,
             "regime_bands": MARKET_REGIME_BANDS,
