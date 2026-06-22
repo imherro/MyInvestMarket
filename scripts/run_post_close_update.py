@@ -525,6 +525,7 @@ def main() -> None:
             "duplicate_of_run_id": score_result.get("duplicate_of_run_id"),
             "history_dedupe_key": score_result.get("dedupe_key"),
             "schema_validation": score_result.get("schema_validation"),
+            "audit_event": score_result.get("audit_event"),
             "market_opportunity_score": record.get("market_opportunity_score"),
             "crowding_penalty": record.get("crowding_penalty"),
             "pre_cap_market_position_score": record.get("pre_cap_market_position_score"),

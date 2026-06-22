@@ -13,8 +13,12 @@ def run_migration(history_path: Path, *, dry_run: bool = False, archive_duplicat
     result = market_scoring.migrate_history_legacy_records(history, archive_duplicates=archive_duplicates)
     if result["changed"] and not dry_run:
         market_scoring.save_history(result["history"], history_path)
+    audit_path = market_scoring.history_audit_log_path(history_path)
+    if not dry_run:
+        market_scoring.write_history_audit_event(result["audit_event"], audit_path)
     return {
         "history_path": str(history_path),
+        "audit_path": str(audit_path),
         "dry_run": dry_run,
         "written": bool(result["changed"] and not dry_run),
         **{key: value for key, value in result.items() if key != "history"},

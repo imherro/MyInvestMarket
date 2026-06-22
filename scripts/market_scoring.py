@@ -15,6 +15,7 @@ ROOT = Path(__file__).resolve().parents[1]
 DATA_DIR = ROOT / "data"
 DEFAULT_SNAPSHOT_PATH = DATA_DIR / "latest_market_snapshot.json"
 DEFAULT_HISTORY_PATH = DATA_DIR / "market_score_history.json"
+DEFAULT_AUDIT_LOG_PATH = DATA_DIR / "market_score_history_audit.jsonl"
 TZ = ZoneInfo("Asia/Shanghai")
 MODEL_VERSION = "a_share_market_score_v1_4"
 SCORE_SCHEMA_VERSION = "1.4"
@@ -71,6 +72,17 @@ MODULES = {
 
 class ScoreRecordValidationError(ValueError):
     pass
+
+
+def history_audit_log_path(history_path: Path = DEFAULT_HISTORY_PATH) -> Path:
+    try:
+        if history_path.resolve() == (DATA_DIR / "market_score_history.json").resolve():
+            return DEFAULT_AUDIT_LOG_PATH
+    except Exception:
+        pass
+    if history_path == DATA_DIR / "market_score_history.json":
+        return DEFAULT_AUDIT_LOG_PATH
+    return history_path.with_name(f"{history_path.stem}_audit.jsonl")
 
 
 def clamp(value: float, low: float, high: float) -> float:
@@ -1346,6 +1358,41 @@ def save_history(history: dict[str, Any], path: Path = DEFAULT_HISTORY_PATH) -> 
     path.write_text(json.dumps(history, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
 
+def build_history_audit_event(
+    event_type: str,
+    *,
+    record: dict[str, Any] | None = None,
+    dedupe_key: dict[str, Any] | None = None,
+    appended: bool = False,
+    duplicate: bool = False,
+    status: str = "ok",
+    reason: str | None = None,
+    details: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    record = record if isinstance(record, dict) else {}
+    return {
+        "event_time": datetime.now(TZ).isoformat(timespec="seconds"),
+        "event_type": event_type,
+        "status": status,
+        "reason": reason,
+        "run_id": record.get("run_id"),
+        "dedupe_key": dedupe_key if dedupe_key is not None else history_dedupe_key_payload(record),
+        "appended": appended,
+        "duplicate": duplicate,
+        "schema_version": record.get("score_schema_version") or SCORE_SCHEMA_VERSION,
+        "history_schema_version": HISTORY_SCHEMA_VERSION,
+        "model_version": record.get("model_version"),
+        "position_policy_version": record.get("position_policy_version"),
+        "details": details or {},
+    }
+
+
+def write_history_audit_event(event: dict[str, Any], audit_path: Path) -> None:
+    audit_path.parent.mkdir(parents=True, exist_ok=True)
+    with audit_path.open("a", encoding="utf-8") as handle:
+        handle.write(json.dumps(event, ensure_ascii=False, sort_keys=True) + "\n")
+
+
 def add_validation_error(errors: list[str], field: str, message: str) -> None:
     errors.append(f"{field}: {message}")
 
@@ -1596,6 +1643,21 @@ def migrate_history_legacy_records(
             "archive_duplicates": archive_duplicates,
         }
 
+    audit_event = build_history_audit_event(
+        "history_migration",
+        appended=False,
+        duplicate=False,
+        details={
+            "changed": migrated_history != history,
+            "legacy_marked_count": legacy_marked_count,
+            "legacy_archived_count": legacy_archived_count,
+            "current_record_count": current_record_count,
+            "legacy_record_count": migrated_history["legacy_record_count"],
+            "legacy_archive_count": len(archive),
+            "archive_duplicates": archive_duplicates,
+        },
+    )
+
     return {
         "history": migrated_history,
         "changed": migrated_history != history,
@@ -1604,6 +1666,7 @@ def migrate_history_legacy_records(
         "current_record_count": current_record_count,
         "legacy_record_count": migrated_history["legacy_record_count"],
         "legacy_archive_count": len(archive),
+        "audit_event": audit_event,
     }
 
 
@@ -1670,12 +1733,43 @@ def append_history_record(history: dict[str, Any], record: dict[str, Any]) -> di
     }
 
 
-def append_score_record(record: dict[str, Any], history_path: Path = DEFAULT_HISTORY_PATH) -> dict[str, Any]:
+def append_score_record(
+    record: dict[str, Any],
+    history_path: Path = DEFAULT_HISTORY_PATH,
+    audit_path: Path | None = None,
+) -> dict[str, Any]:
+    audit_path = audit_path or history_audit_log_path(history_path)
     history = load_history(history_path)
-    result = append_history_record(history, record)
+    try:
+        result = append_history_record(history, record)
+    except Exception as exc:
+        audit_event = build_history_audit_event(
+            "history_append_failed",
+            record=record if isinstance(record, dict) else {},
+            appended=False,
+            duplicate=False,
+            status="failed",
+            reason=str(exc),
+        )
+        write_history_audit_event(audit_event, audit_path)
+        raise
     if result["appended"]:
         save_history(history, history_path)
-    return {"history_path": str(history_path), **result}
+    audit_event = build_history_audit_event(
+        "history_append" if result["appended"] else "history_duplicate",
+        record=result.get("record") if isinstance(result.get("record"), dict) else record,
+        dedupe_key=result.get("dedupe_key"),
+        appended=bool(result.get("appended")),
+        duplicate=bool(result.get("duplicate")),
+        details={
+            "duplicate_of_run_id": result.get("duplicate_of_run_id"),
+            "candidate_run_id": (result.get("candidate_record") or {}).get("run_id")
+            if isinstance(result.get("candidate_record"), dict)
+            else None,
+        },
+    )
+    write_history_audit_event(audit_event, audit_path)
+    return {"history_path": str(history_path), "audit_path": str(audit_path), "audit_event": audit_event, **result}
 
 
 def append_score(snapshot_path: Path = DEFAULT_SNAPSHOT_PATH, history_path: Path = DEFAULT_HISTORY_PATH) -> dict[str, Any]:
