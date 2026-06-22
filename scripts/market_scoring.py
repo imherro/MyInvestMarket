@@ -955,6 +955,9 @@ def evaluate_risk_caps(
         "valuation_score_pct": round2(valuation_score_pct),
         "realized_volatility_30d": round2(realized_volatility),
     }
+    capital_flow_data = snapshot.get("capital_flow", {}) or {}
+    northbound_net = as_float(capital_flow_data.get("northbound_net_inflow_100m_cny"))
+    main_net = as_float(capital_flow_data.get("main_net_inflow_100m_cny"))
 
     if crowding_penalty_value >= 20:
         caps.append(
@@ -974,6 +977,21 @@ def evaluate_risk_caps(
                 "medium",
                 evidence_base,
                 "拥挤惩罚偏高，股票账户仓位分上限限制为60。",
+            )
+        )
+
+    if northbound_net is not None and main_net is not None and northbound_net <= -50 and main_net <= -800:
+        caps.append(
+            risk_cap(
+                "capital_outflow_combo",
+                55,
+                "high",
+                {
+                    **evidence_base,
+                    "northbound_net_inflow_100m_cny": round2(northbound_net),
+                    "main_net_inflow_100m_cny": round2(main_net),
+                },
+                "北向与主力资金同时大幅流出，资金退潮风险触发仓位分上限。",
             )
         )
 
@@ -1370,6 +1388,7 @@ def score_snapshot(snapshot: dict[str, Any], snapshot_path: Path | None = None, 
         "上涨家数和行业上涨占比不足时，不把指数强势直接等同于全面加仓。",
         "主力资金持续流出时，进攻仓只做主线，不扩散到弱势行业。",
         "估值分位偏贵时，即使趋势强也要用拥挤惩罚和风险上限约束泡沫风险。",
+        "北向与主力资金同时大幅流出时，即使趋势分高也触发资金退潮仓位上限。",
         "股票账户官方仓位不再按8%目标波动率缩放，波动率仅作为风险扣分、上限和提示。",
     ]
     record = {
