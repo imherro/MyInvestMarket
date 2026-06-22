@@ -175,6 +175,24 @@ def module_result(
     }
 
 
+def module_strength(score: float, key: str) -> str:
+    weight = as_float(MODULES.get(key, {}).get("weight")) or 1
+    ratio = clamp((as_float(score) or 0) / weight, 0, 1)
+    if ratio >= 0.7:
+        return "偏强"
+    if ratio <= 0.4:
+        return "偏弱"
+    return "中性"
+
+
+def signed_pct_text(value: float | None) -> str:
+    number = as_float(value)
+    if number is None:
+        return "--"
+    prefix = "+" if number > 0 else ""
+    return f"{prefix}{round2(number)}%"
+
+
 def market_snapshot_files() -> list[Path]:
     return sorted(DATA_DIR.glob("market_snapshot_*.json"))
 
@@ -320,7 +338,9 @@ def index_trend(snapshot: dict[str, Any]) -> dict[str, Any]:
         evidence("平均MA20偏离", avg_dev, "%", deviation_score, 2, "温和站上均线最好，过热或深跌都降分。"),
         evidence("沪深创趋势一致性", "", "", balance_score, 2, "大盘和成长同时走强时更稳。"),
     ]
-    return module_result("index_trend", score, "指数层面偏强，但沪深创并未完全同步。", evidences, metrics)
+    strength = module_strength(score, "index_trend")
+    summary = f"指数趋势{strength}，{above_count}/{len(rows) or 0}个指数站上MA20，20日平均涨跌{signed_pct_text(avg_ret20)}。"
+    return module_result("index_trend", score, summary, evidences, metrics)
 
 
 def market_breadth(snapshot: dict[str, Any]) -> dict[str, Any]:
@@ -374,7 +394,14 @@ def market_breadth(snapshot: dict[str, Any]) -> dict[str, Any]:
         evidence("最高连板", max_streak, "板", streak_score, 1, "连板高度衡量短线风险偏好。"),
         evidence("指数与宽度一致性", "", "", consistency_score, 0.5, "指数强但宽度弱时降分。"),
     ]
-    return module_result("breadth", score, "市场宽度偏弱，情绪强于赚钱效应。", evidences, metrics)
+    strength = module_strength(score, "breadth")
+    if strength == "偏强":
+        summary = f"市场宽度偏强，上涨家数占比{pct(advancer_ratio) or '--'}%，个股中位数涨跌{signed_pct_text(median_pct_change)}。"
+    elif strength == "偏弱":
+        summary = f"市场宽度偏弱，上涨家数占比{pct(advancer_ratio) or '--'}%，赚钱效应扩散不足。"
+    else:
+        summary = f"市场宽度中性，上涨家数占比{pct(advancer_ratio) or '--'}%，赚钱效应仍偏结构性。"
+    return module_result("breadth", score, summary, evidences, metrics)
 
 
 def liquidity(snapshot: dict[str, Any]) -> dict[str, Any]:
@@ -411,7 +438,9 @@ def liquidity(snapshot: dict[str, Any]) -> dict[str, Any]:
         evidence("中小盘成交占比", pct(active_share), "%", active_score, 3, "中小盘活跃代表风险偏好抬升。"),
         evidence("大盘成交占比", pct(large_share), "%", large_score, 2, "大盘承接不足会降低趋势稳定性。"),
     ]
-    return module_result("liquidity", score, "成交活跃度尚可，资金更多集中在中小盘。", evidences, metrics)
+    strength = module_strength(score, "liquidity")
+    summary = f"成交与流动性{strength}，指数平均量能比{round2(avg_volume_ratio) or '--'}倍，中小盘成交占比{pct(active_share) or '--'}%。"
+    return module_result("liquidity", score, summary, evidences, metrics)
 
 
 def capital_flow(snapshot: dict[str, Any]) -> dict[str, Any]:
@@ -462,7 +491,17 @@ def capital_flow(snapshot: dict[str, Any]) -> dict[str, Any]:
         evidence("北向5日持续性", north_5d, "亿元", north_5d_score, 2, "样本少于4日时最多按中性持续性计分。"),
         evidence("主力5日持续性", main_5d, "亿元", main_5d_score, 3, "样本少于4日时最多按中性资金确认计分。"),
     ]
-    return module_result("capital_flow", score, "北向流入但主力流出，滚动资金仍需防分歧反复。", evidences, metrics)
+    strength = module_strength(score, "capital_flow")
+    if north is not None and main is not None and north > 0 and main > 0:
+        direction = "内外资同向流入"
+    elif north is not None and main is not None and north > 0 and main < 0:
+        direction = "北向流入但主力流出"
+    elif north is not None and main is not None and north < 0 and main < 0:
+        direction = "内外资同向流出"
+    else:
+        direction = "内外资方向分歧或数据不完整"
+    summary = f"资金面{strength}，{direction}，5日样本北向{north_sample_count or 0}日、主力{main_sample_count or 0}日。"
+    return module_result("capital_flow", score, summary, evidences, metrics)
 
 
 def theme_group(name: str) -> str:
@@ -520,7 +559,14 @@ def mainline(snapshot: dict[str, Any]) -> dict[str, Any]:
         evidence("资金主线组数", flow_group_count, "组", breadth_score, 2, "主线过窄时降低扩仓质量。"),
         evidence("当前主线5日重复率", pct(repeat_ratio), "%", continuity_score, 3, "样本少于4日时最多按中性连续性计分。"),
     ]
-    return module_result("mainline", score, "科技成长主线明确，但资金集中度偏高。", evidences, metrics)
+    strength = module_strength(score, "mainline")
+    if strength == "偏强":
+        summary = f"主线强度偏强，价量重合{overlap_count}组，前五行业净流入{round2(top_flow_sum) or 0}亿元。"
+    elif strength == "偏弱":
+        summary = f"主线强度偏弱，价量重合{overlap_count}组，资金和涨幅共振不足。"
+    else:
+        summary = f"主线强度中性，价量重合{overlap_count}组，仍以结构性机会为主。"
+    return module_result("mainline", score, summary, evidences, metrics)
 
 
 def valuation(snapshot: dict[str, Any]) -> dict[str, Any]:
@@ -679,7 +725,14 @@ def macro(snapshot: dict[str, Any]) -> dict[str, Any]:
         evidence("美元指数", dxy, "", dxy_score, 2, "美元偏强时风险偏好承压。"),
         evidence("美元兑人民币", usd_cny, "", cny_score, 1.5, "人民币稳定有利于外资和风险偏好。"),
     ]
-    return module_result("macro", score, "国内流动性友好，海外利率仍有压制。", evidences, metrics)
+    strength = module_strength(score, "macro")
+    if strength == "偏强":
+        summary = f"宏观与外部环境偏强，中国10Y为{round2(cn10) or '--'}%，美元指数{round2(dxy) or '--'}。"
+    elif strength == "偏弱":
+        summary = f"宏观与外部环境偏弱，美国10Y为{round2(us10) or '--'}%，美元或汇率压力较高。"
+    else:
+        summary = f"宏观与外部环境中性，中国10Y为{round2(cn10) or '--'}%，美元指数{round2(dxy) or '--'}。"
+    return module_result("macro", score, summary, evidences, metrics)
 
 
 def crowding_penalty(snapshot: dict[str, Any], modules: dict[str, Any]) -> dict[str, Any]:
