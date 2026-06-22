@@ -7,7 +7,7 @@ import traceback
 from datetime import datetime
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from urllib.parse import unquote, urlparse
+from urllib.parse import parse_qs, unquote, urlparse
 from zoneinfo import ZoneInfo
 
 from market_scoring import (
@@ -127,10 +127,9 @@ def latest_market_snapshot_result() -> dict[str, object]:
 
 
 def latest_market_score_result() -> dict[str, object]:
-    history = load_history(DEFAULT_HISTORY_PATH)
-    records = history.get("records", [])
+    records = score_records(include_legacy=False)
     if not records:
-        return {"available": False, "kind": "market_score", "error": "market_score_history.json has no records"}
+        return {"available": False, "kind": "market_score", "error": "market_score_history.json has no current-version records"}
     record = sorted(records, key=lambda row: str(row.get("scored_at", "")))[-1]
     result: dict[str, object] = {
         "available": True,
@@ -213,6 +212,7 @@ def latest_research_bundle() -> dict[str, object]:
             "market_score": "/api/research/latest/market-score",
             "market_analysis": "/api/research/latest/market-analysis",
             "score_history": "/api/history",
+            "score_history_with_legacy": "/api/history?include_legacy=true",
         },
         "results": {
             "market_snapshot": latest_market_snapshot_result(),
@@ -222,9 +222,43 @@ def latest_research_bundle() -> dict[str, object]:
     }
 
 
-def score_records() -> list[dict[str, object]]:
-    history = load_history(DEFAULT_HISTORY_PATH)
+def current_version_filter() -> dict[str, object]:
+    return {
+        "model_version": MODEL_VERSION,
+        "position_policy_version": POSITION_POLICY_VERSION,
+    }
+
+
+def record_matches_current_version(record: dict[str, object]) -> bool:
+    return (
+        record.get("model_version") == MODEL_VERSION
+        and record.get("position_policy_version") == POSITION_POLICY_VERSION
+    )
+
+
+def filtered_history(history: dict[str, object], include_legacy: bool = False) -> dict[str, object]:
     records = history.get("records", [])
+    if not isinstance(records, list):
+        records = []
+    current_records = [
+        record for record in records if isinstance(record, dict) and record_matches_current_version(record)
+    ]
+    selected_records = records if include_legacy else current_records
+    result = dict(history)
+    result["records"] = selected_records
+    result["record_count"] = len(selected_records)
+    result["total_record_count"] = len(records)
+    result["legacy_record_count"] = len(records) - len(current_records)
+    result["version_filter"] = {
+        **current_version_filter(),
+        "include_legacy": include_legacy,
+    }
+    return result
+
+
+def score_records(include_legacy: bool = False) -> list[dict[str, object]]:
+    history = load_history(DEFAULT_HISTORY_PATH)
+    records = filtered_history(history, include_legacy=include_legacy).get("records", [])
     if not isinstance(records, list):
         return []
     return sorted(records, key=lambda row: str(row.get("scored_at", "")))
@@ -260,21 +294,25 @@ def position_policy_map_result(latest: dict[str, object]) -> dict[str, object]:
     }
 
 
-def history_api_result() -> dict[str, object]:
-    history = load_history(DEFAULT_HISTORY_PATH)
+def history_api_result(include_legacy: bool = False) -> dict[str, object]:
+    history = filtered_history(load_history(DEFAULT_HISTORY_PATH), include_legacy=include_legacy)
     return {
         "api_version": 2,
         "history_schema_version": HISTORY_SCHEMA_VERSION,
         "model_version": MODEL_VERSION,
         "position_policy_version": POSITION_POLICY_VERSION,
         "dedupe_key_fields": list(HISTORY_DEDUPE_KEY_FIELDS),
+        "version_filter": history.get("version_filter"),
+        "record_count": history.get("record_count"),
+        "total_record_count": history.get("total_record_count"),
+        "legacy_record_count": history.get("legacy_record_count"),
         "history": history,
         "snapshot_exists": DEFAULT_SNAPSHOT_PATH.exists(),
     }
 
 
 def homepage_index_result() -> dict[str, object]:
-    records = score_records()
+    records = score_records(include_legacy=False)
     latest = records[-1] if records else {}
     modules = latest.get("modules", {}) if isinstance(latest.get("modules"), dict) else {}
     selected_module_key = next(iter(modules.keys()), None)
@@ -436,6 +474,7 @@ def homepage_index_result() -> dict[str, object]:
         "history_table": {
             "title": "评分历史",
             "updated_at": load_history(DEFAULT_HISTORY_PATH).get("updated_at"),
+            "version_filter": current_version_filter(),
             "rows": [
                 {
                     "scored_at": row.get("scored_at"),
@@ -462,6 +501,7 @@ def homepage_index_result() -> dict[str, object]:
             "page": "/",
             "index": "/api/index",
             "history": "/api/history",
+            "history_with_legacy": "/api/history?include_legacy=true",
             "latest_research": "/api/research/latest",
             "latest_score": "/api/research/latest/market-score",
             "latest_snapshot": "/api/research/latest/market-snapshot",
@@ -475,7 +515,9 @@ class MarketWebHandler(BaseHTTPRequestHandler):
 
     def do_GET(self) -> None:
         try:
-            path = unquote(urlparse(self.path).path)
+            parsed = urlparse(self.path)
+            path = unquote(parsed.path)
+            query = parse_qs(parsed.query)
             if path == "/api/index":
                 self.send_json(homepage_index_result())
                 return
@@ -492,7 +534,8 @@ class MarketWebHandler(BaseHTTPRequestHandler):
                 self.send_json(latest_market_analysis_result())
                 return
             if path == "/api/history":
-                self.send_json(history_api_result())
+                include_legacy = (query.get("include_legacy", ["false"])[0] or "").lower() == "true"
+                self.send_json(history_api_result(include_legacy=include_legacy))
                 return
             if path == "/api/snapshot":
                 if not DEFAULT_SNAPSHOT_PATH.exists():

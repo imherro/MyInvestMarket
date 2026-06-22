@@ -43,6 +43,7 @@ let state = {
   records: [],
   latest: null,
   index: null,
+  historyVersionFilter: null,
   selectedModule: "index_trend",
 };
 
@@ -60,6 +61,7 @@ async function loadHistory() {
   setStatus("读取历史");
   const [payload, indexPayload] = await Promise.all([fetchJson("/api/history"), fetchJson("/api/index")]);
   state.history = payload.history;
+  state.historyVersionFilter = payload.version_filter || payload.history?.version_filter || null;
   state.records = normalizeRecords(payload.history.records || []);
   state.latest = state.records[state.records.length - 1] || null;
   state.index = indexPayload;
@@ -152,7 +154,11 @@ function renderSummary() {
   setMeter("opportunityMeter", latest.market_opportunity_score, 100);
   setMeter("crowdingMeter", latest.crowding_penalty, 30);
   setText("recordCount", `${state.records.length} 条记录`);
-  setText("historyUpdated", state.history?.updated_at ? `更新 ${formatDateTime(state.history.updated_at)}` : "--");
+  const filter = state.historyVersionFilter;
+  const scope = filter?.include_legacy
+    ? "全部版本"
+    : `当前版本 ${filter?.model_version || latest.model_version || "--"} · ${filter?.position_policy_version || latest.position_policy_version || "--"}`;
+  setText("historyUpdated", state.history?.updated_at ? `更新 ${formatDateTime(state.history.updated_at)} · ${scope}` : scope);
 }
 
 function renderPositionMap() {
