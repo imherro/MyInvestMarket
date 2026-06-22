@@ -176,6 +176,9 @@ def market_breadth(pro: Any, trade_date: str, daily: pd.DataFrame, sw_l1: pd.Dat
         "decliners": int((pct < 0).sum()),
         "flat": int((pct == 0).sum()),
         "total": int(pct.notna().sum()),
+        "median_pct_change": finite_float(pct.median()),
+        "strong_advancers_gt3_pct": finite_float((pct > 3).sum() / pct.notna().sum(), 4) if pct.notna().sum() else None,
+        "strong_decliners_lt_minus3_pct": finite_float((pct < -3).sum() / pct.notna().sum(), 4) if pct.notna().sum() else None,
     }
 
     try:
