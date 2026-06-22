@@ -947,6 +947,7 @@ def evaluate_risk_caps(
     volatility_missing = volatility_data_missing(snapshot, data_quality)
     index_trend_score_pct = module_score_pct(modules, "index_trend")
     breadth_score_pct = module_score_pct(modules, "breadth")
+    mainline_score_pct = module_score_pct(modules, "mainline")
     liquidity_metrics = (modules.get("liquidity", {}) or {}).get("metrics", {}) or {}
     avg_volume_ratio = as_float((liquidity_metrics.get("avg_volume_ratio", {}) or {}).get("value"))
 
@@ -967,6 +968,25 @@ def evaluate_risk_caps(
     ]
     known_turnover_values = [value for value in turnover_values if value is not None]
     total_turnover_100m = sum(known_turnover_values) if known_turnover_values else None
+    rotation = snapshot.get("sector_rotation", {}) or {}
+    top_flows = rotation.get("top5_industries_by_capital_inflow", []) or []
+    positive_flow_rows = [
+        (row, as_float(row.get("net_amount_100m_cny")))
+        for row in top_flows
+        if as_float(row.get("net_amount_100m_cny")) is not None and as_float(row.get("net_amount_100m_cny")) > 0
+    ]
+    top_flow_sum = sum(value for _, value in positive_flow_rows)
+    top_flow_row, top_flow_max = max(positive_flow_rows, key=lambda item: item[1]) if positive_flow_rows else ({}, None)
+    top_flow_concentration = top_flow_max / top_flow_sum if top_flow_sum and top_flow_max is not None else None
+    top_returns = rotation.get("top5_industries_by_return", []) or []
+    positive_return_rows = [
+        (row, as_float(row.get("pct_change")))
+        for row in top_returns
+        if as_float(row.get("pct_change")) is not None and as_float(row.get("pct_change")) > 0
+    ]
+    top_return_sum = sum(value for _, value in positive_return_rows)
+    top_return_row, top_return_max = max(positive_return_rows, key=lambda item: item[1]) if positive_return_rows else ({}, None)
+    top_return_concentration = top_return_max / top_return_sum if top_return_sum and top_return_max is not None else None
 
     if crowding_penalty_value >= 20:
         caps.append(
@@ -1013,6 +1033,44 @@ def evaluate_risk_caps(
                     "elevated_valuation_or_volatility": bool(elevated_valuation_or_volatility),
                 },
                 "成交额或换手极端放量，且估值或波动已偏高，爆量顶部风险触发仓位分上限。",
+            )
+        )
+
+    high_sector_flow_concentration = (
+        top_flow_concentration is not None
+        and top_flow_concentration >= 0.70
+        and top_flow_sum >= 200
+    )
+    high_sector_return_concentration = (
+        top_return_concentration is not None
+        and top_return_concentration >= 0.55
+        and top_return_max is not None
+        and top_return_max >= 4
+    )
+    hot_mainline_context = opportunity_score >= 60 or (mainline_score_pct is not None and mainline_score_pct >= 0.65)
+    if (
+        (high_sector_flow_concentration or high_sector_return_concentration)
+        and elevated_valuation_or_volatility
+        and hot_mainline_context
+    ):
+        caps.append(
+            risk_cap(
+                "sector_concentration_top",
+                50,
+                "high",
+                {
+                    **evidence_base,
+                    "mainline_score_pct": round2(mainline_score_pct),
+                    "top_flow_industry": top_flow_row.get("industry"),
+                    "top_flow_amount_100m_cny": round2(top_flow_max),
+                    "top5_flow_sum_100m_cny": round2(top_flow_sum),
+                    "top_flow_concentration_ratio": round2(top_flow_concentration),
+                    "top_return_industry": top_return_row.get("industry"),
+                    "top_return_pct": round2(top_return_max),
+                    "top5_positive_return_sum_pct": round2(top_return_sum),
+                    "top_return_concentration_ratio": round2(top_return_concentration),
+                },
+                "前五行业资金或涨幅高度集中，且估值或波动偏高，主线拥挤顶部风险触发仓位分上限。",
             )
         )
 
@@ -1426,6 +1484,7 @@ def score_snapshot(snapshot: dict[str, Any], snapshot_path: Path | None = None, 
         "估值分位偏贵时，即使趋势强也要用拥挤惩罚和风险上限约束泡沫风险。",
         "北向与主力资金同时大幅流出时，即使趋势分高也触发资金退潮仓位上限。",
         "成交额或换手极端放量且估值/波动偏高时，按爆量顶部风险限制股票账户仓位。",
+        "前五行业资金或涨幅高度集中且估值/波动偏高时，按主线拥挤顶部风险限制股票账户仓位。",
         "股票账户官方仓位不再按8%目标波动率缩放，波动率仅作为风险扣分、上限和提示。",
     ]
     record = {
@@ -1465,7 +1524,7 @@ def score_snapshot(snapshot: dict[str, Any], snapshot_path: Path | None = None, 
         "volatility_targeting": legacy_vol_targeting,
         "factor_changes": [
             "stock account position policy v2 uses recommended_equity_position_range as the official position output",
-            "risk_caps can cap final market_position_score for bubble, blowoff volume, high volatility, crowding, missing risk data, and strong-index weak-breadth regimes",
+            "risk_caps can cap final market_position_score for bubble, blowoff volume, sector concentration, high volatility, crowding, missing risk data, and strong-index weak-breadth regimes",
             "8% target-volatility scaling is deprecated and no longer changes the official stock-account position range",
             "position ranges now use stock-account exposure and can reach 90%-100% in low-crowding strong trends",
             "capital_flow removed duplicate mid/small turnover and top industry inflow scoring",
