@@ -222,7 +222,7 @@ select {
 }
 
 .position-map-band {
-  margin-top: 18px;
+  margin-top: 24px;
   padding: 18px;
 }
 
@@ -231,7 +231,7 @@ select {
 }
 
 .position-map-frame {
-  height: 330px;
+  height: 360px;
   overflow: hidden;
 }
 
@@ -252,6 +252,11 @@ select {
   stroke-width: 1;
 }
 
+.position-map-note {
+  fill: var(--muted);
+  font-size: 12px;
+}
+
 .position-curve {
   fill: none;
   stroke: var(--teal);
@@ -264,6 +269,18 @@ select {
   fill: var(--surface);
   stroke: var(--teal);
   stroke-width: 2;
+}
+
+.wave-label {
+  fill: var(--teal);
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.wave-phase-label {
+  fill: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
 }
 
 .current-score-line {

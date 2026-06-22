@@ -26,22 +26,22 @@ PORT = 8011
 TZ = ZoneInfo("Asia/Shanghai")
 
 POSITION_CURVE_POINTS = [
-    {"score": 0, "base_equity_midpoint_pct": 10},
-    {"score": 20, "base_equity_midpoint_pct": 20},
-    {"score": 35, "base_equity_midpoint_pct": 35},
-    {"score": 50, "base_equity_midpoint_pct": 45},
-    {"score": 65, "base_equity_midpoint_pct": 60},
-    {"score": 80, "base_equity_midpoint_pct": 75},
-    {"score": 100, "base_equity_midpoint_pct": 85},
+    {"score": 0, "base_equity_midpoint_pct": 10, "wave": "", "label": "极弱防守"},
+    {"score": 18, "base_equity_midpoint_pct": 28, "wave": "1", "label": "修复试探"},
+    {"score": 30, "base_equity_midpoint_pct": 24, "wave": "2", "label": "回踩确认"},
+    {"score": 52, "base_equity_midpoint_pct": 55, "wave": "3", "label": "主升扩散"},
+    {"score": 64, "base_equity_midpoint_pct": 50, "wave": "4", "label": "分歧整理"},
+    {"score": 82, "base_equity_midpoint_pct": 74, "wave": "5", "label": "健康趋势"},
+    {"score": 100, "base_equity_midpoint_pct": 85, "wave": "", "label": "低拥挤强趋势"},
 ]
 
 MARKET_REGIME_BANDS = [
-    {"from": 0, "to": 20, "label": "熊市防守"},
+    {"from": 0, "to": 20, "label": "极弱防守"},
     {"from": 20, "to": 35, "label": "弱修复"},
-    {"from": 35, "to": 50, "label": "震荡"},
-    {"from": 50, "to": 65, "label": "结构牛"},
-    {"from": 65, "to": 80, "label": "趋势牛"},
-    {"from": 80, "to": 100, "label": "高热牛"},
+    {"from": 35, "to": 50, "label": "震荡修复"},
+    {"from": 50, "to": 65, "label": "结构机会"},
+    {"from": 65, "to": 80, "label": "健康趋势"},
+    {"from": 80, "to": 100, "label": "低拥挤强趋势"},
 ]
 
 
@@ -263,9 +263,10 @@ def homepage_index_result() -> dict[str, object]:
             "endpoints": latest_research.get("endpoints", {}),
         },
         "position_map": {
-            "title": "市场分与仓位对应",
-            "x_axis": "市场分",
+            "title": "净市场分与仓位对应",
+            "x_axis": "净市场分",
             "y_axis": "基准权益仓位",
+            "curve_style": "cycle_wave",
             "curve_points": POSITION_CURVE_POINTS,
             "regime_bands": MARKET_REGIME_BANDS,
             "current": {
