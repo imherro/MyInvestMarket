@@ -27,6 +27,7 @@ HISTORY_DEDUPE_KEY_FIELDS = (
     "model_version",
     "position_policy_version",
 )
+MIN_ROLLING_SAMPLE_COUNT = 4
 
 MODULES = {
     "index_trend": {"label": "指数趋势", "weight": 20},
@@ -68,6 +69,16 @@ def scale(value: float | None, low: float, high: float, points: float) -> float:
     else:
         ratio = (low - value) / (low - high)
     return clamp(ratio, 0.0, 1.0) * points
+
+
+def cap_score_when_sample_short(score: float | None, max_score: float, sample_count: Any) -> float:
+    score_value = as_float(score)
+    count = as_float(sample_count)
+    if score_value is None:
+        return max_score * 0.5
+    if count is None or count < MIN_ROLLING_SAMPLE_COUNT:
+        return min(score_value, max_score * 0.5)
+    return score_value
 
 
 def penalty_scale(value: float | None, no_penalty: float, full_penalty: float, points: float) -> float:
@@ -410,6 +421,8 @@ def capital_flow(snapshot: dict[str, Any]) -> dict[str, Any]:
     main = as_float(cap.get("main_net_inflow_100m_cny"))
     north_5d = as_float(rolling.get("northbound_5d_sum_100m_cny"))
     main_5d = as_float(rolling.get("main_5d_sum_100m_cny"))
+    north_sample_count = rolling.get("northbound_sample_count")
+    main_sample_count = rolling.get("main_sample_count")
 
     north_score = scale(north, -50, 80, 3)
     main_score = scale(main, -800, 300, 4)
@@ -422,8 +435,10 @@ def capital_flow(snapshot: dict[str, Any]) -> dict[str, Any]:
     else:
         consistency_score = 1.5
 
-    north_5d_score = scale(north_5d, -150, 250, 2)
-    main_5d_score = scale(main_5d, -2500, 800, 3)
+    north_5d_raw_score = scale(north_5d, -150, 250, 2)
+    main_5d_raw_score = scale(main_5d, -2500, 800, 3)
+    north_5d_score = cap_score_when_sample_short(north_5d_raw_score, 2, north_sample_count)
+    main_5d_score = cap_score_when_sample_short(main_5d_raw_score, 3, main_sample_count)
 
     score = north_score + main_score + consistency_score + north_5d_score + main_5d_score
     metrics = {
@@ -431,8 +446,8 @@ def capital_flow(snapshot: dict[str, Any]) -> dict[str, Any]:
         "main_net_inflow_100m_cny": metric("主力净流入", main, "亿元", True),
         "northbound_5d_sum_100m_cny": metric("北向5日净流入", north_5d, "亿元", True),
         "main_5d_sum_100m_cny": metric("主力5日净流入", main_5d, "亿元", True),
-        "northbound_5d_sample_count": metric("北向滚动样本数", rolling.get("northbound_sample_count"), "日", True),
-        "main_5d_sample_count": metric("主力滚动样本数", rolling.get("main_sample_count"), "日", True),
+        "northbound_5d_sample_count": metric("北向滚动样本数", north_sample_count, "日", True),
+        "main_5d_sample_count": metric("主力滚动样本数", main_sample_count, "日", True),
         "flow_direction_pair": {
             "label": "内外资方向",
             "value": "同向流入" if north is not None and main is not None and north > 0 and main > 0 else "分歧或偏弱",
@@ -444,8 +459,8 @@ def capital_flow(snapshot: dict[str, Any]) -> dict[str, Any]:
         evidence("北向当日净流入", north, "亿元", north_score, 3, "外资当日方向对风险偏好有边际影响。"),
         evidence("主力当日净流入", main, "亿元", main_score, 4, "主力资金代表内资承接和兑现压力。"),
         evidence("内外资一致性", "", "", consistency_score, 3, "北向和主力同向时更可靠，背离时降分。"),
-        evidence("北向5日持续性", north_5d, "亿元", north_5d_score, 2, "持续流入比单日脉冲更可靠。"),
-        evidence("主力5日持续性", main_5d, "亿元", main_5d_score, 3, "连续流出说明内资兑现压力仍重。"),
+        evidence("北向5日持续性", north_5d, "亿元", north_5d_score, 2, "样本少于4日时最多按中性持续性计分。"),
+        evidence("主力5日持续性", main_5d, "亿元", main_5d_score, 3, "样本少于4日时最多按中性资金确认计分。"),
     ]
     return module_result("capital_flow", score, "北向流入但主力流出，滚动资金仍需防分歧反复。", evidences, metrics)
 
@@ -478,12 +493,14 @@ def mainline(snapshot: dict[str, Any]) -> dict[str, Any]:
     flow_group_count = len(flow_groups)
     repeat_ratio = as_float(rolling.get("current_group_repeat_ratio_5d"))
     top_flow_5d = as_float(rolling.get("top_flow_5d_sum_100m_cny"))
+    rolling_sample_count = rolling.get("sample_count")
 
     return_score = scale(return_avg, 0, 4, 3.5)
     flow_score = scale(top_flow_sum, 0, 250, 3.5)
     alignment_score = scale(overlap_count, 0, 2, 3)
     breadth_score = scale(flow_group_count, 1, 4, 2)
-    continuity_score = scale(repeat_ratio, 0.2, 0.8, 3)
+    continuity_raw_score = scale(repeat_ratio, 0.2, 0.8, 3)
+    continuity_score = cap_score_when_sample_short(continuity_raw_score, 3, rolling_sample_count)
     score = return_score + flow_score + alignment_score + breadth_score + continuity_score
 
     metrics = {
@@ -493,7 +510,7 @@ def mainline(snapshot: dict[str, Any]) -> dict[str, Any]:
         "price_flow_overlap_count": metric("价量重合主线数", overlap_count, "组", True),
         "flow_group_count": metric("资金主线组数", flow_group_count, "组", True),
         "current_group_repeat_ratio_5d_pct": metric("当前主线5日重复率", pct(repeat_ratio), "%", True),
-        "mainline_rolling_sample_count": metric("主线连续性样本数", rolling.get("sample_count"), "日", True),
+        "mainline_rolling_sample_count": metric("主线连续性样本数", rolling_sample_count, "日", True),
         "top_flow_concentration_pct": metric("第一主线资金占比", pct(concentration), "%", False),
     }
     evidences = [
@@ -501,7 +518,7 @@ def mainline(snapshot: dict[str, Any]) -> dict[str, Any]:
         evidence("前五行业净流入合计", top_flow_sum, "亿元", flow_score, 3.5, "资金集中流入说明主线有承接。"),
         evidence("价量重合主线数", overlap_count, "组", alignment_score, 3, "涨幅榜和资金榜重合越高越可靠。"),
         evidence("资金主线组数", flow_group_count, "组", breadth_score, 2, "主线过窄时降低扩仓质量。"),
-        evidence("当前主线5日重复率", pct(repeat_ratio), "%", continuity_score, 3, "主线连续出现比单日冲高更可靠。"),
+        evidence("当前主线5日重复率", pct(repeat_ratio), "%", continuity_score, 3, "样本少于4日时最多按中性连续性计分。"),
     ]
     return module_result("mainline", score, "科技成长主线明确，但资金集中度偏高。", evidences, metrics)
 
@@ -601,6 +618,37 @@ def future_dated_feature_warnings(snapshot: dict[str, Any]) -> list[str]:
             warnings.append(
                 f"{field_name}: observation date {observation_date.isoformat()} is after "
                 f"basis_trade_date {basis.isoformat()}; excluded from scoring"
+            )
+    return warnings
+
+
+def rolling_sample_warnings(rolling: dict[str, Any]) -> list[str]:
+    checks = [
+        (
+            "capital_flow.northbound_5d_sum_100m_cny",
+            ((rolling.get("capital_flow", {}) or {}).get("northbound_sample_count")),
+        ),
+        (
+            "capital_flow.main_5d_sum_100m_cny",
+            ((rolling.get("capital_flow", {}) or {}).get("main_sample_count")),
+        ),
+        (
+            "breadth.advancer_ratio_5d_avg_pct",
+            ((rolling.get("breadth", {}) or {}).get("sample_count")),
+        ),
+        (
+            "mainline.current_group_repeat_ratio_5d",
+            ((rolling.get("mainline", {}) or {}).get("sample_count")),
+        ),
+    ]
+    warnings = []
+    for field_name, sample_count in checks:
+        count = as_float(sample_count)
+        if count is None or count < MIN_ROLLING_SAMPLE_COUNT:
+            shown_count = int(count) if count is not None else 0
+            warnings.append(
+                f"{field_name}: rolling sample insufficient "
+                f"({shown_count}/{MIN_ROLLING_SAMPLE_COUNT}); capped persistence score and lowered confidence"
             )
     return warnings
 
@@ -1033,8 +1081,10 @@ def regime(opportunity: float, position: float, modules: dict[str, Any], crowdin
     return "趋势性偏强"
 
 
-def confidence(snapshot: dict[str, Any]) -> str:
-    missing = (snapshot.get("data_quality", {}) or {}).get("missing_fields", []) or []
+def confidence(snapshot: dict[str, Any], data_quality: dict[str, Any] | None = None) -> str:
+    quality = data_quality if data_quality is not None else (snapshot.get("data_quality", {}) or {})
+    missing = quality.get("missing_fields", []) or []
+    warnings = quality.get("warnings", []) or []
     valuation_market = ((snapshot.get("valuation") or snapshot.get("repricing") or {}).get("market", {}) or {})
     valuation_missing = as_float(valuation_market.get("valuation_score")) is None
     volatility_missing = as_float(((snapshot.get("volatility", {}) or {}).get("market", {}) or {}).get("realized_vol_30d")) is None
@@ -1060,10 +1110,11 @@ def confidence(snapshot: dict[str, Any]) -> str:
     core_missing = any(any(str(field).startswith(prefix) for prefix in core_prefixes) for field in missing)
     important_missing = any(any(str(field).startswith(prefix) for prefix in important_prefixes) for field in missing)
     auxiliary_only = missing and all(any(str(field).startswith(prefix) for prefix in auxiliary_prefixes) for field in missing)
+    rolling_sample_insufficient = any("rolling sample insufficient" in str(warning) for warning in warnings)
 
     if core_missing:
         return "low"
-    if valuation_missing or volatility_missing or important_missing:
+    if valuation_missing or volatility_missing or important_missing or rolling_sample_insufficient:
         return "medium"
     if auxiliary_only:
         return "high"
@@ -1076,6 +1127,8 @@ def score_snapshot(snapshot: dict[str, Any], snapshot_path: Path | None = None, 
     rolling = rolling_market_features(snapshot)
     quality = data_quality_with_warnings(snapshot.get("data_quality", {}))
     for warning in future_dated_feature_warnings(snapshot):
+        add_quality_warning(quality, warning)
+    for warning in rolling_sample_warnings(rolling):
         add_quality_warning(quality, warning)
     modules = {
         "index_trend": index_trend(snapshot),
@@ -1132,7 +1185,7 @@ def score_snapshot(snapshot: dict[str, Any], snapshot_path: Path | None = None, 
         "market_position_score": final_score,
         "base_market_position_score": final_score,
         "recommended_equity_position_range": recommended_range,
-        "confidence": confidence(snapshot),
+        "confidence": confidence(snapshot, quality),
         "equity_position_range": recommended_range,
         "base_equity_position_range": recommended_range,
         "risk_caps": position_policy["risk_caps"],
