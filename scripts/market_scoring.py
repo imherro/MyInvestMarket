@@ -947,6 +947,8 @@ def evaluate_risk_caps(
     volatility_missing = volatility_data_missing(snapshot, data_quality)
     index_trend_score_pct = module_score_pct(modules, "index_trend")
     breadth_score_pct = module_score_pct(modules, "breadth")
+    liquidity_metrics = (modules.get("liquidity", {}) or {}).get("metrics", {}) or {}
+    avg_volume_ratio = as_float((liquidity_metrics.get("avg_volume_ratio", {}) or {}).get("value"))
 
     evidence_base = {
         "pre_cap_market_position_score": round2(pre_cap_score),
@@ -958,6 +960,13 @@ def evaluate_risk_caps(
     capital_flow_data = snapshot.get("capital_flow", {}) or {}
     northbound_net = as_float(capital_flow_data.get("northbound_net_inflow_100m_cny"))
     main_net = as_float(capital_flow_data.get("main_net_inflow_100m_cny"))
+    turnover_distribution = capital_flow_data.get("turnover_distribution", {}) or {}
+    turnover_values = [
+        as_float((turnover_distribution.get(bucket) or {}).get("turnover_100m_cny"))
+        for bucket in ["large_cap", "mid_cap", "small_cap"]
+    ]
+    known_turnover_values = [value for value in turnover_values if value is not None]
+    total_turnover_100m = sum(known_turnover_values) if known_turnover_values else None
 
     if crowding_penalty_value >= 20:
         caps.append(
@@ -977,6 +986,33 @@ def evaluate_risk_caps(
                 "medium",
                 evidence_base,
                 "拥挤惩罚偏高，股票账户仓位分上限限制为60。",
+            )
+        )
+
+    extreme_volume = (
+        (avg_volume_ratio is not None and avg_volume_ratio >= 1.45)
+        or (total_turnover_100m is not None and total_turnover_100m >= 25000)
+    )
+    elevated_valuation_or_volatility = (
+        (valuation_score_pct is not None and valuation_score_pct <= 0.35)
+        or (realized_volatility is not None and realized_volatility >= 0.25)
+    )
+    hot_trend_context = opportunity_score >= 65 or (index_trend_score_pct is not None and index_trend_score_pct >= 0.75)
+    if extreme_volume and elevated_valuation_or_volatility and hot_trend_context:
+        caps.append(
+            risk_cap(
+                "volume_blowoff_top",
+                45,
+                "high",
+                {
+                    **evidence_base,
+                    "avg_volume_ratio": round2(avg_volume_ratio),
+                    "total_turnover_100m_cny": round2(total_turnover_100m),
+                    "index_trend_score_pct": round2(index_trend_score_pct),
+                    "extreme_volume": bool(extreme_volume),
+                    "elevated_valuation_or_volatility": bool(elevated_valuation_or_volatility),
+                },
+                "成交额或换手极端放量，且估值或波动已偏高，爆量顶部风险触发仓位分上限。",
             )
         )
 
@@ -1389,6 +1425,7 @@ def score_snapshot(snapshot: dict[str, Any], snapshot_path: Path | None = None, 
         "主力资金持续流出时，进攻仓只做主线，不扩散到弱势行业。",
         "估值分位偏贵时，即使趋势强也要用拥挤惩罚和风险上限约束泡沫风险。",
         "北向与主力资金同时大幅流出时，即使趋势分高也触发资金退潮仓位上限。",
+        "成交额或换手极端放量且估值/波动偏高时，按爆量顶部风险限制股票账户仓位。",
         "股票账户官方仓位不再按8%目标波动率缩放，波动率仅作为风险扣分、上限和提示。",
     ]
     record = {
@@ -1428,7 +1465,7 @@ def score_snapshot(snapshot: dict[str, Any], snapshot_path: Path | None = None, 
         "volatility_targeting": legacy_vol_targeting,
         "factor_changes": [
             "stock account position policy v2 uses recommended_equity_position_range as the official position output",
-            "risk_caps can cap final market_position_score for bubble, high volatility, crowding, missing risk data, and strong-index weak-breadth regimes",
+            "risk_caps can cap final market_position_score for bubble, blowoff volume, high volatility, crowding, missing risk data, and strong-index weak-breadth regimes",
             "8% target-volatility scaling is deprecated and no longer changes the official stock-account position range",
             "position ranges now use stock-account exposure and can reach 90%-100% in low-crowding strong trends",
             "capital_flow removed duplicate mid/small turnover and top industry inflow scoring",
