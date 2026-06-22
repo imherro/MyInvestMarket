@@ -115,6 +115,7 @@ function normalizeRecords(records) {
 
 function renderAll() {
   renderSummary();
+  renderRiskOverview();
   renderPositionMap();
   renderOverviewChart();
   renderModuleSelect();
@@ -159,6 +160,102 @@ function renderSummary() {
     ? "全部版本"
     : `当前版本 ${filter?.model_version || latest.model_version || "--"} · ${filter?.position_policy_version || latest.position_policy_version || "--"}`;
   setText("historyUpdated", state.history?.updated_at ? `更新 ${formatDateTime(state.history.updated_at)} · ${scope}` : scope);
+}
+
+function renderRiskOverview() {
+  const latest = state.latest;
+  const overview = state.index?.risk_overview || buildRiskOverviewFromRecord(latest);
+  if (!latest) {
+    setText("riskOverviewStatus", "暂无评分");
+    setText("riskConfidence", "--");
+    setText("riskConfidenceDetail", "--");
+    setText("qualityWarningCount", "--");
+    setText("qualityDataDetail", "--");
+    setText("riskCapTotal", "--");
+    setText("riskCapDetail", "--");
+    renderMessageList("qualityWarnings", [], "暂无数据质量 warning");
+    renderMessageList("riskCapList", [], "未触发风险上限");
+    return;
+  }
+
+  const confidence = overview.confidence || {};
+  const quality = overview.data_quality || {};
+  const caps = overview.risk_caps || {};
+  const warnings = Array.isArray(quality.warnings) ? quality.warnings : [];
+  const riskCaps = Array.isArray(caps.items) ? caps.items : [];
+  const statusLabel = overview.status_label || (warnings.length || riskCaps.length ? "需关注" : "正常");
+
+  setText("riskOverviewStatus", `${statusLabel} · ${warnings.length} 条 warning · ${riskCaps.length} 项风险上限`);
+  setText("riskConfidence", confidence.label || confidenceLabel(confidence.value || latest.confidence));
+  setText("riskConfidenceDetail", confidence.message || "置信度由核心字段、warning 和样本质量决定。");
+  setText("qualityWarningCount", `${quality.warning_count ?? warnings.length} 条`);
+  setText(
+    "qualityDataDetail",
+    `${quality.message || (warnings.length ? `存在 ${warnings.length} 条数据质量 warning。` : "暂无数据质量 warning。")} 缺失字段 ${quality.missing_field_count ?? 0} 个，数据源 ${quality.source_count ?? 0} 个。`,
+  );
+  setText("riskCapTotal", `${caps.count ?? riskCaps.length} 项`);
+  setText("riskCapDetail", caps.message || (riskCaps.length ? `已触发 ${riskCaps.length} 项风险上限。` : "未触发风险上限。"));
+  renderMessageList("qualityWarnings", warnings, "暂无数据质量 warning");
+  renderMessageList("riskCapList", riskCaps, "未触发风险上限", riskCapMessage);
+}
+
+function buildRiskOverviewFromRecord(record) {
+  if (!record) return {};
+  const dataQuality = record.data_quality || {};
+  const warnings = Array.isArray(dataQuality.warnings) ? dataQuality.warnings : [];
+  const missingFields = Array.isArray(dataQuality.missing_fields) ? dataQuality.missing_fields : [];
+  const sourcesUsed = Array.isArray(dataQuality.sources_used) ? dataQuality.sources_used : [];
+  const riskCaps = Array.isArray(record.risk_caps) ? record.risk_caps : [];
+  return {
+    status_label: warnings.length || riskCaps.length || record.confidence === "low" ? "需关注" : "正常",
+    confidence: {
+      value: record.confidence,
+      label: confidenceLabel(record.confidence),
+      message: "置信度由核心字段、warning 和样本质量决定。",
+    },
+    data_quality: {
+      warning_count: warnings.length,
+      warnings,
+      missing_field_count: missingFields.length,
+      source_count: sourcesUsed.length,
+      message: warnings.length ? `存在 ${warnings.length} 条数据质量 warning。` : "暂无数据质量 warning。",
+    },
+    risk_caps: {
+      count: riskCaps.length,
+      items: riskCaps,
+      message: riskCaps.length ? `已触发 ${riskCaps.length} 项风险上限。` : "未触发风险上限。",
+    },
+  };
+}
+
+function renderMessageList(containerId, items, emptyText, mapper = (item) => String(item)) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  const list = Array.isArray(items) ? items : [];
+  if (!list.length) {
+    container.innerHTML = `<div class="message-item normal">${escapeHtml(emptyText)}</div>`;
+    return;
+  }
+  const visible = list.slice(0, 6);
+  const extraCount = list.length - visible.length;
+  container.innerHTML = [
+    ...visible.map((item) => `<div class="message-item">${escapeHtml(mapper(item))}</div>`),
+    extraCount > 0 ? `<div class="message-item muted">另有 ${extraCount} 条未展开</div>` : "",
+  ].join("");
+}
+
+function riskCapMessage(cap) {
+  if (!cap || typeof cap !== "object") return String(cap);
+  const severity = cap.severity ? `${severityLabel(cap.severity)} · ` : "";
+  const reason = cap.reason ? `${cap.reason} · ` : "";
+  return `${severity}${reason}${cap.message || "风险上限已触发"}`;
+}
+
+function severityLabel(value) {
+  if (value === "high") return "高风险";
+  if (value === "medium") return "中风险";
+  if (value === "low") return "低风险";
+  return value || "风险";
 }
 
 function renderPositionMap() {

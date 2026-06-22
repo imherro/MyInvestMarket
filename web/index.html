@@ -47,12 +47,39 @@
         </article>
       </section>
 
+      <section class="risk-overview-band" aria-label="数据质量与风险提示">
+        <div class="section-head">
+          <h2>数据质量与风险提示</h2>
+          <span id="riskOverviewStatus">--</span>
+        </div>
+        <div class="risk-overview-grid">
+          <article class="risk-panel">
+            <span class="label">置信度</span>
+            <strong id="riskConfidence">--</strong>
+            <small id="riskConfidenceDetail">--</small>
+          </article>
+          <article class="risk-panel">
+            <span class="label">数据质量 warning</span>
+            <strong id="qualityWarningCount">--</strong>
+            <small id="qualityDataDetail">--</small>
+            <div id="qualityWarnings" class="message-list"></div>
+          </article>
+          <article class="risk-panel">
+            <span class="label">风险上限</span>
+            <strong id="riskCapTotal">--</strong>
+            <small id="riskCapDetail">--</small>
+            <div id="riskCapList" class="message-list"></div>
+          </article>
+        </div>
+      </section>
+
       <section class="api-band">
         <div class="section-head">
           <h2>最新研究结果 API</h2>
           <span id="apiStatus">检查中</span>
         </div>
         <div class="api-grid">
+          <code>GET /api/service</code>
           <code>GET /api/index</code>
           <code>GET /api/research/latest</code>
           <code>GET /api/research/latest/market-snapshot</code>

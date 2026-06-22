@@ -290,6 +290,53 @@ def recommended_equity_position_range(record: dict[str, object]) -> object:
     )
 
 
+def normalized_text_list(value: object) -> list[str]:
+    if isinstance(value, list):
+        return [str(item) for item in value if item not in [None, ""]]
+    if value:
+        return [str(value)]
+    return []
+
+
+def risk_overview_result(latest: dict[str, object]) -> dict[str, object]:
+    data_quality = latest.get("data_quality", {}) if isinstance(latest.get("data_quality"), dict) else {}
+    warnings = normalized_text_list(data_quality.get("warnings"))
+    missing_fields = normalized_text_list(data_quality.get("missing_fields"))
+    sources_used = normalized_text_list(data_quality.get("sources_used"))
+    raw_risk_caps = latest.get("risk_caps", [])
+    risk_caps = raw_risk_caps if isinstance(raw_risk_caps, list) else []
+    confidence_value = str(latest.get("confidence") or "unknown")
+    has_warning = bool(warnings)
+    has_risk_cap = bool(risk_caps)
+    status = "risk" if has_warning or has_risk_cap or confidence_value == "low" else "normal"
+
+    return {
+        "available": bool(latest),
+        "status": status,
+        "status_label": "需关注" if status == "risk" else "正常",
+        "confidence": {
+            "value": latest.get("confidence"),
+            "label": {"high": "高", "medium": "中", "low": "低"}.get(confidence_value, confidence_value),
+            "message": "置信度由核心字段缺失、数据 warning 和滚动样本质量共同决定。",
+        },
+        "data_quality": {
+            "status": "warning" if has_warning else "normal",
+            "warning_count": len(warnings),
+            "warnings": warnings,
+            "missing_field_count": len(missing_fields),
+            "missing_fields": missing_fields,
+            "source_count": len(sources_used),
+            "message": f"存在 {len(warnings)} 条数据质量 warning。" if has_warning else "暂无数据质量 warning。",
+        },
+        "risk_caps": {
+            "status": "active" if has_risk_cap else "normal",
+            "count": len(risk_caps),
+            "items": risk_caps,
+            "message": f"已触发 {len(risk_caps)} 项风险上限。" if has_risk_cap else "未触发风险上限。",
+        },
+    }
+
+
 def position_policy_map_result(latest: dict[str, object]) -> dict[str, object]:
     return {
         "title": "股票账户净分-推荐权益仓位映射",
@@ -398,6 +445,7 @@ def homepage_index_result() -> dict[str, object]:
             "legacy_vol_adjusted_equity_position_range": latest.get("legacy_vol_adjusted_equity_position_range"),
             "legacy_vol_adjusted_market_position_score": latest.get("legacy_vol_adjusted_market_position_score"),
             "legacy_vol_adjusted_deprecated": latest.get("legacy_vol_adjusted_deprecated"),
+            "data_quality": latest.get("data_quality", {}),
             "cards": [
                 {
                     "id": "position_score",
@@ -437,6 +485,7 @@ def homepage_index_result() -> dict[str, object]:
                 },
             ],
         },
+        "risk_overview": risk_overview_result(latest),
         "api_status": {
             "label": "最新研究结果 API",
             "available_count": sum(1 for available in api_available.values() if available),

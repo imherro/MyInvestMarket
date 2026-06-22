@@ -184,6 +184,70 @@ select {
   background: var(--amber);
 }
 
+.risk-overview-band {
+  margin-top: 24px;
+}
+
+.risk-overview-band .section-head {
+  margin-top: 0;
+}
+
+.risk-overview-grid {
+  display: grid;
+  grid-template-columns: minmax(180px, 0.75fr) minmax(260px, 1.2fr) minmax(260px, 1.2fr);
+  gap: 12px;
+}
+
+.risk-panel {
+  min-height: 150px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-soft);
+}
+
+.risk-panel strong {
+  display: block;
+  margin-top: 8px;
+  font-size: 1.45rem;
+  line-height: 1.25;
+}
+
+.risk-panel small {
+  display: block;
+  margin-top: 8px;
+  color: var(--muted);
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.message-list {
+  display: grid;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.message-item {
+  padding: 8px 10px;
+  border-left: 3px solid var(--amber);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.72);
+  color: var(--ink);
+  font-size: 0.82rem;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.message-item.normal {
+  border-left-color: var(--teal);
+  color: var(--muted);
+}
+
+.message-item.muted {
+  border-left-color: var(--line);
+  color: var(--muted);
+}
+
 .section-head {
   display: flex;
   align-items: center;
@@ -684,6 +748,10 @@ td.score-risk {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .risk-overview-grid {
+    grid-template-columns: 1fr;
+  }
+
   .detail-layout {
     grid-template-columns: 1fr;
   }
@@ -709,6 +777,7 @@ td.score-risk {
 
   .summary-grid,
   .api-grid,
+  .risk-overview-grid,
   .module-grid,
   .position-benchmark-grid,
   .metric-grid {
