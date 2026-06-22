@@ -832,7 +832,7 @@ def build_dataset(as_of: date) -> dict[str, Any]:
     qmt = qmt_portfolio(q)
     baostock_cross_validation(trade_date, market, q)
 
-    return {
+    dataset = {
         "date": iso_date(trade_date),
         "market": market,
         "breadth": breadth,
@@ -853,6 +853,14 @@ def build_dataset(as_of: date) -> dict[str, Any]:
             "cross_validation": q.cross_validation,
         },
     }
+    validate_built_dataset(dataset)
+    return dataset
+
+
+def validate_built_dataset(dataset: dict[str, Any]) -> dict[str, Any]:
+    import market_scoring
+
+    return market_scoring.validate_market_snapshot(dataset)
 
 
 def parse_args() -> argparse.Namespace:

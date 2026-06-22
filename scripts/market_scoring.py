@@ -74,6 +74,10 @@ class ScoreRecordValidationError(ValueError):
     pass
 
 
+class MarketSnapshotValidationError(ValueError):
+    pass
+
+
 def history_audit_log_path(history_path: Path = DEFAULT_HISTORY_PATH) -> Path:
     try:
         if history_path.resolve() == (DATA_DIR / "market_score_history.json").resolve():
@@ -1221,7 +1225,111 @@ def confidence(snapshot: dict[str, Any], data_quality: dict[str, Any] | None = N
     return "high"
 
 
+def validate_market_snapshot(snapshot: dict[str, Any]) -> dict[str, Any]:
+    errors: list[str] = []
+
+    def err(field: str, message: str) -> None:
+        errors.append(f"{field}: {message}")
+
+    def require_object(field: str) -> dict[str, Any]:
+        value = snapshot.get(field)
+        if not isinstance(value, dict):
+            err(field, "required object")
+            return {}
+        return value
+
+    def require_number(container: dict[str, Any], field: str, label: str) -> None:
+        if as_float(container.get(field)) is None:
+            err(label, "required numeric value")
+
+    if not isinstance(snapshot, dict):
+        raise MarketSnapshotValidationError("market snapshot must be an object")
+
+    trade_date = parse_date_value(snapshot.get("date"))
+    if trade_date is None:
+        err("date", "required ISO date")
+
+    market = require_object("market")
+    market_date = parse_date_value(market.get("as_of_trade_date"))
+    if market_date is None:
+        err("market.as_of_trade_date", "required ISO date")
+    elif trade_date is not None and market_date != trade_date:
+        err("market.as_of_trade_date", "must match snapshot date")
+    indices = market.get("indices")
+    if not isinstance(indices, dict) or not indices:
+        err("market.indices", "required non-empty object")
+    else:
+        for code in ["000001.SH", "399001.SZ", "399006.SZ"]:
+            row = indices.get(code)
+            if not isinstance(row, dict):
+                err(f"market.indices.{code}", "required object")
+            else:
+                require_number(row, "close", f"market.indices.{code}.close")
+
+    breadth = require_object("breadth")
+    for field in ["advancers", "decliners", "total"]:
+        require_number(breadth, field, f"breadth.{field}")
+
+    capital_flow = require_object("capital_flow")
+    for field in ["northbound_net_inflow_100m_cny", "main_net_inflow_100m_cny"]:
+        require_number(capital_flow, field, f"capital_flow.{field}")
+    turnover = capital_flow.get("turnover_distribution")
+    if not isinstance(turnover, dict):
+        err("capital_flow.turnover_distribution", "required object")
+    else:
+        for bucket in ["large_cap", "mid_cap", "small_cap"]:
+            row = turnover.get(bucket)
+            if not isinstance(row, dict):
+                err(f"capital_flow.turnover_distribution.{bucket}", "required object")
+            elif as_float(row.get("share")) is None:
+                err(f"capital_flow.turnover_distribution.{bucket}.share", "required numeric value")
+
+    sector_rotation = require_object("sector_rotation")
+    for field in ["top5_industries_by_return", "top5_industries_by_capital_inflow"]:
+        rows = sector_rotation.get(field)
+        if not isinstance(rows, list) or not rows:
+            err(f"sector_rotation.{field}", "required non-empty list")
+        elif not all(isinstance(row, dict) for row in rows):
+            err(f"sector_rotation.{field}", "must contain objects")
+
+    valuation = require_object("valuation")
+    if not isinstance(valuation.get("market"), dict):
+        err("valuation.market", "required object")
+
+    volatility = require_object("volatility")
+    if not isinstance(volatility.get("market"), dict):
+        err("volatility.market", "required object")
+
+    macro_data = snapshot.get("macro")
+    if not isinstance(macro_data, dict):
+        err("macro", "required object")
+
+    data_quality = require_object("data_quality")
+    for field in ["missing_fields", "warnings"]:
+        if not isinstance(data_quality.get(field), list):
+            err(f"data_quality.{field}", "required list")
+
+    if errors:
+        raise MarketSnapshotValidationError("; ".join(errors))
+    return {
+        "ok": True,
+        "basis_trade_date": snapshot.get("date"),
+        "checked_fields": [
+            "date",
+            "market.indices",
+            "breadth",
+            "capital_flow",
+            "sector_rotation",
+            "valuation.market",
+            "volatility.market",
+            "macro",
+            "data_quality",
+        ],
+    }
+
+
 def score_snapshot(snapshot: dict[str, Any], snapshot_path: Path | None = None, snapshot_bytes: bytes | None = None) -> dict[str, Any]:
+    snapshot_validation = validate_market_snapshot(snapshot)
     rolling = rolling_market_features(snapshot)
     quality = data_quality_with_warnings(snapshot.get("data_quality", {}))
     for warning in future_dated_feature_warnings(snapshot):
@@ -1313,6 +1421,7 @@ def score_snapshot(snapshot: dict[str, Any], snapshot_path: Path | None = None, 
         ],
         "key_constraints": key_constraints,
         "data_quality": quality,
+        "snapshot_validation": snapshot_validation,
     }
     return record
 

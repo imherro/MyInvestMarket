@@ -336,6 +336,7 @@
       "macro.china_10y_government_bond_yield_pct.tushare_yc_cb",
       "qmt_portfolio.positions"
     ],
+    "warnings": [],
     "sources_used": [
       "Tushare.trade_cal",
       "Tushare.daily",

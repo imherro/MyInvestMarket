@@ -38,7 +38,35 @@ def low_sample_rolling() -> dict:
 def snapshot() -> dict:
     return {
         "date": "2026-06-18",
-        "market": {"as_of_trade_date": "2026-06-18", "indices": {}},
+        "market": {
+            "as_of_trade_date": "2026-06-18",
+            "indices": {
+                "000001.SH": {
+                    "close": 3000,
+                    "above_ma20": True,
+                    "return_5d_pct": 1,
+                    "return_20d_pct": 3,
+                    "ma20_deviation_pct": 2,
+                    "volume_ratio_5d": 1.05,
+                },
+                "399001.SZ": {
+                    "close": 10000,
+                    "above_ma20": True,
+                    "return_5d_pct": 1,
+                    "return_20d_pct": 3,
+                    "ma20_deviation_pct": 2,
+                    "volume_ratio_5d": 1.05,
+                },
+                "399006.SZ": {
+                    "close": 2000,
+                    "above_ma20": True,
+                    "return_5d_pct": 1,
+                    "return_20d_pct": 3,
+                    "ma20_deviation_pct": 2,
+                    "volume_ratio_5d": 1.05,
+                },
+            },
+        },
         "breadth": {
             "advancers": 80,
             "decliners": 20,
