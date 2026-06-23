@@ -491,6 +491,40 @@ def verify_api() -> dict[str, Any]:
     return result
 
 
+def validation_error_fields(error: market_scoring.MarketSnapshotValidationError) -> list[str]:
+    fields: list[str] = []
+    for item in str(error).split(";"):
+        field = item.strip().split(":", 1)[0].strip()
+        if field and field not in fields:
+            fields.append(field)
+    return fields
+
+
+def incomplete_market_data_skip_result(as_of: date, error: market_scoring.MarketSnapshotValidationError) -> dict[str, Any]:
+    result: dict[str, Any] = {
+        "status": "skipped",
+        "reason": "latest candidate trading day data is incomplete",
+        "as_of": as_of.isoformat(),
+        "model_version": market_scoring.MODEL_VERSION,
+        "validation_error": str(error),
+        "missing_fields": validation_error_fields(error),
+    }
+    try:
+        probe_quality = build_market_dataset.Quality()
+        trade_date, _, _ = build_market_dataset.fetch_latest_complete_trade_date(
+            build_market_dataset.tushare_client(),
+            as_of,
+            probe_quality,
+        )
+        result["basis_trade_date"] = build_market_dataset.iso_date(trade_date)
+        result["candidate_trade_date_basis"] = "Tushare daily and index_daily are present, but required scoring fields are missing."
+    except Exception as exc:
+        result["basis_trade_date"] = None
+        result["candidate_trade_date_probe_error"] = str(exc)
+    result["api"] = verify_api()
+    return result
+
+
 def commit_and_push(paths: list[Path], trade_date: str, no_git: bool) -> dict[str, Any]:
     if no_git:
         return {"skipped": True, "reason": "--no-git"}
@@ -551,7 +585,11 @@ def main() -> None:
     as_of = datetime.strptime(args.as_of, "%Y-%m-%d").date()
     old_snapshot = load_json(DATA_DIR / "latest_market_snapshot.json")
     old_fingerprint = stable_fingerprint(old_snapshot)
-    snapshot = build_market_dataset.build_dataset(as_of)
+    try:
+        snapshot = build_market_dataset.build_dataset(as_of)
+    except market_scoring.MarketSnapshotValidationError as exc:
+        print(json.dumps(incomplete_market_data_skip_result(as_of, exc), ensure_ascii=False, indent=2))
+        return
     new_fingerprint = stable_fingerprint(snapshot)
     trade_date = snapshot.get("date")
     backfilled_paths = backfill_recent_market_snapshots(as_of, str(trade_date))

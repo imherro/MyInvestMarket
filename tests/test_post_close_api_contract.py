@@ -4,6 +4,7 @@ import copy
 import sys
 import tempfile
 import unittest
+from datetime import date
 from pathlib import Path
 from unittest.mock import patch
 
@@ -148,6 +149,35 @@ class PostCloseApiContractTest(unittest.TestCase):
 
         with self.assertRaisesRegex(RuntimeError, "POSITION_POLICY_VERSION"):
             run_post_close_update.validate_api_payloads(payloads)
+
+    def test_incomplete_market_data_skip_result_reports_missing_fields(self) -> None:
+        error = market_scoring.MarketSnapshotValidationError(
+            "capital_flow.main_net_inflow_100m_cny: required numeric value; "
+            "sector_rotation.top5_industries_by_return: required non-empty list"
+        )
+
+        with (
+            patch.object(run_post_close_update, "verify_api", return_value={"validation": {"ok": True}}),
+            patch.object(run_post_close_update.build_market_dataset, "tushare_client", return_value=object()),
+            patch.object(
+                run_post_close_update.build_market_dataset,
+                "fetch_latest_complete_trade_date",
+                return_value=("20260623", object(), object()),
+            ),
+        ):
+            result = run_post_close_update.incomplete_market_data_skip_result(date(2026, 6, 23), error)
+
+        self.assertEqual(result["status"], "skipped")
+        self.assertEqual(result["reason"], "latest candidate trading day data is incomplete")
+        self.assertEqual(result["basis_trade_date"], "2026-06-23")
+        self.assertEqual(
+            result["missing_fields"],
+            [
+                "capital_flow.main_net_inflow_100m_cny",
+                "sector_rotation.top5_industries_by_return",
+            ],
+        )
+        self.assertEqual(result["api"]["validation"]["ok"], True)
 
     def test_service_version_result_exposes_local_versions(self) -> None:
         payload = serve_market_web.service_version_result()
