@@ -72,11 +72,29 @@ class PositionMapContractTest(unittest.TestCase):
         self.assertEqual([wave["wave"] for wave in waves], ["1", "2", "3", "4", "5", "a", "b", "c"])
         self.assertEqual(waves[2]["position_score_range"], "80-100")
         self.assertEqual(waves[4]["position_score_range"], "20-45")
+        self.assertIn("current_profile", reference)
+        self.assertFalse(reference["current_profile"].get("is_wave_prediction"))
         for wave in waves:
             self.assertIn("opportunity_score_range", wave)
             self.assertIn("position_score_range", wave)
             self.assertIn("equity_position_range", wave)
             self.assertIn("note", wave)
+
+    def test_market_cycle_profile_marks_hot_capped_market_without_wave_prediction(self) -> None:
+        record = {
+            "market_opportunity_score": 72,
+            "market_position_score": 35,
+            "pre_cap_market_position_score": 58,
+            "crowding_penalty": 14,
+            "risk_caps": [{"reason": "bubble_top_combo"}],
+        }
+
+        profile = serve_market_web.market_cycle_profile_result(record)
+
+        self.assertEqual(profile["label"], "高位过热风控特征")
+        self.assertEqual(profile["reference_waves"], ["5", "b"])
+        self.assertFalse(profile["is_wave_prediction"])
+        self.assertIn("不判定当前处于某个具体浪位", profile["note"])
 
     def test_frontend_no_longer_uses_score_as_cycle_stage(self) -> None:
         app_js = (ROOT / "web" / "app.js").read_text(encoding="utf-8")

@@ -67,6 +67,14 @@ def valid_api_payloads() -> dict:
                 "position_policy_version": record["position_policy_version"],
                 "current": {"market_position_score": record["market_position_score"]},
             },
+            "market_cycle_reference": {
+                "waves": [{"wave": "1"}],
+                "current_profile": {
+                    "available": True,
+                    "label": "高位过热风控特征",
+                    "is_wave_prediction": False,
+                },
+            },
         },
         "/api/research/latest/market-score": {
             "available": True,
@@ -96,6 +104,9 @@ class PostCloseApiContractTest(unittest.TestCase):
         binding = serve_market_web.analysis_report_binding(content, score_record())
 
         self.assertIn("- 评分运行ID: 20260622T170000-test", content)
+        self.assertIn("## 周期特征参照", content)
+        self.assertIn("- 当前特征:", content)
+        self.assertIn("不判定当前处于某个具体浪位", content)
         self.assertEqual(binding["run_id"], "20260622T170000-test")
         self.assertEqual(binding["basis_trade_date"], "2026-06-18")
         self.assertTrue(binding["consistent"])

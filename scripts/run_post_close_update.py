@@ -18,6 +18,7 @@ from zoneinfo import ZoneInfo
 
 import build_market_dataset
 import market_scoring
+import serve_market_web
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -269,6 +270,25 @@ def top_industry_lines(snapshot: dict[str, Any], key: str) -> str:
     return "\n".join(lines)
 
 
+def cycle_profile_section(record: dict[str, Any]) -> str:
+    profile = serve_market_web.market_cycle_profile_result(record)
+    observations = profile.get("observations", [])
+    observation_lines = "\n".join(f"- {item}" for item in observations) if isinstance(observations, list) and observations else "- 暂无可用周期特征观察。"
+    reference_waves = profile.get("reference_waves", [])
+    wave_text = "、".join(f"{wave}浪" for wave in reference_waves) if isinstance(reference_waves, list) and reference_waves else "无"
+    return f"""## 周期特征参照
+
+- 当前特征: {profile.get('label')}
+- 参照位置: {wave_text}
+- 分数组合: {profile.get('score_line')}
+- 判断说明: {profile.get('message')}
+- 仓位含义: {profile.get('stance')}
+- 注意: {profile.get('note')}
+
+{observation_lines}
+"""
+
+
 def write_report(snapshot: dict[str, Any], record: dict[str, Any]) -> Path:
     now = datetime.now(TZ)
     report_path = DATA_DIR / f"chatgpt_market_analysis_{now.strftime('%Y%m%d_%H%M%S')}.md"
@@ -325,6 +345,8 @@ def write_report(snapshot: dict[str, Any], record: dict[str, Any]) -> Path:
 
 {crowding_rows(record)}
 
+{cycle_profile_section(record)}
+
 ## 执行观察
 
 后续重点观察宽度是否修复、主力资金是否收敛、估值分位是否回到中性区间，以及波动率是否下降。宽度和资金未修复前，只承认结构性机会，不把指数强势直接视为全面扩仓信号。
@@ -352,6 +374,8 @@ def validate_api_payloads(payloads: dict[str, dict[str, Any]]) -> dict[str, Any]
     latest_record = score_payload.get("record") or {}
     index_summary = index.get("summary") or {}
     policy_map = index.get("position_policy_map") or {}
+    cycle_reference = index.get("market_cycle_reference") or {}
+    cycle_profile = cycle_reference.get("current_profile") or {}
     binding = analysis_payload.get("binding") or {}
     local_model_version = market_scoring.MODEL_VERSION
     local_position_policy_version = market_scoring.POSITION_POLICY_VERSION
@@ -380,6 +404,10 @@ def validate_api_payloads(payloads: dict[str, dict[str, Any]]) -> dict[str, Any]
         "/api/index.position_policy_map.position_policy_version does not match local POSITION_POLICY_VERSION",
     )
     require_api(bool((policy_map.get("current") or {}).get("market_position_score") is not None), "/api/index.position_policy_map.current.market_position_score is missing")
+    require_api(bool(cycle_reference.get("waves")), "/api/index.market_cycle_reference.waves is missing")
+    require_api(bool(cycle_profile.get("available")), "/api/index.market_cycle_reference.current_profile is not available")
+    require_api(bool(cycle_profile.get("label")), "/api/index.market_cycle_reference.current_profile.label is missing")
+    require_api(cycle_profile.get("is_wave_prediction") is False, "/api/index.market_cycle_reference.current_profile must not be a wave prediction")
 
     require_api(bool(score_payload.get("available")), "/api/research/latest/market-score is not available")
     require_api(bool(latest_record.get("run_id")), "latest market score run_id is missing")

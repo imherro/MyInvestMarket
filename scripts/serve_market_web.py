@@ -173,6 +173,24 @@ MARKET_CYCLE_REFERENCE = [
 ]
 
 
+RISK_CAP_LABELS = {
+    "high_crowding_extreme": "拥挤极高",
+    "high_crowding": "拥挤偏高",
+    "volume_blowoff_top": "爆量顶部",
+    "sector_concentration_top": "主线拥挤顶部",
+    "capital_outflow_combo": "资金同步退潮",
+    "extreme_expensive_valuation": "估值极贵",
+    "expensive_valuation": "估值偏贵",
+    "bubble_top_combo": "泡沫顶部组合",
+    "extreme_high_volatility": "波动率极高",
+    "high_volatility": "波动率偏高",
+    "missing_valuation_data_hot_market": "高机会行情缺估值数据",
+    "missing_volatility_data_hot_market": "高机会行情缺波动率数据",
+    "missing_core_risk_data_hot_market": "高机会行情缺核心风控数据",
+    "strong_index_weak_breadth": "指数强但宽度弱",
+}
+
+
 def now_iso() -> str:
     return datetime.now(TZ).isoformat(timespec="seconds")
 
@@ -454,7 +472,124 @@ def position_policy_map_result(latest: dict[str, object]) -> dict[str, object]:
     }
 
 
-def market_cycle_reference_result() -> dict[str, object]:
+def number_or_none(value: object) -> float | None:
+    try:
+        number = float(value)  # type: ignore[arg-type]
+    except (TypeError, ValueError):
+        return None
+    return number if number == number else None
+
+
+def format_score_value(value: float | None) -> str:
+    if value is None:
+        return "--"
+    return f"{value:.1f}".rstrip("0").rstrip(".")
+
+
+def market_cycle_profile_result(record: dict[str, object] | None) -> dict[str, object]:
+    if not record:
+        return {
+            "available": False,
+            "label": "暂无评分特征",
+            "is_wave_prediction": False,
+            "message": "没有最新评分记录，暂不能生成周期特征参照。",
+            "reference_waves": [],
+            "observations": [],
+        }
+
+    opportunity = number_or_none(record.get("market_opportunity_score"))
+    position = number_or_none(record.get("market_position_score"))
+    pre_cap = number_or_none(record.get("pre_cap_market_position_score"))
+    crowding = number_or_none(record.get("crowding_penalty")) or 0
+    gap = opportunity - position if opportunity is not None and position is not None else None
+    risk_caps = record.get("risk_caps", [])
+    risk_cap_items = risk_caps if isinstance(risk_caps, list) else []
+    risk_cap_reasons = {str(item.get("reason")) for item in risk_cap_items if isinstance(item, dict) and item.get("reason")}
+    top_risk_reasons = {
+        "bubble_top_combo",
+        "extreme_expensive_valuation",
+        "expensive_valuation",
+        "volume_blowoff_top",
+        "sector_concentration_top",
+        "high_crowding_extreme",
+        "high_crowding",
+    }
+    high_volatility_reasons = {"extreme_high_volatility", "high_volatility"}
+
+    if opportunity is not None and position is not None and position >= 80 and opportunity >= 70 and crowding < 10 and not (risk_cap_reasons & top_risk_reasons):
+        label = "健康主升特征"
+        reference_waves = ["3"]
+        stance = "股票账户可保持高仓位，但仍要跟踪宽度和资金是否同步。"
+        message = "机会分和仓位分同时处于高位，说明趋势、宽度、资金或主线质量较好，且风险上限没有明显压制。"
+    elif opportunity is not None and position is not None and opportunity >= 60 and position <= 45 and ((risk_cap_reasons & top_risk_reasons) or (gap is not None and gap >= 20) or crowding >= 12):
+        label = "高位过热风控特征"
+        reference_waves = ["5", "b"]
+        stance = "不追高扩仓，优先检查估值、波动、拥挤和资金退潮风险。"
+        message = "机会分仍不低，但最终仓位分被明显压低，说明模型认为行情可看见，但风险收益不适合重仓。"
+    elif opportunity is not None and position is not None and opportunity <= 45 and position <= 40:
+        label = "悲观出清观察特征"
+        reference_waves = ["c"]
+        stance = "底部区间只做观察和分批确认，不因便宜直接满仓。"
+        message = "机会分和仓位分都低，通常对应趋势、资金、宽度尚未确认的悲观阶段。"
+    elif opportunity is not None and position is not None and 35 <= opportunity <= 60 and 35 <= position <= 70 and (gap is None or gap <= 15):
+        label = "底部修复或回踩确认特征"
+        reference_waves = ["1", "2"]
+        stance = "可以关注修复是否持续，仓位随宽度和资金确认逐步提升。"
+        message = "市场已经脱离极弱区，但趋势和资金质量还没有进入强共振。"
+    elif opportunity is not None and position is not None and opportunity >= 55 and 50 <= position <= 80:
+        label = "中继调整或结构趋势特征"
+        reference_waves = ["4"]
+        stance = "维持中高仓位，重点检查调整是否破坏宽度和主线。"
+        message = "机会分和仓位分处在中高区，行情有延续基础，但还不是低拥挤强趋势满仓状态。"
+    elif opportunity is not None and position is not None and opportunity >= 45 and position <= 45:
+        label = "反抽但风控压制特征"
+        reference_waves = ["a", "b"]
+        stance = "把反弹当作验证窗口，不把短期修复直接等同为新主升。"
+        message = "机会分有修复，但仓位分仍低，说明反弹质量或风险约束不足。"
+    else:
+        label = "中性震荡特征"
+        reference_waves = ["2", "4"]
+        stance = "按结构性机会处理，等待趋势、宽度、资金或估值给出更清晰确认。"
+        message = "当前分数组合没有落入极端底部、健康主升或泡沫顶部的典型区间。"
+
+    observations = [
+        f"机会分 {format_score_value(opportunity)}，最终仓位分 {format_score_value(position)}。",
+    ]
+    if pre_cap is not None and position is not None and pre_cap > position:
+        if risk_cap_items:
+            observations.append(f"扣上限前仓位分 {format_score_value(pre_cap)}，风险上限后降至 {format_score_value(position)}。")
+        else:
+            observations.append(f"扣上限前仓位分 {format_score_value(pre_cap)}，最终执行仓位分为 {format_score_value(position)}。")
+    if gap is not None:
+        observations.append(f"机会分与仓位分差值 {format_score_value(gap)}，差值越大越说明风险约束在主导仓位。")
+    if risk_cap_items:
+        risk_cap_labels = [RISK_CAP_LABELS.get(reason, reason) for reason in sorted(risk_cap_reasons)]
+        observations.append(f"已触发 {len(risk_cap_items)} 项风险上限：{'、'.join(risk_cap_labels)}。")
+    elif risk_cap_reasons & high_volatility_reasons:
+        observations.append("波动率风险上限正在压制仓位。")
+    else:
+        observations.append("未触发风险上限，仓位主要由机会分和拥挤惩罚决定。")
+
+    return {
+        "available": True,
+        "label": label,
+        "is_wave_prediction": False,
+        "reference_waves": reference_waves,
+        "score_line": f"机会 {format_score_value(opportunity)} / 仓位 {format_score_value(position)}",
+        "opportunity_score": opportunity,
+        "market_position_score": position,
+        "pre_cap_market_position_score": pre_cap,
+        "crowding_penalty": crowding,
+        "opportunity_position_gap": gap,
+        "risk_cap_reasons": sorted(risk_cap_reasons),
+        "message": message,
+        "stance": stance,
+        "observations": observations,
+        "note": "这是当前评分特征参照，不判定当前处于某个具体浪位。",
+    }
+
+
+def market_cycle_reference_result(latest: dict[str, object] | None = None) -> dict[str, object]:
     return {
         "title": "市场八浪周期与评分区间",
         "kind": "cycle_reference",
@@ -465,6 +600,7 @@ def market_cycle_reference_result() -> dict[str, object]:
             "market_position_score": "最终仓位分，扣除拥挤惩罚并经过风险上限后的股票账户仓位分。",
         },
         "waves": MARKET_CYCLE_REFERENCE,
+        "current_profile": market_cycle_profile_result(latest),
     }
 
 
@@ -605,7 +741,7 @@ def homepage_index_result() -> dict[str, object]:
         },
         "position_policy_map": policy_map,
         "position_map": {**policy_map, "legacy_alias_of": "position_policy_map"},
-        "market_cycle_reference": market_cycle_reference_result(),
+        "market_cycle_reference": market_cycle_reference_result(latest),
         "overview_chart": {
             "title": "总分与上证指数",
             "record_count": len(records),

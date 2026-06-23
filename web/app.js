@@ -38,6 +38,7 @@ const fallbackPositionScoreBands = [
 
 const fallbackMarketCycleReference = {
   title: "市场八浪周期与评分区间",
+  is_prediction: false,
   basis: "示意图只解释模型在不同周期位置的典型评分反应，不用于预测当前浪位。",
   waves: [
     { wave: "1", phase: "impulse", label: "熊末反弹", price_level: 42, opportunity_score_range: "45-60", position_score_range: "40-70", equity_position_range: "40%-75%", note: "估值开始有吸引力，但趋势和资金通常还需要确认。" },
@@ -432,6 +433,7 @@ function renderMarketCycleReference() {
 
   setText("cycleMapLabel", reference.is_prediction === false ? "示意图 · 不预测当前浪位" : reference.basis || "周期评分示意");
   renderMarketCycleChart(container, { ...reference, waves });
+  renderMarketCycleProfile(reference.current_profile);
   renderMarketCycleCards(waves);
 }
 
@@ -594,6 +596,39 @@ function renderMarketCycleCards(waves) {
       `,
     )
     .join("");
+}
+
+function renderMarketCycleProfile(profile) {
+  const container = document.getElementById("marketCycleProfile");
+  if (!container) return;
+  const item = profile && typeof profile === "object" ? profile : {};
+  if (!item.available) {
+    container.innerHTML = `
+      <article class="market-cycle-profile-card muted">
+        <span>当前评分特征</span>
+        <strong>暂无评分特征</strong>
+        <small>有最新评分记录后，这里会显示当前更接近哪类周期风险特征。</small>
+      </article>
+    `;
+    return;
+  }
+  const observations = Array.isArray(item.observations) ? item.observations.slice(0, 4) : [];
+  const waves = Array.isArray(item.reference_waves) ? item.reference_waves.map((wave) => `${wave}浪`).join(" / ") : "--";
+  container.innerHTML = `
+    <article class="market-cycle-profile-card">
+      <span>当前评分特征 · ${escapeHtml(item.note || "不判定当前浪位")}</span>
+      <strong>${escapeHtml(item.label || "--")}</strong>
+      <div class="cycle-profile-meta">
+        <b>${escapeHtml(item.score_line || "--")}</b>
+        <b>参照 ${escapeHtml(waves || "--")}</b>
+      </div>
+      <p>${escapeHtml(item.message || "")}</p>
+      <small>${escapeHtml(item.stance || "")}</small>
+      <ul>
+        ${observations.map((text) => `<li>${escapeHtml(text)}</li>`).join("")}
+      </ul>
+    </article>
+  `;
 }
 
 function currentPositionPolicyMap() {

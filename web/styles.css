@@ -510,6 +510,69 @@ select {
   height: 100%;
 }
 
+.market-cycle-profile {
+  margin-top: 12px;
+}
+
+.market-cycle-profile-card {
+  padding: 14px 16px;
+  border: 1px solid rgba(4, 125, 115, 0.24);
+  border-left: 4px solid var(--teal);
+  border-radius: 8px;
+  background: #f7fbfa;
+}
+
+.market-cycle-profile-card.muted {
+  border-left-color: var(--line);
+}
+
+.market-cycle-profile-card span,
+.market-cycle-profile-card small,
+.market-cycle-profile-card li {
+  color: var(--muted);
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+
+.market-cycle-profile-card strong {
+  display: block;
+  margin-top: 6px;
+  color: var(--ink);
+  font-size: 1.08rem;
+  line-height: 1.3;
+}
+
+.market-cycle-profile-card p {
+  margin-top: 8px;
+  color: var(--ink);
+  font-size: 0.9rem;
+  line-height: 1.55;
+}
+
+.cycle-profile-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.cycle-profile-meta b {
+  padding: 5px 8px;
+  border-radius: 6px;
+  background: var(--surface-soft);
+  color: var(--teal);
+  font-size: 0.82rem;
+  line-height: 1.3;
+}
+
+.market-cycle-profile-card ul {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px 18px;
+  margin: 10px 0 0;
+  padding-left: 18px;
+}
+
 .cycle-zone-line {
   stroke: rgba(98, 112, 107, 0.28);
   stroke-width: 1;
@@ -899,6 +962,10 @@ td.score-risk {
 
   .market-cycle-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .market-cycle-profile-card ul {
+    grid-template-columns: 1fr;
   }
 
   .detail-layout {
