@@ -36,6 +36,21 @@ const fallbackPositionScoreBands = [
   { score_min: 80, score_max: 100, position_range: "90%-100%", label: "低拥挤强趋势", description: "市场健康且风险约束未触发时，股票账户可接近满仓。" },
 ];
 
+const fallbackMarketCycleReference = {
+  title: "市场八浪周期与评分区间",
+  basis: "示意图只解释模型在不同周期位置的典型评分反应，不用于预测当前浪位。",
+  waves: [
+    { wave: "1", phase: "impulse", label: "熊末反弹", price_level: 42, opportunity_score_range: "45-60", position_score_range: "40-70", equity_position_range: "40%-75%", note: "估值开始有吸引力，但趋势和资金通常还需要确认。" },
+    { wave: "2", phase: "impulse", label: "回踩确认", price_level: 32, opportunity_score_range: "35-50", position_score_range: "35-60", equity_position_range: "20%-60%", note: "便宜度仍在，但回踩会压低趋势、宽度和风险偏好。" },
+    { wave: "3", phase: "impulse", label: "主升共振", price_level: 82, opportunity_score_range: "75-90", position_score_range: "80-100", equity_position_range: "90%-100%", note: "趋势、宽度、资金和主线共振，是模型最愿意重仓的位置。" },
+    { wave: "4", phase: "impulse", label: "中继调整", price_level: 64, opportunity_score_range: "60-75", position_score_range: "60-80", equity_position_range: "55%-90%", note: "牛市中继回撤，仓位不追高，但也不按熊市处理。" },
+    { wave: "5", phase: "impulse", label: "牛末冲顶", price_level: 90, opportunity_score_range: "60-80", position_score_range: "20-45", equity_position_range: "20%-60%", note: "人气和趋势仍强，但估值、拥挤、波动和风险上限开始压仓位。" },
+    { wave: "a", phase: "corrective", label: "顶部杀跌", price_level: 55, opportunity_score_range: "40-55", position_score_range: "20-40", equity_position_range: "20%-60%", note: "顶部后的第一波下跌，风险释放不充分，先控制仓位。" },
+    { wave: "b", phase: "corrective", label: "反抽诱多", price_level: 68, opportunity_score_range: "50-65", position_score_range: "20-45", equity_position_range: "20%-60%", note: "反抽会抬高短期机会分，但若估值和资金没有修复，仓位仍受约束。" },
+    { wave: "c", phase: "corrective", label: "悲观出清", price_level: 22, opportunity_score_range: "25-45", position_score_range: "10-40", equity_position_range: "0%-40%", note: "最悲观时估值便宜，但趋势、资金和宽度常未确认，不会盲目满仓。" },
+  ],
+};
+
 const svgNs = "http://www.w3.org/2000/svg";
 
 let state = {
@@ -117,6 +132,7 @@ function renderAll() {
   renderSummary();
   renderRiskOverview();
   renderPositionMap();
+  renderMarketCycleReference();
   renderOverviewChart();
   renderModuleSelect();
   renderModuleGrid();
@@ -396,6 +412,184 @@ function renderPositionBenchmarks(bands) {
           <span>${escapeHtml(item.label)}</span>
           <strong>净分 ${escapeHtml(scoreRangeText(item))} · 权益 ${escapeHtml(item.position_range)}</strong>
           <small>${escapeHtml(item.description || "")}</small>
+        </article>
+      `,
+    )
+    .join("");
+}
+
+function renderMarketCycleReference() {
+  const container = document.getElementById("marketCycleChart");
+  const reference = currentMarketCycleReference();
+  const waves = normalizeMarketCycleWaves(reference.waves);
+  if (!container) return;
+  if (!waves.length) {
+    setText("cycleMapLabel", "--");
+    renderEmpty(container, "暂无周期示意");
+    renderMarketCycleCards([]);
+    return;
+  }
+
+  setText("cycleMapLabel", reference.is_prediction === false ? "示意图 · 不预测当前浪位" : reference.basis || "周期评分示意");
+  renderMarketCycleChart(container, { ...reference, waves });
+  renderMarketCycleCards(waves);
+}
+
+function currentMarketCycleReference() {
+  const reference = state.index?.market_cycle_reference;
+  if (reference && Array.isArray(reference.waves) && reference.waves.length) return reference;
+  return fallbackMarketCycleReference;
+}
+
+function normalizeMarketCycleWaves(waves) {
+  const source = Array.isArray(waves) && waves.length ? waves : fallbackMarketCycleReference.waves;
+  return source
+    .map((wave, index) => ({
+      wave: String(wave.wave ?? index + 1),
+      phase: wave.phase === "corrective" ? "corrective" : "impulse",
+      label: wave.label || "",
+      price_level: numeric(wave.price_level) ?? 50,
+      opportunity_score_range: wave.opportunity_score_range || "--",
+      position_score_range: wave.position_score_range || "--",
+      equity_position_range: wave.equity_position_range || "--",
+      note: wave.note || "",
+    }))
+    .slice(0, 8);
+}
+
+function renderMarketCycleChart(container, reference) {
+  container.innerHTML = "";
+  const waves = reference.waves;
+  const width = 980;
+  const height = 520;
+  const margin = { top: 42, right: 34, bottom: 48, left: 42 };
+  const plotWidth = width - margin.left - margin.right;
+  const plotHeight = height - margin.top - margin.bottom;
+  const xForIndex = (index) => margin.left + (index / Math.max(waves.length - 1, 1)) * plotWidth;
+  const yForPrice = (priceLevel) => yPos(clamp(priceLevel, 0, 100), { min: 0, max: 100 }, margin, plotHeight);
+  const points = waves.map((wave, index) => ({
+    ...wave,
+    x: xForIndex(index),
+    y: yForPrice(wave.price_level),
+  }));
+
+  const svg = createSvg("svg", {
+    class: "market-cycle-svg",
+    viewBox: `0 0 ${width} ${height}`,
+    role: "img",
+  });
+  svg.appendChild(createSvg("title", {}, "市场八浪周期示意：每个位置标注市场机会分和最终仓位分的典型区间。"));
+
+  [
+    { y: 74, label: "高位风险", className: "risk" },
+    { y: 48, label: "健康趋势", className: "trend" },
+    { y: 22, label: "低位观察", className: "base" },
+  ].forEach((zone) => {
+    const y = yForPrice(zone.y);
+    svg.appendChild(createSvg("line", { class: `cycle-zone-line ${zone.className}`, x1: margin.left, y1: y, x2: width - margin.right, y2: y }));
+    svg.appendChild(createSvg("text", { class: "cycle-zone-label", x: margin.left + 6, y: y - 8 }, zone.label));
+  });
+
+  const impulsePoints = points.filter((pointItem) => pointItem.phase !== "corrective");
+  const correctivePoints = points.filter((pointItem) => pointItem.phase === "corrective");
+  if (impulsePoints.length > 1) {
+    svg.appendChild(createSvg("path", { class: "cycle-path impulse", d: smoothPath(impulsePoints) }));
+  }
+  if (correctivePoints.length) {
+    const correctivePathPoints = [points[4], ...correctivePoints].filter(Boolean);
+    svg.appendChild(createSvg("path", { class: "cycle-path corrective", d: smoothPath(correctivePathPoints) }));
+  }
+  renderNestedWave(svg, points);
+
+  svg.appendChild(createSvg("line", { class: "axis-line", x1: margin.left, y1: height - margin.bottom, x2: width - margin.right, y2: height - margin.bottom }));
+  svg.appendChild(createSvg("text", { class: "axis-label", x: width / 2, y: height - 12, "text-anchor": "middle" }, "1-5 推动浪上升，a-b-c 调整浪下降"));
+
+  points.forEach((pointItem, index) => {
+    const isCorrective = pointItem.phase === "corrective";
+    const markerClass = isCorrective ? "cycle-node corrective" : "cycle-node impulse";
+    svg.appendChild(createSvg("circle", { class: markerClass, cx: pointItem.x, cy: pointItem.y, r: 6 }));
+    svg.appendChild(
+      createSvg(
+        "text",
+        { class: isCorrective ? "wave-label corrective" : "wave-label", x: pointItem.x, y: pointItem.y - 12, "text-anchor": "middle" },
+        `${pointItem.wave}浪`,
+      ),
+    );
+    appendCycleCallout(svg, pointItem, index, width, height, margin);
+  });
+
+  container.appendChild(svg);
+}
+
+function renderNestedWave(svg, points) {
+  const second = points[1];
+  const third = points[2];
+  if (!second || !third) return;
+  const nested = [0.08, 0.24, 0.42, 0.62, 0.82].map((ratio, index) => {
+    const baseX = second.x + (third.x - second.x) * ratio;
+    const baseY = second.y + (third.y - second.y) * ratio;
+    const offset = index % 2 === 0 ? 14 : -16;
+    return { x: baseX, y: baseY + offset };
+  });
+  svg.appendChild(createSvg("path", { class: "cycle-subwave", d: smoothPath(nested) }));
+  svg.appendChild(createSvg("text", { class: "cycle-subwave-label", x: nested[2].x + 12, y: nested[2].y - 18 }, "浪中有浪"));
+}
+
+function appendCycleCallout(svg, pointItem, index, width, height, margin) {
+  const boxWidth = 132;
+  const boxHeight = 66;
+  const offsets = [
+    { dx: -26, dy: -96 },
+    { dx: -18, dy: 22 },
+    { dx: -56, dy: -100 },
+    { dx: -58, dy: 26 },
+    { dx: -82, dy: 24 },
+    { dx: -76, dy: 28 },
+    { dx: -90, dy: -96 },
+    { dx: -116, dy: 20 },
+  ];
+  const offset = offsets[index] || { dx: 10, dy: -84 };
+  const x = clamp(pointItem.x + offset.dx, margin.left + 4, width - margin.right - boxWidth);
+  const y = clamp(pointItem.y + offset.dy, margin.top + 4, height - margin.bottom - boxHeight - 4);
+  const isCorrective = pointItem.phase === "corrective";
+  svg.appendChild(createSvg("rect", { class: isCorrective ? "cycle-callout-box corrective" : "cycle-callout-box", x, y, width: boxWidth, height: boxHeight, rx: 6 }));
+  svg.appendChild(createSvg("text", { class: "cycle-callout-title", x: x + 10, y: y + 18 }, `${pointItem.wave}浪 · ${pointItem.label}`));
+  svg.appendChild(createSvg("text", { class: "cycle-callout-text opportunity", x: x + 10, y: y + 38 }, `机会 ${pointItem.opportunity_score_range}`));
+  svg.appendChild(createSvg("text", { class: "cycle-callout-text position", x: x + 10, y: y + 56 }, `仓位 ${pointItem.position_score_range}`));
+}
+
+function smoothPath(points) {
+  if (!points.length) return "";
+  if (points.length === 1) return `M ${points[0].x} ${points[0].y}`;
+  let d = `M ${points[0].x} ${points[0].y}`;
+  for (let index = 0; index < points.length - 1; index += 1) {
+    const p0 = points[index - 1] || points[index];
+    const p1 = points[index];
+    const p2 = points[index + 1];
+    const p3 = points[index + 2] || p2;
+    const cp1x = p1.x + (p2.x - p0.x) / 6;
+    const cp1y = p1.y + (p2.y - p0.y) / 6;
+    const cp2x = p2.x - (p3.x - p1.x) / 6;
+    const cp2y = p2.y - (p3.y - p1.y) / 6;
+    d += ` C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${p2.x} ${p2.y}`;
+  }
+  return d;
+}
+
+function renderMarketCycleCards(waves) {
+  const container = document.getElementById("marketCycleCards");
+  if (!container) return;
+  if (!waves.length) {
+    renderEmpty(container, "暂无周期示意");
+    return;
+  }
+  container.innerHTML = waves
+    .map(
+      (wave) => `
+        <article class="market-cycle-card ${escapeHtml(wave.phase)}">
+          <span>${escapeHtml(wave.wave)}浪 · ${escapeHtml(wave.label)}</span>
+          <strong>机会 ${escapeHtml(wave.opportunity_score_range)} · 仓位 ${escapeHtml(wave.position_score_range)}</strong>
+          <small>股票账户 ${escapeHtml(wave.equity_position_range)}。${escapeHtml(wave.note)}</small>
         </article>
       `,
     )

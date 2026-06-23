@@ -61,6 +61,23 @@ class PositionMapContractTest(unittest.TestCase):
             self.assertIn("pre_cap_market_position_score", current)
             self.assertIsInstance(current.get("risk_caps"), list)
 
+    def test_api_index_returns_market_cycle_reference(self) -> None:
+        payload = serve_market_web.homepage_index_result()
+        reference = payload.get("market_cycle_reference")
+        waves = reference.get("waves") if isinstance(reference, dict) else None
+
+        self.assertIsInstance(reference, dict)
+        self.assertFalse(reference.get("is_prediction"))
+        self.assertIsInstance(waves, list)
+        self.assertEqual([wave["wave"] for wave in waves], ["1", "2", "3", "4", "5", "a", "b", "c"])
+        self.assertEqual(waves[2]["position_score_range"], "80-100")
+        self.assertEqual(waves[4]["position_score_range"], "20-45")
+        for wave in waves:
+            self.assertIn("opportunity_score_range", wave)
+            self.assertIn("position_score_range", wave)
+            self.assertIn("equity_position_range", wave)
+            self.assertIn("note", wave)
+
     def test_frontend_no_longer_uses_score_as_cycle_stage(self) -> None:
         app_js = (ROOT / "web" / "app.js").read_text(encoding="utf-8")
 

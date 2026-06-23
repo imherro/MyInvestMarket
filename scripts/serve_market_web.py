@@ -89,6 +89,90 @@ POSITION_SCORE_BANDS = [
 ]
 
 
+MARKET_CYCLE_REFERENCE = [
+    {
+        "wave": "1",
+        "phase": "impulse",
+        "label": "熊末反弹",
+        "price_level": 42,
+        "opportunity_score_range": "45-60",
+        "position_score_range": "40-70",
+        "equity_position_range": "40%-75%",
+        "note": "估值开始有吸引力，但趋势和资金通常还需要确认。",
+    },
+    {
+        "wave": "2",
+        "phase": "impulse",
+        "label": "回踩确认",
+        "price_level": 32,
+        "opportunity_score_range": "35-50",
+        "position_score_range": "35-60",
+        "equity_position_range": "20%-60%",
+        "note": "便宜度仍在，但回踩会压低趋势、宽度和风险偏好。",
+    },
+    {
+        "wave": "3",
+        "phase": "impulse",
+        "label": "主升共振",
+        "price_level": 82,
+        "opportunity_score_range": "75-90",
+        "position_score_range": "80-100",
+        "equity_position_range": "90%-100%",
+        "note": "趋势、宽度、资金和主线共振，是模型最愿意重仓的位置。",
+    },
+    {
+        "wave": "4",
+        "phase": "impulse",
+        "label": "中继调整",
+        "price_level": 64,
+        "opportunity_score_range": "60-75",
+        "position_score_range": "60-80",
+        "equity_position_range": "55%-90%",
+        "note": "牛市中继回撤，仓位不追高，但也不按熊市处理。",
+    },
+    {
+        "wave": "5",
+        "phase": "impulse",
+        "label": "牛末冲顶",
+        "price_level": 90,
+        "opportunity_score_range": "60-80",
+        "position_score_range": "20-45",
+        "equity_position_range": "20%-60%",
+        "note": "人气和趋势仍强，但估值、拥挤、波动和风险上限开始压仓位。",
+    },
+    {
+        "wave": "a",
+        "phase": "corrective",
+        "label": "顶部杀跌",
+        "price_level": 55,
+        "opportunity_score_range": "40-55",
+        "position_score_range": "20-40",
+        "equity_position_range": "20%-60%",
+        "note": "顶部后的第一波下跌，风险释放不充分，先控制仓位。",
+    },
+    {
+        "wave": "b",
+        "phase": "corrective",
+        "label": "反抽诱多",
+        "price_level": 68,
+        "opportunity_score_range": "50-65",
+        "position_score_range": "20-45",
+        "equity_position_range": "20%-60%",
+        "note": "反抽会抬高短期机会分，但若估值和资金没有修复，仓位仍受约束。",
+    },
+    {
+        "wave": "c",
+        "phase": "corrective",
+        "label": "悲观出清",
+        "price_level": 22,
+        "opportunity_score_range": "25-45",
+        "position_score_range": "10-40",
+        "equity_position_range": "0%-40%",
+        "note": "最悲观时估值便宜，但趋势、资金和宽度常未确认，不会盲目满仓。",
+    },
+]
+
+
 def now_iso() -> str:
     return datetime.now(TZ).isoformat(timespec="seconds")
 
@@ -370,6 +454,20 @@ def position_policy_map_result(latest: dict[str, object]) -> dict[str, object]:
     }
 
 
+def market_cycle_reference_result() -> dict[str, object]:
+    return {
+        "title": "市场八浪周期与评分区间",
+        "kind": "cycle_reference",
+        "is_prediction": False,
+        "basis": "示意图只解释模型在不同周期位置的典型评分反应，不用于预测当前浪位。",
+        "score_fields": {
+            "market_opportunity_score": "市场机会分，衡量行情机会质量。",
+            "market_position_score": "最终仓位分，扣除拥挤惩罚并经过风险上限后的股票账户仓位分。",
+        },
+        "waves": MARKET_CYCLE_REFERENCE,
+    }
+
+
 def history_api_result(include_legacy: bool = False) -> dict[str, object]:
     history = filtered_history(load_history(DEFAULT_HISTORY_PATH), include_legacy=include_legacy)
     return {
@@ -507,6 +605,7 @@ def homepage_index_result() -> dict[str, object]:
         },
         "position_policy_map": policy_map,
         "position_map": {**policy_map, "legacy_alias_of": "position_policy_map"},
+        "market_cycle_reference": market_cycle_reference_result(),
         "overview_chart": {
             "title": "总分与上证指数",
             "record_count": len(records),
