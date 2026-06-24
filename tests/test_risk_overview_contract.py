@@ -12,6 +12,7 @@ sys.path.insert(0, str(SCRIPTS))
 
 import market_scoring  # noqa: E402
 import serve_market_web  # noqa: E402
+from tests.helpers import attach_allocation_policy  # noqa: E402
 
 
 def score_record(*, warnings: list[str] | None = None, risk_caps: list[dict] | None = None, confidence: str = "medium") -> dict:
@@ -27,7 +28,7 @@ def score_record(*, warnings: list[str] | None = None, risk_caps: list[dict] | N
         }
         for key, meta in market_scoring.MODULES.items()
     }
-    return {
+    return attach_allocation_policy({
         "run_id": "risk-overview-test",
         "scored_at": "2026-06-22T16:00:00+08:00",
         "basis_trade_date": "2026-06-18",
@@ -54,7 +55,7 @@ def score_record(*, warnings: list[str] | None = None, risk_caps: list[dict] | N
         "risk_caps": risk_caps or [],
         "modules": modules,
         "crowding": {"penalty": 15, "items": []},
-    }
+    })
 
 
 class RiskOverviewContractTest(unittest.TestCase):

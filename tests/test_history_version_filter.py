@@ -12,6 +12,7 @@ sys.path.insert(0, str(SCRIPTS))
 
 import market_scoring  # noqa: E402
 import serve_market_web  # noqa: E402
+from tests.helpers import attach_allocation_policy  # noqa: E402
 
 
 def record(run_id: str, model_version: str, position_policy_version: str) -> dict:
@@ -27,7 +28,7 @@ def record(run_id: str, model_version: str, position_policy_version: str) -> dic
         }
         for key, meta in market_scoring.MODULES.items()
     }
-    return {
+    return attach_allocation_policy({
         "run_id": run_id,
         "scored_at": f"2026-06-22T16:00:0{run_id[-1]}+08:00",
         "basis_trade_date": "2026-06-18",
@@ -50,7 +51,7 @@ def record(run_id: str, model_version: str, position_policy_version: str) -> dic
         "modules": modules,
         "crowding": {"penalty": 15, "items": []},
         "data_quality": {"missing_fields": [], "warnings": []},
-    }
+    })
 
 
 def mixed_history() -> dict:
@@ -58,6 +59,7 @@ def mixed_history() -> dict:
         "schema_version": market_scoring.HISTORY_SCHEMA_VERSION,
         "model_version": market_scoring.MODEL_VERSION,
         "position_policy_version": market_scoring.POSITION_POLICY_VERSION,
+        "allocation_policy_version": market_scoring.ALLOCATION_POLICY_VERSION,
         "updated_at": "2026-06-22T16:10:00+08:00",
         "records": [
             record("legacy-model-1", "a_share_market_score_v1_3", market_scoring.POSITION_POLICY_VERSION),
@@ -94,6 +96,7 @@ class HistoryVersionFilterTest(unittest.TestCase):
         self.assertEqual(with_legacy["record_count"], 3)
         self.assertEqual(current["version_filter"]["model_version"], market_scoring.MODEL_VERSION)
         self.assertEqual(current["version_filter"]["position_policy_version"], market_scoring.POSITION_POLICY_VERSION)
+        self.assertEqual(current["version_filter"]["allocation_policy_version"], market_scoring.ALLOCATION_POLICY_VERSION)
 
     def test_frontend_does_not_request_legacy_history_by_default(self) -> None:
         app_js = (ROOT / "web" / "app.js").read_text(encoding="utf-8")

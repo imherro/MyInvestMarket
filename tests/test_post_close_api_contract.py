@@ -16,10 +16,11 @@ sys.path.insert(0, str(SCRIPTS))
 import run_post_close_update  # noqa: E402
 import market_scoring  # noqa: E402
 import serve_market_web  # noqa: E402
+from tests.helpers import attach_allocation_policy  # noqa: E402
 
 
 def score_record() -> dict:
-    return {
+    return attach_allocation_policy({
         "run_id": "20260622T170000-test",
         "basis_trade_date": "2026-06-18",
         "model_version": market_scoring.MODEL_VERSION,
@@ -34,7 +35,8 @@ def score_record() -> dict:
         "risk_caps": [],
         "modules": {},
         "crowding": {},
-    }
+        "data_quality": {"missing_fields": [], "warnings": []},
+    })
 
 
 def snapshot() -> dict:
@@ -54,11 +56,13 @@ def valid_api_payloads() -> dict:
             "available": True,
             "model_version": record["model_version"],
             "position_policy_version": record["position_policy_version"],
+            "allocation_policy_version": record["allocation_policy_version"],
         },
         "/api/index": {
             "available": True,
             "model_version": record["model_version"],
             "position_policy_version": record["position_policy_version"],
+            "allocation_policy_version": record["allocation_policy_version"],
             "summary": {
                 "run_id": record["run_id"],
                 "basis_trade_date": record["basis_trade_date"],
@@ -67,6 +71,20 @@ def valid_api_payloads() -> dict:
             "position_policy_map": {
                 "position_policy_version": record["position_policy_version"],
                 "current": {"market_position_score": record["market_position_score"]},
+            },
+            "allocation_policy": {
+                **record["allocation_policy"],
+                "history": [
+                    {
+                        "basis_trade_date": record["basis_trade_date"],
+                        "scored_at": record.get("scored_at"),
+                        "state": record["allocation_policy"]["state"],
+                        "sleeves": {
+                            sleeve["key"]: {"target_range": sleeve["target_range"], "midpoint": sleeve["midpoint"]}
+                            for sleeve in record["allocation_policy"]["sleeves"]
+                        },
+                    }
+                ],
             },
             "market_cycle_reference": {
                 "waves": [{"wave": "1"}],
@@ -185,6 +203,7 @@ class PostCloseApiContractTest(unittest.TestCase):
         self.assertTrue(payload["available"])
         self.assertEqual(payload["model_version"], market_scoring.MODEL_VERSION)
         self.assertEqual(payload["position_policy_version"], market_scoring.POSITION_POLICY_VERSION)
+        self.assertEqual(payload["allocation_policy_version"], market_scoring.ALLOCATION_POLICY_VERSION)
 
 
 if __name__ == "__main__":

@@ -24,6 +24,19 @@ const chartColors = {
   opportunity: "#2c68a0",
   shanghai: "#b7791f",
   penalty: "#bf3d2b",
+  coreWide: "#2c68a0",
+  mainlineEtf: "#bf3d2b",
+  leaderAlpha: "#b7791f",
+  defensiveQuality: "#2f7d4f",
+  cashLike: "#6b7280",
+};
+
+const allocationColors = {
+  core_wide_etf: chartColors.coreWide,
+  mainline_etf: chartColors.mainlineEtf,
+  leader_alpha: chartColors.leaderAlpha,
+  defensive_quality: chartColors.defensiveQuality,
+  cash_like: chartColors.cashLike,
 };
 
 // Compatibility fallback only. The default page uses /api/index.position_policy_map.bands.
@@ -132,6 +145,7 @@ function normalizeRecords(records) {
 function renderAll() {
   renderSummary();
   renderRiskOverview();
+  renderAllocationPolicy();
   renderPositionMap();
   renderMarketCycleReference();
   renderOverviewChart();
@@ -266,6 +280,82 @@ function riskCapMessage(cap) {
   const severity = cap.severity ? `${severityLabel(cap.severity)} · ` : "";
   const reason = cap.reason ? `${cap.reason} · ` : "";
   return `${severity}${reason}${cap.message || "风险上限已触发"}`;
+}
+
+function renderAllocationPolicy() {
+  const policy = state.index?.allocation_policy || state.latest?.allocation_policy || null;
+  const cards = document.getElementById("allocationCards");
+  const chart = document.getElementById("allocationChart");
+  const triggerBox = document.getElementById("allocationTriggers");
+  if (!policy || !policy.available && !Array.isArray(policy.sleeves)) {
+    setText("allocationState", "暂无配置研究");
+    renderEmpty(cards, "暂无五仓配置");
+    renderEmpty(chart, "暂无配置曲线");
+    renderEmpty(triggerBox, "暂无配置依据");
+    return;
+  }
+
+  const sleeves = Array.isArray(policy.sleeves) ? policy.sleeves : [];
+  setText(
+    "allocationState",
+    `${policy.state || "--"} · 风险资产 ${policy.total_risk_asset_range || officialPositionRange(state.latest)}`,
+  );
+  cards.innerHTML = sleeves
+    .map((sleeve) => {
+      const color = allocationColors[sleeve.key] || chartColors.position;
+      return `
+        <article class="allocation-card">
+          <header>
+            <span class="allocation-swatch" style="background:${color}"></span>
+            <div>
+              <strong>${escapeHtml(sleeve.label || sleeve.key || "--")}</strong>
+              <small>${escapeHtml(sleeve.asset || "")}</small>
+            </div>
+          </header>
+          <b>${escapeHtml(sleeve.target_range || "--")}</b>
+          <p>${escapeHtml(sleeve.role || "")}</p>
+          <small>${escapeHtml(sleeve.driver || "")}</small>
+        </article>
+      `;
+    })
+    .join("");
+
+  const history = Array.isArray(policy.history) && policy.history.length
+    ? policy.history
+    : state.records.map((record) => ({
+        basis_trade_date: record.basis_trade_date,
+        scored_at: record.scored_at,
+        sleeves: sleevesToHistoryMap(record.allocation_policy?.sleeves || []),
+      }));
+  const labels = history.map(recordLabel);
+  const titles = history.map(recordPointTitle);
+  const series = sleeves.map((sleeve) => ({
+    name: sleeve.label || sleeve.key,
+    color: allocationColors[sleeve.key] || chartColors.position,
+    axis: "left",
+    data: history.map((record, index) => point(labels[index], record.sleeves?.[sleeve.key]?.midpoint, titles[index])),
+  }));
+  renderLineChart(chart, series, { leftMin: 0, leftMax: 100 });
+
+  const triggers = Array.isArray(policy.triggers) ? policy.triggers : [];
+  const principles = Array.isArray(policy.principles) ? policy.principles : [];
+  const lines = [...triggers.slice(0, 4), ...principles.slice(0, 2)];
+  triggerBox.innerHTML = lines.length
+    ? lines.map((text) => `<div class="allocation-trigger">${escapeHtml(text)}</div>`).join("")
+    : `<div class="allocation-trigger muted">暂无配置依据</div>`;
+}
+
+function sleevesToHistoryMap(sleeves) {
+  if (!Array.isArray(sleeves)) return {};
+  return sleeves.reduce((memo, sleeve) => {
+    if (sleeve && sleeve.key) {
+      memo[sleeve.key] = {
+        target_range: sleeve.target_range,
+        midpoint: sleeve.midpoint,
+      };
+    }
+    return memo;
+  }, {});
 }
 
 function severityLabel(value) {

@@ -14,6 +14,7 @@ sys.path.insert(0, str(SCRIPTS))
 import market_scoring  # noqa: E402
 import migrate_market_score_history  # noqa: E402
 import serve_market_web  # noqa: E402
+from tests.helpers import attach_allocation_policy  # noqa: E402
 
 
 def current_record(run_id: str = "current-run") -> dict:
@@ -29,7 +30,7 @@ def current_record(run_id: str = "current-run") -> dict:
         }
         for key, meta in market_scoring.MODULES.items()
     }
-    return {
+    return attach_allocation_policy({
         "run_id": run_id,
         "model_version": market_scoring.MODEL_VERSION,
         "position_policy_version": market_scoring.POSITION_POLICY_VERSION,
@@ -52,7 +53,7 @@ def current_record(run_id: str = "current-run") -> dict:
         "modules": modules,
         "crowding": {"penalty": 15, "items": []},
         "data_quality": {"missing_fields": [], "warnings": []},
-    }
+    })
 
 
 def legacy_record(run_id: str, snapshot_sha256: str = "legacy-sha") -> dict:

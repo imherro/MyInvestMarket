@@ -256,6 +256,29 @@ def crowding_rows(record: dict[str, Any]) -> str:
     return "\n".join(lines)
 
 
+def allocation_rows(record: dict[str, Any]) -> str:
+    policy = record.get("allocation_policy", {}) if isinstance(record.get("allocation_policy"), dict) else {}
+    sleeves = policy.get("sleeves", []) if isinstance(policy.get("sleeves"), list) else []
+    if not sleeves:
+        return "暂无五仓配置。"
+    rows = ["| 仓位 | 资产 | 建议区间 | 角色 |", "|---|---|---:|---|"]
+    for sleeve in sleeves:
+        if not isinstance(sleeve, dict):
+            continue
+        rows.append(
+            f"| {sleeve.get('label')} | {sleeve.get('asset')} | {sleeve.get('target_range')} | {sleeve.get('role')} |"
+        )
+    return "\n".join(rows)
+
+
+def allocation_trigger_lines(record: dict[str, Any]) -> str:
+    policy = record.get("allocation_policy", {}) if isinstance(record.get("allocation_policy"), dict) else {}
+    triggers = policy.get("triggers", []) if isinstance(policy.get("triggers"), list) else []
+    if not triggers:
+        return "- 暂无配置触发依据。"
+    return "\n".join(f"- {item}" for item in triggers)
+
+
 def top_industry_lines(snapshot: dict[str, Any], key: str) -> str:
     rows = ((snapshot.get("sector_rotation", {}) or {}).get(key, []) or [])[:5]
     if not rows:
@@ -320,7 +343,9 @@ def write_report(snapshot: dict[str, Any], record: dict[str, Any]) -> Path:
 | 官方推荐权益区间 | {fmt(record.get('recommended_equity_position_range') or record.get('base_equity_position_range') or record.get('equity_position_range'))} |
 | 风险上限数量 | {len(record.get('risk_caps', []) or [])} |
 | 仓位策略版本 | {record.get('position_policy_version')} |
+| 配置策略版本 | {record.get('allocation_policy_version')} |
 | 市场状态 | {record.get('market_regime')} |
+| 配置状态 | {record.get('allocation_state')} |
 | 置信度 | {record.get('confidence')} |
 
 {module_rows(record)}
@@ -344,6 +369,14 @@ def write_report(snapshot: dict[str, Any], record: dict[str, Any]) -> Path:
 ## 拥挤与风险
 
 {crowding_rows(record)}
+
+## 五仓配置
+
+{allocation_rows(record)}
+
+配置触发依据：
+
+{allocation_trigger_lines(record)}
 
 {cycle_profile_section(record)}
 
@@ -374,11 +407,13 @@ def validate_api_payloads(payloads: dict[str, dict[str, Any]]) -> dict[str, Any]
     latest_record = score_payload.get("record") or {}
     index_summary = index.get("summary") or {}
     policy_map = index.get("position_policy_map") or {}
+    allocation_policy = index.get("allocation_policy") or {}
     cycle_reference = index.get("market_cycle_reference") or {}
     cycle_profile = cycle_reference.get("current_profile") or {}
     binding = analysis_payload.get("binding") or {}
     local_model_version = market_scoring.MODEL_VERSION
     local_position_policy_version = market_scoring.POSITION_POLICY_VERSION
+    local_allocation_policy_version = market_scoring.ALLOCATION_POLICY_VERSION
 
     require_api(bool(service_payload.get("available")), "/api/service is not available")
     require_api(
@@ -389,11 +424,19 @@ def validate_api_payloads(payloads: dict[str, dict[str, Any]]) -> dict[str, Any]
         service_payload.get("position_policy_version") == local_position_policy_version,
         "/api/service POSITION_POLICY_VERSION does not match local POSITION_POLICY_VERSION",
     )
+    require_api(
+        service_payload.get("allocation_policy_version") == local_allocation_policy_version,
+        "/api/service ALLOCATION_POLICY_VERSION does not match local ALLOCATION_POLICY_VERSION",
+    )
     require_api(bool(index.get("available")), "/api/index is not available")
     require_api(index.get("model_version") == local_model_version, "/api/index MODEL_VERSION does not match local MODEL_VERSION")
     require_api(
         index.get("position_policy_version") == local_position_policy_version,
         "/api/index POSITION_POLICY_VERSION does not match local POSITION_POLICY_VERSION",
+    )
+    require_api(
+        index.get("allocation_policy_version") == local_allocation_policy_version,
+        "/api/index ALLOCATION_POLICY_VERSION does not match local ALLOCATION_POLICY_VERSION",
     )
     require_api(bool(index_summary.get("run_id")), "/api/index.summary.run_id is missing")
     require_api(bool(index_summary.get("basis_trade_date")), "/api/index.summary.basis_trade_date is missing")
@@ -404,6 +447,10 @@ def validate_api_payloads(payloads: dict[str, dict[str, Any]]) -> dict[str, Any]
         "/api/index.position_policy_map.position_policy_version does not match local POSITION_POLICY_VERSION",
     )
     require_api(bool((policy_map.get("current") or {}).get("market_position_score") is not None), "/api/index.position_policy_map.current.market_position_score is missing")
+    require_api(allocation_policy.get("version") == local_allocation_policy_version, "/api/index.allocation_policy.version does not match local ALLOCATION_POLICY_VERSION")
+    require_api(bool(allocation_policy.get("state")), "/api/index.allocation_policy.state is missing")
+    require_api(len(allocation_policy.get("sleeves") or []) == 5, "/api/index.allocation_policy.sleeves must contain five sleeves")
+    require_api(bool(allocation_policy.get("history")), "/api/index.allocation_policy.history is missing")
     require_api(bool(cycle_reference.get("waves")), "/api/index.market_cycle_reference.waves is missing")
     require_api(bool(cycle_profile.get("available")), "/api/index.market_cycle_reference.current_profile is not available")
     require_api(bool(cycle_profile.get("label")), "/api/index.market_cycle_reference.current_profile.label is missing")
@@ -417,6 +464,11 @@ def validate_api_payloads(payloads: dict[str, dict[str, Any]]) -> dict[str, Any]
         latest_record.get("position_policy_version") == local_position_policy_version,
         "latest market score POSITION_POLICY_VERSION does not match local POSITION_POLICY_VERSION",
     )
+    require_api(
+        latest_record.get("allocation_policy_version") == local_allocation_policy_version,
+        "latest market score ALLOCATION_POLICY_VERSION does not match local ALLOCATION_POLICY_VERSION",
+    )
+    require_api(len(((latest_record.get("allocation_policy") or {}).get("sleeves") or [])) == 5, "latest market score allocation_policy.sleeves must contain five sleeves")
     require_api(bool(latest_record.get("recommended_equity_position_range")), "latest market score recommended_equity_position_range is missing")
     require_api(index_summary.get("run_id") == latest_record.get("run_id"), "/api/index summary run_id does not match latest score")
     require_api(
@@ -437,6 +489,7 @@ def validate_api_payloads(payloads: dict[str, dict[str, Any]]) -> dict[str, Any]
         "service_version": {
             "model_version": service_payload.get("model_version"),
             "position_policy_version": service_payload.get("position_policy_version"),
+            "allocation_policy_version": service_payload.get("allocation_policy_version"),
         },
         "run_id": latest_record.get("run_id"),
         "basis_trade_date": latest_record.get("basis_trade_date"),

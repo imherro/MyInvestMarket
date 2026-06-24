@@ -17,16 +17,18 @@ DEFAULT_SNAPSHOT_PATH = DATA_DIR / "latest_market_snapshot.json"
 DEFAULT_HISTORY_PATH = DATA_DIR / "market_score_history.json"
 DEFAULT_AUDIT_LOG_PATH = DATA_DIR / "market_score_history_audit.jsonl"
 TZ = ZoneInfo("Asia/Shanghai")
-MODEL_VERSION = "v1.0_stable"
-SCORE_SCHEMA_VERSION = "1.4"
-FEATURE_SCHEMA_VERSION = "1.2"
-POSITION_POLICY_VERSION = "stock_account_position_policy_v2"
-HISTORY_SCHEMA_VERSION = 2
+MODEL_VERSION = "v2.0_allocation"
+SCORE_SCHEMA_VERSION = "2.0"
+FEATURE_SCHEMA_VERSION = "1.3"
+POSITION_POLICY_VERSION = "stock_account_position_policy_v3"
+ALLOCATION_POLICY_VERSION = "allocation_policy_v1"
+HISTORY_SCHEMA_VERSION = 3
 HISTORY_DEDUPE_KEY_FIELDS = (
     "basis_trade_date",
     "snapshot_sha256",
     "model_version",
     "position_policy_version",
+    "allocation_policy_version",
 )
 MIN_ROLLING_SAMPLE_COUNT = 4
 RISK_CAP_SEVERITY_RANK = {"low": 1, "medium": 2, "high": 3}
@@ -34,6 +36,7 @@ REQUIRED_SCORE_RECORD_STRING_FIELDS = (
     "run_id",
     "model_version",
     "position_policy_version",
+    "allocation_policy_version",
     "account_scope",
     "scored_at",
     "basis_trade_date",
@@ -891,6 +894,276 @@ def position_range(score: float) -> str:
     return "90%-100%"
 
 
+ALLOCATION_SLEEVE_ORDER = (
+    "core_wide_etf",
+    "mainline_etf",
+    "leader_alpha",
+    "defensive_quality",
+    "cash_like",
+)
+
+
+ALLOCATION_SLEEVE_META = {
+    "core_wide_etf": {
+        "label": "核心仓",
+        "asset": "宽基ETF",
+        "role": "宏观β底座",
+        "driver": "流动性、估值分位、宽基趋势、风险溢价",
+        "examples": ["沪深300ETF", "中证A500ETF", "中证500ETF"],
+    },
+    "mainline_etf": {
+        "label": "主线仓",
+        "asset": "行业/主题ETF",
+        "role": "产业β增强",
+        "driver": "主线强度、资金集中、成交额、行业持续性",
+        "examples": ["半导体ETF", "人工智能ETF", "机器人ETF"],
+    },
+    "leader_alpha": {
+        "label": "龙头仓",
+        "asset": "龙头个股",
+        "role": "资金α弹性",
+        "driver": "资金选择、强度排序、龙头稳定性、退潮风险",
+        "examples": ["主线龙头", "细分龙头"],
+    },
+    "defensive_quality": {
+        "label": "收益防御仓",
+        "asset": "红利低波/自由现金流ETF",
+        "role": "低波动权益防御",
+        "driver": "风险偏好、利率环境、质量因子、相对抗跌",
+        "examples": ["红利低波ETF", "自由现金流ETF"],
+    },
+    "cash_like": {
+        "label": "现金替代仓",
+        "asset": "短融ETF/货币工具",
+        "role": "等待权与回撤缓冲",
+        "driver": "风险上限、波动率、资金退潮、机会等待",
+        "examples": ["短融ETF", "货币基金"],
+    },
+}
+
+
+def percent_range_midpoint(range_text: str | None) -> float | None:
+    parsed = parse_percent_range(range_text)
+    if parsed is None:
+        return None
+    return round2((parsed[0] + parsed[1]) / 2)
+
+
+def allocation_range(low: float, high: float) -> str:
+    low = clamp(low, 0, 100)
+    high = clamp(high, 0, 100)
+    if low > high:
+        low, high = high, low
+    return f"{round(low)}%-{round(high)}%"
+
+
+def module_pct_value(modules: dict[str, Any], key: str) -> float:
+    value = module_score_pct(modules, key)
+    return round2((value or 0) * 100) or 0
+
+
+def allocation_state(
+    position_score: float,
+    opportunity_score: float,
+    pre_cap_score: float,
+    modules: dict[str, Any],
+    crowding_penalty_value: float,
+    risk_caps: list[dict[str, Any]],
+) -> str:
+    risk_reasons = {str(cap.get("reason")) for cap in risk_caps if isinstance(cap, dict) and cap.get("reason")}
+    top_reasons = {
+        "bubble_top_combo",
+        "volume_blowoff_top",
+        "sector_concentration_top",
+        "extreme_expensive_valuation",
+        "extreme_high_volatility",
+        "capital_outflow_combo",
+    }
+    if opportunity_score >= 60 and (pre_cap_score - position_score >= 15 or risk_reasons & top_reasons or crowding_penalty_value >= 15):
+        return "高位过热风控"
+    if position_score <= 20:
+        return "防守期"
+    if position_score <= 35:
+        return "弱修复期"
+    if position_score <= 50:
+        return "震荡轮动期"
+    mainline_pct = module_pct_value(modules, "mainline")
+    breadth_pct = module_pct_value(modules, "breadth")
+    if position_score <= 65:
+        return "结构主线期" if mainline_pct >= 55 else "震荡轮动期"
+    if position_score <= 80:
+        return "趋势扩张期" if breadth_pct >= 50 else "结构主线期"
+    return "低拥挤强趋势期"
+
+
+def allocation_policy(
+    position_score: float,
+    opportunity_score: float,
+    pre_cap_score: float,
+    recommended_range: str,
+    modules: dict[str, Any],
+    crowding: dict[str, Any],
+    snapshot: dict[str, Any],
+    risk_caps: list[dict[str, Any]],
+) -> dict[str, Any]:
+    crowding_penalty_value = as_float(crowding.get("penalty")) or 0
+    state = allocation_state(position_score, opportunity_score, pre_cap_score, modules, crowding_penalty_value, risk_caps)
+    index_pct = module_pct_value(modules, "index_trend")
+    breadth_pct = module_pct_value(modules, "breadth")
+    liquidity_pct = module_pct_value(modules, "liquidity")
+    capital_pct = module_pct_value(modules, "capital_flow")
+    mainline_pct = module_pct_value(modules, "mainline")
+    valuation_pct = module_pct_value(modules, "valuation")
+    macro_pct = module_pct_value(modules, "macro")
+    risk_reasons = {str(cap.get("reason")) for cap in risk_caps if isinstance(cap, dict) and cap.get("reason")}
+    high_risk = bool(risk_caps) or crowding_penalty_value >= 12
+    strong_mainline = mainline_pct >= 65 and liquidity_pct >= 55
+    leader_enabled = strong_mainline and breadth_pct >= 45 and not high_risk
+    cheap_market = valuation_pct >= 65
+    expensive_market = valuation_pct <= 35
+
+    base_ranges = {
+        "防守期": {
+            "core_wide_etf": (0, 15),
+            "mainline_etf": (0, 5),
+            "leader_alpha": (0, 0),
+            "defensive_quality": (20, 40),
+            "cash_like": (50, 75),
+        },
+        "弱修复期": {
+            "core_wide_etf": (15, 30),
+            "mainline_etf": (0, 10),
+            "leader_alpha": (0, 3),
+            "defensive_quality": (25, 45),
+            "cash_like": (30, 55),
+        },
+        "震荡轮动期": {
+            "core_wide_etf": (25, 40),
+            "mainline_etf": (10, 25),
+            "leader_alpha": (0, 8),
+            "defensive_quality": (20, 35),
+            "cash_like": (10, 30),
+        },
+        "结构主线期": {
+            "core_wide_etf": (30, 45),
+            "mainline_etf": (20, 35),
+            "leader_alpha": (5, 12),
+            "defensive_quality": (10, 25),
+            "cash_like": (5, 20),
+        },
+        "趋势扩张期": {
+            "core_wide_etf": (35, 50),
+            "mainline_etf": (25, 40),
+            "leader_alpha": (10, 20),
+            "defensive_quality": (5, 15),
+            "cash_like": (0, 10),
+        },
+        "低拥挤强趋势期": {
+            "core_wide_etf": (35, 55),
+            "mainline_etf": (25, 45),
+            "leader_alpha": (10, 25),
+            "defensive_quality": (0, 10),
+            "cash_like": (0, 5),
+        },
+        "高位过热风控": {
+            "core_wide_etf": (20, 35),
+            "mainline_etf": (5, 18),
+            "leader_alpha": (0, 5),
+            "defensive_quality": (25, 40),
+            "cash_like": (25, 45),
+        },
+    }
+    ranges = {key: list(value) for key, value in base_ranges[state].items()}
+
+    if cheap_market and state in {"弱修复期", "震荡轮动期"}:
+        ranges["core_wide_etf"][0] += 5
+        ranges["core_wide_etf"][1] += 5
+        ranges["cash_like"][0] -= 5
+        ranges["cash_like"][1] -= 5
+    if expensive_market or risk_reasons & {"expensive_valuation", "extreme_expensive_valuation", "bubble_top_combo"}:
+        ranges["cash_like"][0] += 5
+        ranges["cash_like"][1] += 10
+        ranges["leader_alpha"][1] = min(ranges["leader_alpha"][1], 8)
+    if mainline_pct < 45:
+        ranges["mainline_etf"][1] = min(ranges["mainline_etf"][1], 15)
+        ranges["leader_alpha"][1] = min(ranges["leader_alpha"][1], 3)
+        ranges["defensive_quality"][0] += 5
+    if leader_enabled:
+        ranges["leader_alpha"][0] = max(ranges["leader_alpha"][0], 8)
+        ranges["leader_alpha"][1] = max(ranges["leader_alpha"][1], 18)
+    if risk_reasons & {"capital_outflow_combo", "extreme_high_volatility", "high_volatility"}:
+        ranges["cash_like"][0] += 10
+        ranges["cash_like"][1] += 10
+        ranges["leader_alpha"][1] = min(ranges["leader_alpha"][1], 5)
+    if state == "高位过热风控":
+        ranges["mainline_etf"][1] = min(ranges["mainline_etf"][1], 18)
+        ranges["leader_alpha"][1] = min(ranges["leader_alpha"][1], 5)
+
+    sleeve_items: list[dict[str, Any]] = []
+    for key in ALLOCATION_SLEEVE_ORDER:
+        meta = ALLOCATION_SLEEVE_META[key]
+        range_text = allocation_range(ranges[key][0], ranges[key][1])
+        sleeve_items.append(
+            {
+                "key": key,
+                "label": meta["label"],
+                "name": meta["label"],
+                "asset": meta["asset"],
+                "role": meta["role"],
+                "driver": meta["driver"],
+                "examples": meta["examples"],
+                "target_range": range_text,
+                "midpoint": percent_range_midpoint(range_text),
+            }
+        )
+
+    triggers = [
+        f"指数趋势 {index_pct}%，宽度 {breadth_pct}%，主线 {mainline_pct}%，资金 {capital_pct}%。",
+        f"估值便宜度 {valuation_pct}%，宏观环境 {macro_pct}%，拥挤惩罚 {round2(crowding_penalty_value)}。",
+        f"官方风险资产区间 {recommended_range}；短融/现金仓用于承接未配置风险资产和等待机会。",
+    ]
+    if risk_caps:
+        labels = "、".join(str(cap.get("reason")) for cap in risk_caps if isinstance(cap, dict))
+        triggers.append(f"风险上限已触发：{labels}。")
+    if leader_enabled:
+        triggers.append("主线强、成交与宽度配合，龙头仓可打开；否则龙头仓保持小仓或关闭。")
+    else:
+        triggers.append("龙头仓未充分打开：需要主线强度、成交持续和宽度同时确认。")
+
+    return {
+        "version": ALLOCATION_POLICY_VERSION,
+        "account_scope": "stock_account",
+        "state": state,
+        "total_risk_asset_range": recommended_range,
+        "score_inputs": {
+            "market_position_score": round2(position_score),
+            "market_opportunity_score": round2(opportunity_score),
+            "pre_cap_market_position_score": round2(pre_cap_score),
+            "crowding_penalty": round2(crowding_penalty_value),
+            "index_trend_score_pct": index_pct,
+            "breadth_score_pct": breadth_pct,
+            "liquidity_score_pct": liquidity_pct,
+            "capital_flow_score_pct": capital_pct,
+            "mainline_score_pct": mainline_pct,
+            "valuation_score_pct": valuation_pct,
+            "macro_score_pct": macro_pct,
+        },
+        "principles": [
+            "总仓位分决定股票账户承担多少风险，五仓配置决定风险放在哪里。",
+            "宽基ETF按宏观流动性和估值趋势管理，不用主线短炒逻辑。",
+            "主线ETF看趋势和资金，估值是风险背景，不是直接买卖开关。",
+            "龙头仓只有在主线强且资金集中时开放，退潮或高波动时最先收缩。",
+            "红利低波/自由现金流是收益型防御，短融ETF才是现金替代。",
+        ],
+        "sleeves": sleeve_items,
+        "triggers": triggers,
+        "notes": [
+            "所有比例为股票账户内部配置区间，不代表总资产配置。",
+            "单个 ETF、行业、个股仍需由标的研究系统单独确认；本模块只做市场层资金分配。",
+        ],
+    }
+
+
 def normalize_annual_vol(value: Any) -> float | None:
     number = as_float(value)
     if number is None:
@@ -942,7 +1215,7 @@ def volatility_data_missing(snapshot: dict[str, Any], data_quality: dict[str, An
 
 def risk_cap(reason: str, score_cap: float, severity: str, evidence_data: dict[str, Any], message: str) -> dict[str, Any]:
     if reason not in STABLE_RISK_CAP_REASONS:
-        raise ValueError(f"risk_cap reason is frozen in v1.0_stable: {reason}")
+        raise ValueError(f"risk_cap reason is frozen in {MODEL_VERSION}: {reason}")
     return {
         "reason": reason,
         "score_cap": round2(score_cap),
@@ -1267,6 +1540,7 @@ def apply_position_policy(
     return {
         "account_scope": "stock_account",
         "position_policy_version": POSITION_POLICY_VERSION,
+        "allocation_policy_version": ALLOCATION_POLICY_VERSION,
         "pre_cap_market_position_score": pre_cap_score,
         "market_position_score": final_score,
         "risk_caps": caps,
@@ -1517,6 +1791,16 @@ def score_snapshot(snapshot: dict[str, Any], snapshot_path: Path | None = None, 
     final_score = position_policy["market_position_score"]
     pre_cap_score = position_policy["pre_cap_market_position_score"]
     recommended_range = position_policy["recommended_equity_position_range"]
+    allocation = allocation_policy(
+        final_score,
+        opportunity,
+        pre_cap_score,
+        recommended_range,
+        modules,
+        crowding,
+        snapshot,
+        position_policy["risk_caps"],
+    )
     vol_policy = volatility_policy(snapshot)
     legacy_vol_targeting = legacy_volatility_targeting(snapshot, final_score, recommended_range)
     shanghai = (snapshot.get("market", {}).get("indices", {}) or {}).get("000001.SH", {})
@@ -1548,6 +1832,7 @@ def score_snapshot(snapshot: dict[str, Any], snapshot_path: Path | None = None, 
         "feature_schema_version": FEATURE_SCHEMA_VERSION,
         "account_scope": position_policy["account_scope"],
         "position_policy_version": position_policy["position_policy_version"],
+        "allocation_policy_version": allocation["version"],
         "scored_at": now,
         "basis_trade_date": snapshot.get("date") or (snapshot.get("market", {}) or {}).get("as_of_trade_date"),
         "snapshot_file": snapshot_label,
@@ -1572,7 +1857,10 @@ def score_snapshot(snapshot: dict[str, Any], snapshot_path: Path | None = None, 
         "legacy_vol_adjusted_market_position_score": legacy_vol_targeting.get("adjusted_position_score"),
         "legacy_vol_adjusted_equity_position_range": legacy_vol_targeting.get("adjusted_equity_position_range"),
         "legacy_vol_adjusted_deprecated": True,
-        "sleeve_mix": sleeve_mix(final_score, modules, crowding),
+        "allocation_state": allocation["state"],
+        "allocation_policy": allocation,
+        "sleeve_allocation": allocation["sleeves"],
+        "legacy_sleeve_mix": sleeve_mix(final_score, modules, crowding),
         "shanghai_composite": round2(as_float(shanghai.get("close"))),
         "modules": modules,
         "crowding": crowding,
@@ -1590,6 +1878,7 @@ def score_snapshot(snapshot: dict[str, Any], snapshot_path: Path | None = None, 
             "confidence now distinguishes core, important, and auxiliary missing fields",
             "valuation now scores 5-year index PE/PB percentiles instead of a neutral placeholder",
             "capital flow and mainline modules use rolling persistence features",
+            "allocation_policy_v1 replaces the old four-sleeve summary with five stock-account sleeves: core wide ETF, mainline ETF, leader alpha, defensive quality, and cash-like",
         ],
         "key_constraints": key_constraints,
         "data_quality": quality,
@@ -1608,6 +1897,7 @@ def load_history(path: Path = DEFAULT_HISTORY_PATH) -> dict[str, Any]:
             "schema_version": HISTORY_SCHEMA_VERSION,
             "model_version": MODEL_VERSION,
             "position_policy_version": POSITION_POLICY_VERSION,
+            "allocation_policy_version": ALLOCATION_POLICY_VERSION,
             "dedupe_key_fields": list(HISTORY_DEDUPE_KEY_FIELDS),
             "updated_at": None,
             "records": [],
@@ -1618,6 +1908,7 @@ def load_history(path: Path = DEFAULT_HISTORY_PATH) -> dict[str, Any]:
             "schema_version": HISTORY_SCHEMA_VERSION,
             "model_version": MODEL_VERSION,
             "position_policy_version": POSITION_POLICY_VERSION,
+            "allocation_policy_version": ALLOCATION_POLICY_VERSION,
             "dedupe_key_fields": list(HISTORY_DEDUPE_KEY_FIELDS),
             "updated_at": None,
             "records": payload,
@@ -1628,15 +1919,42 @@ def load_history(path: Path = DEFAULT_HISTORY_PATH) -> dict[str, Any]:
         payload["schema_version"] = HISTORY_SCHEMA_VERSION
     payload.setdefault("model_version", MODEL_VERSION)
     payload.setdefault("position_policy_version", POSITION_POLICY_VERSION)
+    payload.setdefault("allocation_policy_version", ALLOCATION_POLICY_VERSION)
     payload["dedupe_key_fields"] = list(HISTORY_DEDUPE_KEY_FIELDS)
     if not isinstance(payload.get("records"), list):
         payload["records"] = []
+    payload["records"] = [normalize_score_record(record) if isinstance(record, dict) else record for record in payload["records"]]
     return payload
 
 
 def save_history(history: dict[str, Any], path: Path = DEFAULT_HISTORY_PATH) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(history, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
+
+def normalize_allocation_policy(policy: Any) -> Any:
+    if not isinstance(policy, dict):
+        return policy
+    normalized = dict(policy)
+    sleeves = normalized.get("sleeves")
+    if isinstance(sleeves, list):
+        normalized_sleeves: list[Any] = []
+        for sleeve in sleeves:
+            if isinstance(sleeve, dict):
+                normalized_sleeve = dict(sleeve)
+                if "name" not in normalized_sleeve and isinstance(normalized_sleeve.get("label"), str):
+                    normalized_sleeve["name"] = normalized_sleeve["label"]
+                normalized_sleeves.append(normalized_sleeve)
+            else:
+                normalized_sleeves.append(sleeve)
+        normalized["sleeves"] = normalized_sleeves
+    return normalized
+
+
+def normalize_score_record(record: dict[str, Any]) -> dict[str, Any]:
+    normalized = dict(record)
+    normalized["allocation_policy"] = normalize_allocation_policy(normalized.get("allocation_policy"))
+    return normalized
 
 
 def build_history_audit_event(
@@ -1664,6 +1982,7 @@ def build_history_audit_event(
         "history_schema_version": HISTORY_SCHEMA_VERSION,
         "model_version": record.get("model_version"),
         "position_policy_version": record.get("position_policy_version"),
+        "allocation_policy_version": record.get("allocation_policy_version"),
         "details": details or {},
     }
 
@@ -1765,6 +2084,41 @@ def validate_score_risk_caps(risk_caps: Any, errors: list[str]) -> None:
             add_validation_error(errors, f"{field}.score_cap", "must be numeric and between 0 and 100")
 
 
+def validate_allocation_policy(policy: Any, errors: list[str]) -> None:
+    if not isinstance(policy, dict):
+        add_validation_error(errors, "allocation_policy", "required object")
+        return
+    if policy.get("version") != ALLOCATION_POLICY_VERSION:
+        add_validation_error(errors, "allocation_policy.version", f"must equal {ALLOCATION_POLICY_VERSION}")
+    if not isinstance(policy.get("state"), str) or not policy.get("state"):
+        add_validation_error(errors, "allocation_policy.state", "required non-empty string")
+    sleeves = policy.get("sleeves")
+    if not isinstance(sleeves, list):
+        add_validation_error(errors, "allocation_policy.sleeves", "required list")
+        return
+    seen_keys: set[str] = set()
+    for index, sleeve in enumerate(sleeves):
+        field = f"allocation_policy.sleeves[{index}]"
+        if not isinstance(sleeve, dict):
+            add_validation_error(errors, field, "must be an object")
+            continue
+        key = sleeve.get("key")
+        if key not in ALLOCATION_SLEEVE_ORDER:
+            add_validation_error(errors, f"{field}.key", "must be a known sleeve key")
+        else:
+            seen_keys.add(key)
+        validate_percent_range_field(sleeve, "target_range", errors, required=True)
+        midpoint = as_float(sleeve.get("midpoint"))
+        if midpoint is None or midpoint < 0 or midpoint > 100:
+            add_validation_error(errors, f"{field}.midpoint", "must be numeric and between 0 and 100")
+        for required in ["label", "asset", "role", "driver"]:
+            if not isinstance(sleeve.get(required), str) or not sleeve.get(required):
+                add_validation_error(errors, f"{field}.{required}", "required non-empty string")
+    missing = set(ALLOCATION_SLEEVE_ORDER) - seen_keys
+    if missing:
+        add_validation_error(errors, "allocation_policy.sleeves", f"missing sleeve keys: {', '.join(sorted(missing))}")
+
+
 def validate_score_record(record: dict[str, Any]) -> dict[str, Any]:
     errors: list[str] = []
     if not isinstance(record, dict):
@@ -1791,6 +2145,7 @@ def validate_score_record(record: dict[str, Any]) -> dict[str, Any]:
 
     validate_score_modules(record.get("modules"), errors)
     validate_score_risk_caps(record.get("risk_caps"), errors)
+    validate_allocation_policy(record.get("allocation_policy"), errors)
     if not isinstance(record.get("crowding"), dict):
         add_validation_error(errors, "crowding", "required object")
     if not isinstance(record.get("data_quality"), dict):
@@ -1803,7 +2158,7 @@ def validate_score_record(record: dict[str, Any]) -> dict[str, Any]:
         "schema_version": SCORE_SCHEMA_VERSION,
         "checked_required_fields": list(REQUIRED_SCORE_RECORD_STRING_FIELDS)
         + list(REQUIRED_SCORE_RECORD_NUMERIC_RANGES.keys())
-        + ["modules", "risk_caps", "crowding", "data_quality"],
+        + ["modules", "risk_caps", "allocation_policy", "crowding", "data_quality"],
     }
 
 
@@ -1811,6 +2166,8 @@ def score_record_is_current_schema(record: dict[str, Any]) -> bool:
     if not isinstance(record, dict) or record.get("legacy_schema") is True:
         return False
     if record.get("model_version") != MODEL_VERSION or record.get("position_policy_version") != POSITION_POLICY_VERSION:
+        return False
+    if record.get("allocation_policy_version") != ALLOCATION_POLICY_VERSION:
         return False
     try:
         validate_score_record(record)
@@ -1828,6 +2185,8 @@ def legacy_schema_reason(record: dict[str, Any]) -> str:
         return "legacy_model_version"
     if record.get("position_policy_version") != POSITION_POLICY_VERSION:
         return "legacy_position_policy_version"
+    if record.get("allocation_policy_version") != ALLOCATION_POLICY_VERSION:
+        return "legacy_allocation_policy_version"
     try:
         validate_score_record(record)
     except ScoreRecordValidationError:
@@ -1876,6 +2235,7 @@ def migrate_history_legacy_records(
 
     for raw_record in source_records:
         record = raw_record if isinstance(raw_record, dict) else {"raw_record": raw_record}
+        record = normalize_score_record(record)
         if score_record_is_current_schema(record):
             records.append(record)
             current_record_count += 1
@@ -1908,6 +2268,7 @@ def migrate_history_legacy_records(
     migrated_history["schema_version"] = HISTORY_SCHEMA_VERSION
     migrated_history["model_version"] = MODEL_VERSION
     migrated_history["position_policy_version"] = POSITION_POLICY_VERSION
+    migrated_history["allocation_policy_version"] = ALLOCATION_POLICY_VERSION
     migrated_history["dedupe_key_fields"] = list(HISTORY_DEDUPE_KEY_FIELDS)
     migrated_history["records"] = records
     migrated_history["record_count"] = len(records)
@@ -1983,6 +2344,7 @@ def append_history_record(history: dict[str, Any], record: dict[str, Any]) -> di
     history["schema_version"] = HISTORY_SCHEMA_VERSION
     history["model_version"] = MODEL_VERSION
     history["position_policy_version"] = POSITION_POLICY_VERSION
+    history["allocation_policy_version"] = ALLOCATION_POLICY_VERSION
     history["dedupe_key_fields"] = list(HISTORY_DEDUPE_KEY_FIELDS)
     if not isinstance(history.get("records"), list):
         history["records"] = []

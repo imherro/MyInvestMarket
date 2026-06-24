@@ -28,7 +28,7 @@ class PositionMapContractTest(unittest.TestCase):
 
         self.assertIsInstance(policy_map, dict)
         self.assertEqual(policy_map.get("account_scope"), "stock_account")
-        self.assertEqual(policy_map.get("position_policy_version"), "stock_account_position_policy_v2")
+        self.assertEqual(policy_map.get("position_policy_version"), market_scoring.POSITION_POLICY_VERSION)
         self.assertEqual(policy_map.get("score_min"), 0)
         self.assertEqual(policy_map.get("score_max"), 100)
         self.assertEqual(policy_map.get("position_min"), 0)
@@ -60,6 +60,17 @@ class PositionMapContractTest(unittest.TestCase):
             self.assertIsNotNone(current.get("recommended_equity_position_range"))
             self.assertIn("pre_cap_market_position_score", current)
             self.assertIsInstance(current.get("risk_caps"), list)
+
+    def test_api_index_returns_allocation_policy(self) -> None:
+        payload = serve_market_web.homepage_index_result()
+        allocation = payload.get("allocation_policy")
+
+        self.assertIsInstance(allocation, dict)
+        self.assertEqual(allocation.get("version"), market_scoring.ALLOCATION_POLICY_VERSION)
+        if payload.get("available"):
+            self.assertEqual(len(allocation.get("sleeves") or []), 5)
+            self.assertTrue(allocation.get("state"))
+            self.assertTrue(allocation.get("history"))
 
     def test_api_index_returns_market_cycle_reference(self) -> None:
         payload = serve_market_web.homepage_index_result()

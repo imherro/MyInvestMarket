@@ -10,7 +10,7 @@ Run the MyInvestMarket post-close update in C:\Users\kunpeng\Documents\MyInvestM
 Execute:
 python .\scripts\run_post_close_update.py
 
-Report the basis trading day, model version, market opportunity score, crowding penalty, base equity range, volatility-adjusted equity range, market regime, API verification result, and commit hash or skip reason.
+Report the basis trading day, model version, market opportunity score, crowding penalty, recommended equity range, allocation policy version, allocation state, five-sleeve allocation ranges, market regime, API verification result, and commit hash or skip reason.
 ```
 
 The script is intentionally idempotent:
@@ -19,6 +19,7 @@ The script is intentionally idempotent:
 - It uses the latest complete A-share trading day at or before the as-of date.
 - It does not append another score when the latest score has the same basis date and the stable market snapshot content is unchanged.
 - It validates `/api/index`, `/api/research/latest/market-score`, and `/api/research/latest/market-analysis`.
+- It exposes `allocation_policy_v1` in `/api/index.allocation_policy` with five sleeves: core wide ETF, mainline ETF, leader alpha, defensive quality, and cash-like.
 - When it writes new files, it commits and pushes the data/report updates to `origin main`.
 
 Manual test command:

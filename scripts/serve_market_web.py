@@ -11,6 +11,7 @@ from urllib.parse import parse_qs, unquote, urlparse
 from zoneinfo import ZoneInfo
 
 from market_scoring import (
+    ALLOCATION_POLICY_VERSION,
     DATA_DIR,
     DEFAULT_HISTORY_PATH,
     DEFAULT_SNAPSHOT_PATH,
@@ -39,8 +40,9 @@ def stable_release_result() -> dict[str, object]:
         "status": "stable",
         "core_rules_frozen": True,
         "risk_cap_reasons": list(STABLE_RISK_CAP_REASONS),
-        "risk_cap_extension_policy": "v1.0_stable freezes risk_cap types; parameter tuning is allowed, new logical branches require a new model version.",
+        "risk_cap_extension_policy": "v2.0_allocation freezes risk_cap types; parameter tuning is allowed, new logical branches require a new model version.",
         "position_policy_version": POSITION_POLICY_VERSION,
+        "allocation_policy_version": ALLOCATION_POLICY_VERSION,
     }
 
 POSITION_SCORE_BANDS = [
@@ -253,6 +255,7 @@ def service_version_result() -> dict[str, object]:
         "generated_at": now_iso(),
         "model_version": MODEL_VERSION,
         "position_policy_version": POSITION_POLICY_VERSION,
+        "allocation_policy_version": ALLOCATION_POLICY_VERSION,
         "history_schema_version": HISTORY_SCHEMA_VERSION,
         "stable_release": stable_release_result(),
     }
@@ -360,6 +363,7 @@ def current_version_filter() -> dict[str, object]:
     return {
         "model_version": MODEL_VERSION,
         "position_policy_version": POSITION_POLICY_VERSION,
+        "allocation_policy_version": ALLOCATION_POLICY_VERSION,
     }
 
 
@@ -470,6 +474,63 @@ def position_policy_map_result(latest: dict[str, object]) -> dict[str, object]:
             "market_regime": latest.get("market_regime"),
         },
     }
+
+
+def allocation_policy_result(latest: dict[str, object], records: list[dict[str, object]] | None = None) -> dict[str, object]:
+    policy = latest.get("allocation_policy") if isinstance(latest.get("allocation_policy"), dict) else {}
+    sleeves = policy.get("sleeves") if isinstance(policy, dict) else []
+    if not isinstance(sleeves, list):
+        sleeves = []
+
+    history = []
+    for record in records or []:
+        allocation = record.get("allocation_policy") if isinstance(record.get("allocation_policy"), dict) else {}
+        record_sleeves = allocation.get("sleeves") if isinstance(allocation, dict) else []
+        if not isinstance(record_sleeves, list):
+            record_sleeves = []
+        sleeve_values = {
+            str(item.get("key")): {
+                "target_range": item.get("target_range"),
+                "midpoint": item.get("midpoint"),
+            }
+            for item in record_sleeves
+            if isinstance(item, dict) and item.get("key")
+        }
+        history.append(
+            {
+                "basis_trade_date": record.get("basis_trade_date"),
+                "scored_at": record.get("scored_at"),
+                "state": allocation.get("state"),
+                "market_position_score": record.get("market_position_score"),
+                "sleeves": sleeve_values,
+            }
+        )
+
+    return {
+        "available": bool(policy),
+        "title": "股票账户五仓配置",
+        "version": policy.get("version") or ALLOCATION_POLICY_VERSION,
+        "account_scope": policy.get("account_scope") or "stock_account",
+        "state": policy.get("state"),
+        "total_risk_asset_range": policy.get("total_risk_asset_range") or recommended_equity_position_range(latest),
+        "principles": policy.get("principles", []) if isinstance(policy.get("principles"), list) else [],
+        "score_inputs": policy.get("score_inputs", {}) if isinstance(policy.get("score_inputs"), dict) else {},
+        "sleeves": sleeves,
+        "triggers": policy.get("triggers", []) if isinstance(policy.get("triggers"), list) else [],
+        "notes": policy.get("notes", []) if isinstance(policy.get("notes"), list) else [],
+        "history": history,
+    }
+
+
+def allocation_sleeve_midpoint(record: dict[str, object], key: str) -> object:
+    allocation = record.get("allocation_policy") if isinstance(record.get("allocation_policy"), dict) else {}
+    sleeves = allocation.get("sleeves") if isinstance(allocation, dict) else []
+    if not isinstance(sleeves, list):
+        return None
+    for sleeve in sleeves:
+        if isinstance(sleeve, dict) and sleeve.get("key") == key:
+            return sleeve.get("midpoint")
+    return None
 
 
 def number_or_none(value: object) -> float | None:
@@ -611,6 +672,7 @@ def history_api_result(include_legacy: bool = False) -> dict[str, object]:
         "history_schema_version": HISTORY_SCHEMA_VERSION,
         "model_version": MODEL_VERSION,
         "position_policy_version": POSITION_POLICY_VERSION,
+        "allocation_policy_version": ALLOCATION_POLICY_VERSION,
         "dedupe_key_fields": list(HISTORY_DEDUPE_KEY_FIELDS),
         "version_filter": history.get("version_filter"),
         "record_count": history.get("record_count"),
@@ -634,6 +696,7 @@ def homepage_index_result() -> dict[str, object]:
         for key, value in api_results.items()
     }
     policy_map = position_policy_map_result(latest)
+    allocation_map = allocation_policy_result(latest, records)
 
     module_cards = []
     for key, module in modules.items():
@@ -666,6 +729,7 @@ def homepage_index_result() -> dict[str, object]:
         "model_version": latest.get("model_version", MODEL_VERSION) if latest else MODEL_VERSION,
         "account_scope": latest.get("account_scope", "stock_account") if latest else "stock_account",
         "position_policy_version": latest.get("position_policy_version", POSITION_POLICY_VERSION) if latest else POSITION_POLICY_VERSION,
+        "allocation_policy_version": latest.get("allocation_policy_version", ALLOCATION_POLICY_VERSION) if latest else ALLOCATION_POLICY_VERSION,
         "stable_release": stable_release_result(),
         "page": {
             "path": "/",
@@ -676,6 +740,10 @@ def homepage_index_result() -> dict[str, object]:
         "summary": {
             "basis_trade_date": latest.get("basis_trade_date"),
             "run_id": latest.get("run_id"),
+            "market_position_score": latest.get("market_position_score"),
+            "market_opportunity_score": latest.get("market_opportunity_score"),
+            "crowding_penalty": latest.get("crowding_penalty"),
+            "shanghai_composite": latest.get("shanghai_composite"),
             "market_regime": latest.get("market_regime"),
             "confidence": latest.get("confidence"),
             "equity_position_range": latest.get("equity_position_range"),
@@ -687,6 +755,9 @@ def homepage_index_result() -> dict[str, object]:
             "risk_caps": latest.get("risk_caps", []),
             "account_scope": latest.get("account_scope", "stock_account"),
             "position_policy_version": latest.get("position_policy_version", POSITION_POLICY_VERSION),
+            "allocation_policy_version": latest.get("allocation_policy_version", ALLOCATION_POLICY_VERSION),
+            "allocation_state": latest.get("allocation_state") or allocation_map.get("state"),
+            "allocation_policy": latest.get("allocation_policy", {}),
             "volatility_policy": latest.get("volatility_policy", {}),
             "legacy_vol_adjusted_equity_position_range": latest.get("legacy_vol_adjusted_equity_position_range"),
             "legacy_vol_adjusted_market_position_score": latest.get("legacy_vol_adjusted_market_position_score"),
@@ -741,7 +812,23 @@ def homepage_index_result() -> dict[str, object]:
         },
         "position_policy_map": policy_map,
         "position_map": {**policy_map, "legacy_alias_of": "position_policy_map"},
+        "allocation_policy": allocation_map,
         "market_cycle_reference": market_cycle_reference_result(latest),
+        "allocation_chart": {
+            "title": "五仓配置历史",
+            "record_count": len(records),
+            "series": {
+                key: [
+                    {
+                        "basis_trade_date": row.get("basis_trade_date"),
+                        "scored_at": row.get("scored_at"),
+                        "value": allocation_sleeve_midpoint(row, key),
+                    }
+                    for row in records
+                ]
+                for key in ["core_wide_etf", "mainline_etf", "leader_alpha", "defensive_quality", "cash_like"]
+            },
+        },
         "overview_chart": {
             "title": "总分与上证指数",
             "record_count": len(records),

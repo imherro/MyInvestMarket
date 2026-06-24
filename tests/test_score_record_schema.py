@@ -14,6 +14,7 @@ sys.path.insert(0, str(SCRIPTS))
 
 import market_scoring  # noqa: E402
 import run_post_close_update  # noqa: E402
+from tests.helpers import attach_allocation_policy  # noqa: E402
 
 
 def valid_modules() -> dict:
@@ -32,7 +33,7 @@ def valid_modules() -> dict:
 
 
 def valid_score_record() -> dict:
-    return {
+    return attach_allocation_policy({
         "run_id": "schema-test-run",
         "model_version": market_scoring.MODEL_VERSION,
         "score_schema_version": market_scoring.SCORE_SCHEMA_VERSION,
@@ -57,7 +58,7 @@ def valid_score_record() -> dict:
         "modules": valid_modules(),
         "crowding": {"penalty": 10, "items": []},
         "data_quality": {"missing_fields": [], "warnings": []},
-    }
+    })
 
 
 class ScoreRecordSchemaTest(unittest.TestCase):

@@ -13,6 +13,7 @@ sys.path.insert(0, str(SCRIPTS))
 
 import market_scoring  # noqa: E402
 import serve_market_web  # noqa: E402
+from tests.helpers import attach_allocation_policy  # noqa: E402
 
 
 def score_record(
@@ -35,7 +36,7 @@ def score_record(
         }
         for key, meta in market_scoring.MODULES.items()
     }
-    return {
+    return attach_allocation_policy({
         "run_id": run_id,
         "scored_at": f"2026-06-22T16:00:0{run_id[-1]}+08:00",
         "basis_trade_date": trade_date,
@@ -58,7 +59,7 @@ def score_record(
         "modules": modules,
         "crowding": {"penalty": 15, "items": []},
         "data_quality": {"missing_fields": [], "warnings": []},
-    }
+    })
 
 
 class HistoryDedupeContractTest(unittest.TestCase):
