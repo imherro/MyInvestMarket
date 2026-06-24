@@ -744,6 +744,7 @@ function renderOverviewChart() {
   }
 
   const labels = records.map(recordLabel);
+  const titles = records.map(recordPointTitle);
   renderLineChart(
     container,
     [
@@ -751,31 +752,31 @@ function renderOverviewChart() {
         name: "股票账户仓位分",
         color: chartColors.position,
         axis: "left",
-        data: records.map((record, index) => point(labels[index], record.market_position_score)),
+        data: records.map((record, index) => point(labels[index], record.market_position_score, titles[index])),
       },
       {
         name: "扣上限前分",
         color: chartColors.preCap,
         axis: "left",
-        data: records.map((record, index) => point(labels[index], preCapScore(record))),
+        data: records.map((record, index) => point(labels[index], preCapScore(record), titles[index])),
       },
       {
         name: "市场机会分",
         color: chartColors.opportunity,
         axis: "left",
-        data: records.map((record, index) => point(labels[index], record.market_opportunity_score)),
+        data: records.map((record, index) => point(labels[index], record.market_opportunity_score, titles[index])),
       },
       {
         name: "拥挤惩罚",
         color: chartColors.penalty,
         axis: "left",
-        data: records.map((record, index) => point(labels[index], record.crowding_penalty)),
+        data: records.map((record, index) => point(labels[index], record.crowding_penalty, titles[index])),
       },
       {
         name: "上证指数",
         color: chartColors.shanghai,
         axis: "right",
-        data: records.map((record, index) => point(labels[index], record.shanghai_composite)),
+        data: records.map((record, index) => point(labels[index], record.shanghai_composite, titles[index])),
       },
     ],
     {
@@ -881,6 +882,7 @@ function renderMetricCharts(key, module) {
     `;
     container.appendChild(card);
     const labels = state.records.map(recordLabel);
+    const titles = state.records.map(recordPointTitle);
     const values = state.records.map((record) => numeric(record.modules?.[key]?.metrics?.[metricKey]?.value));
     renderLineChart(
       card.querySelector(".metric-chart"),
@@ -889,7 +891,7 @@ function renderMetricCharts(key, module) {
           name: meta.label || metricKey,
           color: moduleColors[key] || chartColors.position,
           axis: "left",
-          data: values.map((value, index) => point(labels[index], value)),
+          data: values.map((value, index) => point(labels[index], value, titles[index])),
         },
       ],
       { compact: true, legend: false },
@@ -1083,6 +1085,7 @@ function renderLineChart(container, series, options = {}) {
         y: yPos(value, range, margin, plotHeight),
         value,
         label: pointItem.label,
+        titleLabel: pointItem.titleLabel || pointItem.label,
       };
     });
 
@@ -1107,7 +1110,7 @@ function renderLineChart(container, series, options = {}) {
         r: options.compact ? 3.2 : 4,
         fill: item.color,
       });
-      circle.appendChild(createSvg("title", {}, `${item.name} ${itemPoint.label}: ${formatNumber(itemPoint.value)}`));
+      circle.appendChild(createSvg("title", {}, `${item.name} ${itemPoint.titleLabel}: ${formatNumber(itemPoint.value)}`));
       svg.appendChild(circle);
     });
   });
@@ -1198,8 +1201,8 @@ function widestLabels(series) {
   return (longest?.data || []).map((pointItem, index) => pointItem.label || String(index + 1));
 }
 
-function point(label, value) {
-  return { label, value: numeric(value) };
+function point(label, value, titleLabel = null) {
+  return { label, titleLabel: titleLabel || label, value: numeric(value) };
 }
 
 function officialPositionRange(record) {
@@ -1211,9 +1214,15 @@ function preCapScore(record) {
 }
 
 function recordLabel(record) {
+  if (record.basis_trade_date) return record.basis_trade_date;
+  if (record.scored_at) return String(record.scored_at).slice(0, 10);
+  return "--";
+}
+
+function recordPointTitle(record) {
   const basis = record.basis_trade_date || "--";
-  const scored = record.scored_at ? String(record.scored_at).slice(11, 19) : "";
-  return `${basis} ${scored}`.trim();
+  const scored = record.scored_at ? formatDateTime(record.scored_at) : "--";
+  return `基准日 ${basis} · 生成 ${scored}`;
 }
 
 function compactLabel(label) {
