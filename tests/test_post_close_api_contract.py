@@ -101,7 +101,7 @@ def valid_api_payloads() -> dict:
         },
         "/api/research/latest/market-analysis": {
             "available": True,
-            "metadata": {"file": "data/chatgpt_market_analysis_test.md"},
+            "metadata": {"file": "data/market_analysis_test.md"},
             "binding": {
                 "run_id": record["run_id"],
                 "basis_trade_date": record["basis_trade_date"],

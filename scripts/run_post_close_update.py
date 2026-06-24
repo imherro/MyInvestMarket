@@ -314,7 +314,7 @@ def cycle_profile_section(record: dict[str, Any]) -> str:
 
 def write_report(snapshot: dict[str, Any], record: dict[str, Any]) -> Path:
     now = datetime.now(TZ)
-    report_path = DATA_DIR / f"chatgpt_market_analysis_{now.strftime('%Y%m%d_%H%M%S')}.md"
+    report_path = DATA_DIR / f"market_analysis_{now.strftime('%Y%m%d_%H%M%S')}.md"
     valuation_score = (((snapshot.get("valuation", {}) or {}).get("market", {}) or {}).get("valuation_score"))
     realized_vol = (((snapshot.get("volatility", {}) or {}).get("market", {}) or {}).get("realized_vol_30d"))
     breadth = snapshot.get("breadth", {}) or {}

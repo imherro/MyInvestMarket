@@ -311,9 +311,9 @@ def analysis_report_binding(content: str, latest_record: dict[str, object] | Non
 
 
 def latest_market_analysis_result() -> dict[str, object]:
-    path = latest_matching_file("chatgpt_market_analysis_*.md")
+    path = latest_matching_file("market_analysis_*.md")
     if not path:
-        return {"available": False, "kind": "market_analysis", "error": "chatgpt_market_analysis_*.md not found"}
+        return {"available": False, "kind": "market_analysis", "error": "market_analysis_*.md not found"}
     content = path.read_text(encoding="utf-8-sig")
     lines = content.splitlines()
     title = next((line.lstrip("# ").strip() for line in lines if line.startswith("#")), path.stem)
