@@ -25,6 +25,7 @@ from market_scoring import (
     load_history,
     score_record_is_current_schema,
 )
+from market_state_stability import validate_state_stability
 
 
 WEB_DIR = ROOT / "web"
@@ -831,6 +832,7 @@ def homepage_index_result() -> dict[str, object]:
             ],
         },
         "risk_overview": risk_overview_result(latest),
+        "state_stability": validate_state_stability(records),
         "api_status": {
             "label": "最新研究结果 API",
             "available_count": sum(1 for available in api_available.values() if available),
