@@ -10,6 +10,8 @@ from typing import Any
 from uuid import uuid4
 from zoneinfo import ZoneInfo
 
+from market_regime import compute_market_regime
+
 
 ROOT = Path(__file__).resolve().parents[1]
 DATA_DIR = ROOT / "data"
@@ -17,9 +19,9 @@ DEFAULT_SNAPSHOT_PATH = DATA_DIR / "latest_market_snapshot.json"
 DEFAULT_HISTORY_PATH = DATA_DIR / "market_score_history.json"
 DEFAULT_AUDIT_LOG_PATH = DATA_DIR / "market_score_history_audit.jsonl"
 TZ = ZoneInfo("Asia/Shanghai")
-MODEL_VERSION = "v2.0_allocation"
-SCORE_SCHEMA_VERSION = "2.0"
-FEATURE_SCHEMA_VERSION = "1.3"
+MODEL_VERSION = "v3.0_regime"
+SCORE_SCHEMA_VERSION = "2.1"
+FEATURE_SCHEMA_VERSION = "1.4"
 POSITION_POLICY_VERSION = "stock_account_position_policy_v3"
 ALLOCATION_POLICY_VERSION = "allocation_policy_v1"
 HISTORY_SCHEMA_VERSION = 3
@@ -42,9 +44,11 @@ REQUIRED_SCORE_RECORD_STRING_FIELDS = (
     "basis_trade_date",
     "snapshot_sha256",
     "market_regime",
+    "market_regime_code",
     "confidence",
     "recommended_equity_position_range",
 )
+MARKET_REGIME_CODES = {"accumulation", "expansion", "distribution", "contraction"}
 REQUIRED_SCORE_RECORD_NUMERIC_RANGES = {
     "market_opportunity_score": (0, 100),
     "crowding_penalty": (0, 30),
@@ -1787,6 +1791,7 @@ def score_snapshot(snapshot: dict[str, Any], snapshot_path: Path | None = None, 
     }
     opportunity = round2(sum(as_float(module["score"]) or 0 for module in modules.values())) or 0
     crowding = crowding_penalty(snapshot, modules)
+    market_regime_layer = compute_market_regime(snapshot)
     position_policy = apply_position_policy(opportunity, crowding, modules, snapshot, quality)
     final_score = position_policy["market_position_score"]
     pre_cap_score = position_policy["pre_cap_market_position_score"]
@@ -1838,6 +1843,9 @@ def score_snapshot(snapshot: dict[str, Any], snapshot_path: Path | None = None, 
         "snapshot_file": snapshot_label,
         "snapshot_sha256": snapshot_hash,
         "market_regime": regime(opportunity, final_score, modules, crowding),
+        "market_regime_code": market_regime_layer["regime"],
+        "market_regime_label": market_regime_layer["label"],
+        "market_regime_layer": market_regime_layer,
         "market_opportunity_score": opportunity,
         "opportunity_score": opportunity,
         "crowding_penalty": crowding["penalty"],
@@ -1879,6 +1887,7 @@ def score_snapshot(snapshot: dict[str, Any], snapshot_path: Path | None = None, 
             "valuation now scores 5-year index PE/PB percentiles instead of a neutral placeholder",
             "capital flow and mainline modules use rolling persistence features",
             "allocation_policy_v1 replaces the old four-sleeve summary with five stock-account sleeves: core wide ETF, mainline ETF, leader alpha, defensive quality, and cash-like",
+            "market_regime_v1 adds a structural layer for accumulation, expansion, distribution, and contraction classification",
         ],
         "key_constraints": key_constraints,
         "data_quality": quality,
@@ -2084,6 +2093,26 @@ def validate_score_risk_caps(risk_caps: Any, errors: list[str]) -> None:
             add_validation_error(errors, f"{field}.score_cap", "must be numeric and between 0 and 100")
 
 
+def validate_market_regime_layer(layer: Any, errors: list[str]) -> None:
+    if not isinstance(layer, dict):
+        add_validation_error(errors, "market_regime_layer", "required object")
+        return
+    regime_code = layer.get("regime")
+    if regime_code not in MARKET_REGIME_CODES:
+        add_validation_error(errors, "market_regime_layer.regime", "must be one of accumulation, expansion, distribution, contraction")
+    if not isinstance(layer.get("version"), str) or not layer.get("version"):
+        add_validation_error(errors, "market_regime_layer.version", "required non-empty string")
+    if not isinstance(layer.get("label"), str) or not layer.get("label"):
+        add_validation_error(errors, "market_regime_layer.label", "required non-empty string")
+    confidence_value = as_float(layer.get("confidence"))
+    if confidence_value is None or confidence_value < 0 or confidence_value > 1:
+        add_validation_error(errors, "market_regime_layer.confidence", "must be numeric and between 0 and 1")
+    if not isinstance(layer.get("scores"), dict):
+        add_validation_error(errors, "market_regime_layer.scores", "required object")
+    if not isinstance(layer.get("signals"), list):
+        add_validation_error(errors, "market_regime_layer.signals", "required list")
+
+
 def validate_allocation_policy(policy: Any, errors: list[str]) -> None:
     if not isinstance(policy, dict):
         add_validation_error(errors, "allocation_policy", "required object")
@@ -2135,6 +2164,11 @@ def validate_score_record(record: dict[str, Any]) -> dict[str, Any]:
 
     if record.get("confidence") not in {"high", "medium", "low"}:
         add_validation_error(errors, "confidence", "must be high, medium, or low")
+    if record.get("market_regime_code") not in MARKET_REGIME_CODES:
+        add_validation_error(errors, "market_regime_code", "must be one of accumulation, expansion, distribution, contraction")
+    validate_market_regime_layer(record.get("market_regime_layer"), errors)
+    if isinstance(record.get("market_regime_layer"), dict) and record.get("market_regime_code") != record["market_regime_layer"].get("regime"):
+        add_validation_error(errors, "market_regime_code", "must match market_regime_layer.regime")
     if parse_date_value(record.get("basis_trade_date")) is None:
         add_validation_error(errors, "basis_trade_date", "must be parseable as a date")
     scored_at = record.get("scored_at")
@@ -2158,7 +2192,7 @@ def validate_score_record(record: dict[str, Any]) -> dict[str, Any]:
         "schema_version": SCORE_SCHEMA_VERSION,
         "checked_required_fields": list(REQUIRED_SCORE_RECORD_STRING_FIELDS)
         + list(REQUIRED_SCORE_RECORD_NUMERIC_RANGES.keys())
-        + ["modules", "risk_caps", "allocation_policy", "crowding", "data_quality"],
+        + ["modules", "risk_caps", "allocation_policy", "market_regime_layer", "crowding", "data_quality"],
     }
 
 

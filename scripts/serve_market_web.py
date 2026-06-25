@@ -40,7 +40,7 @@ def stable_release_result() -> dict[str, object]:
         "status": "stable",
         "core_rules_frozen": True,
         "risk_cap_reasons": list(STABLE_RISK_CAP_REASONS),
-        "risk_cap_extension_policy": "v2.0_allocation freezes risk_cap types; parameter tuning is allowed, new logical branches require a new model version.",
+        "risk_cap_extension_policy": f"{MODEL_VERSION} freezes risk_cap types; parameter tuning is allowed, new logical branches require a new model version.",
         "position_policy_version": POSITION_POLICY_VERSION,
         "allocation_policy_version": ALLOCATION_POLICY_VERSION,
     }
@@ -745,6 +745,9 @@ def homepage_index_result() -> dict[str, object]:
             "crowding_penalty": latest.get("crowding_penalty"),
             "shanghai_composite": latest.get("shanghai_composite"),
             "market_regime": latest.get("market_regime"),
+            "market_regime_code": latest.get("market_regime_code"),
+            "market_regime_label": latest.get("market_regime_label"),
+            "market_regime_layer": latest.get("market_regime_layer", {}),
             "confidence": latest.get("confidence"),
             "equity_position_range": latest.get("equity_position_range"),
             "base_equity_position_range": latest.get("base_equity_position_range"),
@@ -798,7 +801,7 @@ def homepage_index_result() -> dict[str, object]:
                     "id": "market_regime",
                     "label": "市场状态",
                     "value": latest.get("market_regime"),
-                    "detail": latest.get("confidence"),
+                    "detail": latest.get("market_regime_label") or latest.get("confidence"),
                 },
             ],
         },
@@ -894,6 +897,8 @@ def homepage_index_result() -> dict[str, object]:
                     "risk_cap_count": len(row.get("risk_caps", []) or []),
                     "position_policy_version": row.get("position_policy_version"),
                     "market_regime": row.get("market_regime"),
+                    "market_regime_code": row.get("market_regime_code"),
+                    "market_regime_label": row.get("market_regime_label"),
                 }
                 for row in reversed(records)
             ],

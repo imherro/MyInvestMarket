@@ -67,6 +67,9 @@ def valid_api_payloads() -> dict:
                 "run_id": record["run_id"],
                 "basis_trade_date": record["basis_trade_date"],
                 "recommended_equity_position_range": record["recommended_equity_position_range"],
+                "market_regime_code": record["market_regime_code"],
+                "market_regime_label": record["market_regime_label"],
+                "market_regime_layer": record["market_regime_layer"],
             },
             "position_policy_map": {
                 "position_policy_version": record["position_policy_version"],

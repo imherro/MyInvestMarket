@@ -35,7 +35,7 @@ EXPECTED_STABLE_RISK_CAP_REASONS = (
 
 class StableReleaseLockTest(unittest.TestCase):
     def test_model_version_is_stable_release(self) -> None:
-        self.assertEqual(market_scoring.MODEL_VERSION, "v2.0_allocation")
+        self.assertEqual(market_scoring.MODEL_VERSION, "v3.0_regime")
         self.assertEqual(market_scoring.POSITION_POLICY_VERSION, "stock_account_position_policy_v3")
         self.assertEqual(market_scoring.ALLOCATION_POLICY_VERSION, "allocation_policy_v1")
 
@@ -48,10 +48,10 @@ class StableReleaseLockTest(unittest.TestCase):
         service = serve_market_web.service_version_result()
         index = serve_market_web.homepage_index_result()
 
-        self.assertEqual(service["stable_release"]["model_version"], "v2.0_allocation")
+        self.assertEqual(service["stable_release"]["model_version"], "v3.0_regime")
         self.assertTrue(service["stable_release"]["core_rules_frozen"])
         self.assertEqual(service["stable_release"]["risk_cap_reasons"], list(EXPECTED_STABLE_RISK_CAP_REASONS))
-        self.assertEqual(index["stable_release"]["model_version"], "v2.0_allocation")
+        self.assertEqual(index["stable_release"]["model_version"], "v3.0_regime")
         self.assertTrue(index["stable_release"]["core_rules_frozen"])
         self.assertEqual(service["stable_release"]["allocation_policy_version"], "allocation_policy_v1")
 
@@ -82,7 +82,7 @@ class StableReleaseLockTest(unittest.TestCase):
                 snapshot_bytes=snapshot_path.read_bytes(),
             )
 
-        self.assertEqual(record["model_version"], "v2.0_allocation")
+        self.assertEqual(record["model_version"], "v3.0_regime")
         self.assertEqual(record["allocation_policy_version"], "allocation_policy_v1")
         self.assertEqual(record["market_opportunity_score"], 56.11)
         self.assertEqual(record["crowding_penalty"], 19.91)
@@ -90,6 +90,8 @@ class StableReleaseLockTest(unittest.TestCase):
         self.assertEqual(record["market_position_score"], 35.0)
         self.assertEqual(record["recommended_equity_position_range"], "20%-40%")
         self.assertEqual(record["market_regime"], "防守或弱修复")
+        self.assertEqual(record["market_regime_code"], "distribution")
+        self.assertEqual(record["market_regime_label"], "高位派发")
         self.assertEqual(record["confidence"], "medium")
         self.assertEqual(len(record["allocation_policy"]["sleeves"]), 5)
         self.assertEqual(record["allocation_state"], "弱修复期")

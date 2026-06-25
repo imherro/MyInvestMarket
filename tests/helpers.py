@@ -36,4 +36,31 @@ def attach_allocation_policy(record: dict[str, Any]) -> dict[str, Any]:
     record["allocation_state"] = allocation["state"]
     record["allocation_policy"] = allocation
     record["sleeve_allocation"] = allocation["sleeves"]
+    record.setdefault("market_regime_code", "expansion")
+    record.setdefault("market_regime_label", "主升扩张")
+    record.setdefault(
+        "market_regime_layer",
+        {
+            "version": "market_regime_v1",
+            "regime": record["market_regime_code"],
+            "label": record["market_regime_label"],
+            "confidence": 0.6,
+            "scores": {
+                "accumulation": 1.0,
+                "expansion": 3.0,
+                "distribution": 0.5,
+                "contraction": 0.5,
+            },
+            "signals": [
+                {
+                    "name": "test",
+                    "value": None,
+                    "direction": "mixed",
+                    "scores": {"expansion": 1.0},
+                    "note": "test fixture",
+                }
+            ],
+            "inputs": {},
+        },
+    )
     return record
