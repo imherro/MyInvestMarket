@@ -30,18 +30,28 @@ body {
   letter-spacing: 0;
 }
 
-.app-bar {
+[data-myinvest-header] {
   position: sticky;
   top: 0;
-  z-index: 10;
+  z-index: 1000;
+}
+
+[data-myinvest-header] .mi-header {
+  position: relative;
+}
+
+.app-bar {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 24px;
+  width: min(1480px, calc(100vw - 40px));
+  margin: 24px auto 0;
   padding: 18px 28px;
-  border-bottom: 1px solid var(--line);
-  background: rgba(245, 247, 246, 0.94);
-  backdrop-filter: blur(10px);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
 }
 
 h1,
@@ -114,7 +124,7 @@ select {
 
 .layout {
   width: min(1480px, calc(100vw - 40px));
-  margin: 24px auto 48px;
+  margin: 16px auto 48px;
 }
 
 .summary-grid {
@@ -1083,9 +1093,10 @@ td.score-risk {
 
 @media (max-width: 760px) {
   .app-bar {
-    position: static;
     align-items: stretch;
     flex-direction: column;
+    width: min(100vw - 24px, 1480px);
+    margin-top: 16px;
     padding: 16px;
   }
 

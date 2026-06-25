@@ -7,6 +7,8 @@
     <link rel="stylesheet" href="/styles.css" />
   </head>
   <body>
+    <div data-myinvest-header></div>
+
     <header class="app-bar">
       <div>
         <h1>A股市场评分</h1>
@@ -177,7 +179,10 @@
       </section>
     </main>
 
+    <div data-myinvest-footer></div>
+
     <script src="/app.js"></script>
-    <script src="https://invest.okbbc.com/footer.js" defer></script>
+    <script src="https://invest.okbbc.com/header.js" data-target="[data-myinvest-header]" defer></script>
+    <script src="https://invest.okbbc.com/footer.js" data-target="[data-myinvest-footer]" defer></script>
   </body>
 </html>
