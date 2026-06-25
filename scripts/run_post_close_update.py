@@ -18,6 +18,7 @@ from zoneinfo import ZoneInfo
 
 import build_market_dataset
 import market_scoring
+import report_generator
 import serve_market_web
 
 
@@ -721,6 +722,7 @@ def main() -> None:
     score_result = append_score(snapshot, latest_path, snapshot_bytes)
     record = score_result["record"]
     report_path = write_report(snapshot, record)
+    validation_report = report_generator.write_validation_report(backtest_engine_records(include_legacy=True))
     api = verify_api()
     git_result = commit_and_push(
         [
@@ -729,6 +731,9 @@ def main() -> None:
             *backfilled_paths,
             market_scoring.DEFAULT_HISTORY_PATH,
             report_path,
+            Path(validation_report["markdown_path"]),
+            Path(validation_report["latest_markdown_path"]),
+            Path(validation_report["json_path"]),
         ],
         str(trade_date),
         args.no_git,
@@ -767,11 +772,23 @@ def main() -> None:
             "trend_strength": record.get("trend_strength"),
             "trend_duration": record.get("trend_duration"),
             "report": str(report_path.relative_to(ROOT)),
+            "validation_report": {
+                "markdown": str(Path(validation_report["markdown_path"]).relative_to(ROOT)),
+                "latest_markdown": str(Path(validation_report["latest_markdown_path"]).relative_to(ROOT)),
+                "json": str(Path(validation_report["json_path"]).relative_to(ROOT)),
+                "available": (validation_report.get("report") or {}).get("available"),
+            },
             "api": api,
             "git": git_result,
         }
     )
     print(json.dumps(result, ensure_ascii=False, indent=2))
+
+
+def backtest_engine_records(*, include_legacy: bool = False) -> list[dict[str, Any]]:
+    import backtest_engine
+
+    return backtest_engine.load_history_records(market_scoring.DEFAULT_HISTORY_PATH, include_legacy=include_legacy)
 
 
 if __name__ == "__main__":

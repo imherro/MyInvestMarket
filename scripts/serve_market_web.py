@@ -336,6 +336,31 @@ def latest_market_analysis_result() -> dict[str, object]:
     return result
 
 
+def latest_model_validation_result() -> dict[str, object]:
+    json_path = DATA_DIR / "model_validation_latest.json"
+    markdown_path = DATA_DIR / "model_validation_latest.md"
+    if not json_path.exists() or not markdown_path.exists():
+        return {
+            "available": False,
+            "kind": "model_validation",
+            "error": "model validation report has not been generated",
+        }
+    payload = json.loads(json_path.read_text(encoding="utf-8-sig"))
+    markdown = markdown_path.read_text(encoding="utf-8-sig")
+    return {
+        "available": bool(payload.get("available")),
+        "kind": "model_validation",
+        "endpoint": "/api/research/latest/model-validation",
+        "metadata": {
+            "json": file_meta(json_path),
+            "markdown": file_meta(markdown_path),
+        },
+        "payload": payload,
+        "format": "text/markdown",
+        "content": markdown,
+    }
+
+
 def latest_research_bundle() -> dict[str, object]:
     return {
         "schema_version": 1,
@@ -348,6 +373,7 @@ def latest_research_bundle() -> dict[str, object]:
             "market_snapshot": "/api/research/latest/market-snapshot",
             "market_score": "/api/research/latest/market-score",
             "market_analysis": "/api/research/latest/market-analysis",
+            "model_validation": "/api/research/latest/model-validation",
             "score_history": "/api/history",
             "score_history_with_legacy": "/api/history?include_legacy=true",
         },
@@ -356,6 +382,7 @@ def latest_research_bundle() -> dict[str, object]:
             "market_snapshot": latest_market_snapshot_result(),
             "market_score": latest_market_score_result(),
             "market_analysis": latest_market_analysis_result(),
+            "model_validation": latest_model_validation_result(),
         },
     }
 
@@ -948,6 +975,7 @@ def homepage_index_result() -> dict[str, object]:
             "latest_score": "/api/research/latest/market-score",
             "latest_snapshot": "/api/research/latest/market-snapshot",
             "latest_analysis": "/api/research/latest/market-analysis",
+            "latest_model_validation": "/api/research/latest/model-validation",
         },
     }
 
@@ -977,6 +1005,9 @@ class MarketWebHandler(BaseHTTPRequestHandler):
                 return
             if path == "/api/research/latest/market-analysis":
                 self.send_json(latest_market_analysis_result())
+                return
+            if path == "/api/research/latest/model-validation":
+                self.send_json(latest_model_validation_result())
                 return
             if path == "/api/history":
                 include_legacy = (query.get("include_legacy", ["false"])[0] or "").lower() == "true"

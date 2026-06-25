@@ -1,6 +1,6 @@
 # MyInvestMarket A股市场研究系统
 
-当前模型版本：`v2.0_allocation`。系统服务于股票账户，不做总资产配置，也不再用 8% 目标波动率缩放官方股票仓位。波动率只作为风险扣分、风险上限和提示。
+当前模型版本：`v3.3_position`。系统服务于股票账户，不做总资产配置，也不再用 8% 目标波动率缩放官方股票仓位。波动率只作为风险扣分、风险上限和提示。
 
 ## 核心输出
 
@@ -9,6 +9,10 @@
 - `pre_cap_market_position_score`：机会分扣除拥挤惩罚后的仓位分。
 - `market_position_score`：经过风险上限后的最终股票账户仓位分。
 - `recommended_equity_position_range`：股票账户权益风险资产区间。
+- `market_regime_layer`：市场区制层，区分底部吸筹、主升扩张、高位派发、下行收缩。
+- `market_trend_layer`：趋势结构层，区分趋势初期、强趋势、趋势末期、趋势转弱。
+- `risk_engine`：连续风险分和风险折扣，先做软衰减，再由风险上限兜底。
+- `position_model`：基础仓位分经过趋势乘数、区制乘数、风险折扣后的仓位函数。
 - `allocation_policy`：五仓配置建议，解释风险资产和防御资产分别放在哪里。
 
 ## 分数含义
@@ -83,6 +87,18 @@
 - `GET /api/history?include_legacy=true`：包含旧版本的完整历史。
 - `GET /api/research/latest`：最新市场快照、评分和研究报告绑定结果。
 - `GET /api/research/latest/market-analysis`：最新 Markdown 市场研究报告。
+- `GET /api/research/latest/model-validation`：最新回测与模型验证报告。
+
+## 模型验证
+
+Phase 6 增加回测与验证层，用来检查策略是否只是“看起来合理”，还是能被历史记录重复验证。
+
+```powershell
+python .\scripts\backtest_engine.py --include-legacy
+python .\scripts\report_generator.py --include-legacy
+```
+
+验证层固定使用至少 1 个交易日延迟的仓位信号，避免用当天收盘评分解释当天收盘到收盘收益。当前真实 v3 历史样本仍短，因此报告会明确标出样本不足，不把短样本结果包装成统计结论。
 
 ## 每日更新
 
@@ -93,3 +109,4 @@ python .\scripts\run_post_close_update.py
 ```
 
 脚本会获取最新完整交易日数据、生成评分记录、写入研究报告、验证 API，并在有更新时提交推送到 `origin main`。
+每日更新也会生成 `data/model_validation_latest.md` 和 `data/model_validation_latest.json`，供页面和外部系统读取。
