@@ -383,6 +383,28 @@ def latest_model_health_result() -> dict[str, object]:
         }
 
 
+def latest_strategy_robustness_result() -> dict[str, object]:
+    try:
+        import robustness_score
+
+        records = score_records(include_legacy=True)
+        payload = robustness_score.compute_robustness(records)
+        return {
+            "available": bool(payload.get("available")),
+            "kind": "strategy_robustness",
+            "endpoint": "/api/research/latest/strategy-robustness",
+            "payload": payload,
+        }
+    except Exception as exc:
+        return {
+            "available": False,
+            "kind": "strategy_robustness",
+            "endpoint": "/api/research/latest/strategy-robustness",
+            "error": str(exc),
+            "type": exc.__class__.__name__,
+        }
+
+
 def latest_research_bundle() -> dict[str, object]:
     return {
         "schema_version": 1,
@@ -397,6 +419,7 @@ def latest_research_bundle() -> dict[str, object]:
             "market_analysis": "/api/research/latest/market-analysis",
             "model_validation": "/api/research/latest/model-validation",
             "model_health": "/api/research/latest/model-health",
+            "strategy_robustness": "/api/research/latest/strategy-robustness",
             "score_history": "/api/history",
             "score_history_with_legacy": "/api/history?include_legacy=true",
         },
@@ -407,6 +430,7 @@ def latest_research_bundle() -> dict[str, object]:
             "market_analysis": latest_market_analysis_result(),
             "model_validation": latest_model_validation_result(),
             "model_health": latest_model_health_result(),
+            "strategy_robustness": latest_strategy_robustness_result(),
         },
     }
 
@@ -1001,6 +1025,7 @@ def homepage_index_result() -> dict[str, object]:
             "latest_analysis": "/api/research/latest/market-analysis",
             "latest_model_validation": "/api/research/latest/model-validation",
             "latest_model_health": "/api/research/latest/model-health",
+            "latest_strategy_robustness": "/api/research/latest/strategy-robustness",
         },
     }
 
@@ -1036,6 +1061,9 @@ class MarketWebHandler(BaseHTTPRequestHandler):
                 return
             if path == "/api/research/latest/model-health":
                 self.send_json(latest_model_health_result())
+                return
+            if path == "/api/research/latest/strategy-robustness":
+                self.send_json(latest_strategy_robustness_result())
                 return
             if path == "/api/history":
                 include_legacy = (query.get("include_legacy", ["false"])[0] or "").lower() == "true"

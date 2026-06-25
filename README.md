@@ -89,6 +89,7 @@
 - `GET /api/research/latest/market-analysis`：最新 Markdown 市场研究报告。
 - `GET /api/research/latest/model-validation`：最新回测与模型验证报告。
 - `GET /api/research/latest/model-health`：模型漂移、滚动表现、健康分和校准触发建议。
+- `GET /api/research/latest/strategy-robustness`：因果代理分析、样本外验证、压力测试和策略稳健性评分。
 
 ## 模型验证
 
@@ -98,6 +99,7 @@ Phase 6 增加回测与验证层，用来检查策略是否只是“看起来合
 python .\scripts\backtest_engine.py --include-legacy
 python .\scripts\report_generator.py --include-legacy
 python .\scripts\calibration_trigger.py --include-legacy
+python .\scripts\robustness_score.py --include-legacy
 ```
 
 验证层固定使用至少 1 个交易日延迟的仓位信号，避免用当天收盘评分解释当天收盘到收盘收益。当前真实 v3 历史样本仍短，因此报告会明确标出样本不足，不把短样本结果包装成统计结论。
@@ -110,6 +112,17 @@ Phase 7 增加模型漂移与健康监控：
 - `scripts/rolling_monitor.py`：计算滚动 Sharpe、滚动回撤和区制命中率。
 - `scripts/model_health.py`：输出 `health_score` 与 `healthy / warning / degraded` 状态。
 - `scripts/calibration_trigger.py`：当漂移过高或健康分过低时，只给出校准建议，不自动改实盘参数。
+
+## 策略可信性层
+
+Phase 8 增加策略稳健性验证：
+
+- `scripts/causal_analysis.py`：用 permutation test、分组效应和风险干预代理分析策略信号是否有统计解释力。
+- `scripts/oos_validator.py`：按时间严格切分 train / validation / test，检查样本外表现和未来信息泄露。
+- `scripts/stress_tester.py`：模拟极端牛市、极端熊市、流动性枯竭和高频震荡。
+- `scripts/robustness_score.py`：综合 OOS、因果代理、稳定性和压力测试输出 `robustness_score`。
+
+这些结果是研究和风控证据，不是自动交易指令；短样本时系统会降低可部署判断。
 
 ## 每日更新
 

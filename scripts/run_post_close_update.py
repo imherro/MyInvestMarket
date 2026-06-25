@@ -35,6 +35,7 @@ VERIFY_ENDPOINTS = [
     "/api/research/latest/market-score",
     "/api/research/latest/market-analysis",
     "/api/research/latest/model-health",
+    "/api/research/latest/strategy-robustness",
 ]
 
 
