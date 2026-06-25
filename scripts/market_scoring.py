@@ -11,6 +11,7 @@ from uuid import uuid4
 from zoneinfo import ZoneInfo
 
 from market_regime import compute_market_regime
+from market_trend import compute_market_trend
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -19,9 +20,9 @@ DEFAULT_SNAPSHOT_PATH = DATA_DIR / "latest_market_snapshot.json"
 DEFAULT_HISTORY_PATH = DATA_DIR / "market_score_history.json"
 DEFAULT_AUDIT_LOG_PATH = DATA_DIR / "market_score_history_audit.jsonl"
 TZ = ZoneInfo("Asia/Shanghai")
-MODEL_VERSION = "v3.0_regime"
-SCORE_SCHEMA_VERSION = "2.1"
-FEATURE_SCHEMA_VERSION = "1.4"
+MODEL_VERSION = "v3.1_trend"
+SCORE_SCHEMA_VERSION = "2.2"
+FEATURE_SCHEMA_VERSION = "1.5"
 POSITION_POLICY_VERSION = "stock_account_position_policy_v3"
 ALLOCATION_POLICY_VERSION = "allocation_policy_v1"
 HISTORY_SCHEMA_VERSION = 3
@@ -45,10 +46,12 @@ REQUIRED_SCORE_RECORD_STRING_FIELDS = (
     "snapshot_sha256",
     "market_regime",
     "market_regime_code",
+    "trend_state",
     "confidence",
     "recommended_equity_position_range",
 )
 MARKET_REGIME_CODES = {"accumulation", "expansion", "distribution", "contraction"}
+TREND_STATES = {"early_trend", "strong_trend", "late_trend", "weakening_trend"}
 REQUIRED_SCORE_RECORD_NUMERIC_RANGES = {
     "market_opportunity_score": (0, 100),
     "crowding_penalty": (0, 30),
@@ -315,6 +318,15 @@ def rolling_market_features(snapshot: dict[str, Any]) -> dict[str, Any]:
         flows = (row.get("sector_rotation", {}) or {}).get("top5_industries_by_capital_inflow", []) or []
         return sum(as_float(item.get("net_amount_100m_cny")) or 0 for item in flows)
 
+    def avg_volume_ratio(row: dict[str, Any]) -> float | None:
+        indices = (row.get("market", {}) or {}).get("indices", {}) or {}
+        volume_values = [
+            value
+            for item in indices.values()
+            if isinstance(item, dict) and (value := as_float(item.get("volume_ratio_5d"))) is not None
+        ]
+        return mean(volume_values)
+
     current_flows = (snapshot.get("sector_rotation", {}) or {}).get("top5_industries_by_capital_inflow", []) or []
     current_groups = {theme_group(row.get("industry", "")) for row in current_flows}
     recent_group_hits = 0
@@ -333,6 +345,7 @@ def rolling_market_features(snapshot: dict[str, Any]) -> dict[str, Any]:
     main_5 = values(lambda row: (row.get("capital_flow", {}) or {}).get("main_net_inflow_100m_cny"), 5)
     breadth_5 = values(advancer_ratio, 5)
     top_flow_5 = values(top_flow_sum, 5)
+    volume_ratio_5 = values(avg_volume_ratio, 5)
 
     return {
         "sample_count": len(snapshots),
@@ -346,6 +359,11 @@ def rolling_market_features(snapshot: dict[str, Any]) -> dict[str, Any]:
         "breadth": {
             "advancer_ratio_5d_avg_pct": pct(mean(breadth_5)) if breadth_5 else None,
             "sample_count": len(breadth_5),
+        },
+        "liquidity": {
+            "avg_volume_ratio_5d": round2(mean(volume_ratio_5)) if volume_ratio_5 else None,
+            "avg_volume_ratio_slope_5d": round2(volume_ratio_5[-1] - volume_ratio_5[0]) if len(volume_ratio_5) >= 2 else None,
+            "sample_count": len(volume_ratio_5),
         },
         "mainline": {
             "top_flow_5d_sum_100m_cny": round2(sum(top_flow_5)) if top_flow_5 else None,
@@ -1792,6 +1810,7 @@ def score_snapshot(snapshot: dict[str, Any], snapshot_path: Path | None = None, 
     opportunity = round2(sum(as_float(module["score"]) or 0 for module in modules.values())) or 0
     crowding = crowding_penalty(snapshot, modules)
     market_regime_layer = compute_market_regime(snapshot)
+    market_trend_layer = compute_market_trend(snapshot, modules, rolling)
     position_policy = apply_position_policy(opportunity, crowding, modules, snapshot, quality)
     final_score = position_policy["market_position_score"]
     pre_cap_score = position_policy["pre_cap_market_position_score"]
@@ -1846,6 +1865,11 @@ def score_snapshot(snapshot: dict[str, Any], snapshot_path: Path | None = None, 
         "market_regime_code": market_regime_layer["regime"],
         "market_regime_label": market_regime_layer["label"],
         "market_regime_layer": market_regime_layer,
+        "trend_state": market_trend_layer["trend_state"],
+        "trend_state_label": market_trend_layer["label"],
+        "trend_strength": market_trend_layer["trend_strength"],
+        "trend_duration": market_trend_layer["trend_duration"],
+        "market_trend_layer": market_trend_layer,
         "market_opportunity_score": opportunity,
         "opportunity_score": opportunity,
         "crowding_penalty": crowding["penalty"],
@@ -1888,6 +1912,7 @@ def score_snapshot(snapshot: dict[str, Any], snapshot_path: Path | None = None, 
             "capital flow and mainline modules use rolling persistence features",
             "allocation_policy_v1 replaces the old four-sleeve summary with five stock-account sleeves: core wide ETF, mainline ETF, leader alpha, defensive quality, and cash-like",
             "market_regime_v1 adds a structural layer for accumulation, expansion, distribution, and contraction classification",
+            "market_trend_v1 adds trend_state, trend_strength, and trend_duration from index trend, breadth persistence, and liquidity slope",
         ],
         "key_constraints": key_constraints,
         "data_quality": quality,
@@ -2113,6 +2138,27 @@ def validate_market_regime_layer(layer: Any, errors: list[str]) -> None:
         add_validation_error(errors, "market_regime_layer.signals", "required list")
 
 
+def validate_market_trend_layer(layer: Any, errors: list[str]) -> None:
+    if not isinstance(layer, dict):
+        add_validation_error(errors, "market_trend_layer", "required object")
+        return
+    trend_state = layer.get("trend_state")
+    if trend_state not in TREND_STATES:
+        add_validation_error(errors, "market_trend_layer.trend_state", "must be one of early_trend, strong_trend, late_trend, weakening_trend")
+    if not isinstance(layer.get("version"), str) or not layer.get("version"):
+        add_validation_error(errors, "market_trend_layer.version", "required non-empty string")
+    if not isinstance(layer.get("label"), str) or not layer.get("label"):
+        add_validation_error(errors, "market_trend_layer.label", "required non-empty string")
+    strength = as_float(layer.get("trend_strength"))
+    if strength is None or strength < 0 or strength > 100:
+        add_validation_error(errors, "market_trend_layer.trend_strength", "must be numeric and between 0 and 100")
+    duration = as_float(layer.get("trend_duration"))
+    if duration is None or duration < 0:
+        add_validation_error(errors, "market_trend_layer.trend_duration", "must be numeric and non-negative")
+    if not isinstance(layer.get("signals"), list):
+        add_validation_error(errors, "market_trend_layer.signals", "required list")
+
+
 def validate_allocation_policy(policy: Any, errors: list[str]) -> None:
     if not isinstance(policy, dict):
         add_validation_error(errors, "allocation_policy", "required object")
@@ -2169,6 +2215,11 @@ def validate_score_record(record: dict[str, Any]) -> dict[str, Any]:
     validate_market_regime_layer(record.get("market_regime_layer"), errors)
     if isinstance(record.get("market_regime_layer"), dict) and record.get("market_regime_code") != record["market_regime_layer"].get("regime"):
         add_validation_error(errors, "market_regime_code", "must match market_regime_layer.regime")
+    if record.get("trend_state") not in TREND_STATES:
+        add_validation_error(errors, "trend_state", "must be one of early_trend, strong_trend, late_trend, weakening_trend")
+    validate_market_trend_layer(record.get("market_trend_layer"), errors)
+    if isinstance(record.get("market_trend_layer"), dict) and record.get("trend_state") != record["market_trend_layer"].get("trend_state"):
+        add_validation_error(errors, "trend_state", "must match market_trend_layer.trend_state")
     if parse_date_value(record.get("basis_trade_date")) is None:
         add_validation_error(errors, "basis_trade_date", "must be parseable as a date")
     scored_at = record.get("scored_at")
@@ -2192,7 +2243,7 @@ def validate_score_record(record: dict[str, Any]) -> dict[str, Any]:
         "schema_version": SCORE_SCHEMA_VERSION,
         "checked_required_fields": list(REQUIRED_SCORE_RECORD_STRING_FIELDS)
         + list(REQUIRED_SCORE_RECORD_NUMERIC_RANGES.keys())
-        + ["modules", "risk_caps", "allocation_policy", "market_regime_layer", "crowding", "data_quality"],
+        + ["modules", "risk_caps", "allocation_policy", "market_regime_layer", "market_trend_layer", "crowding", "data_quality"],
     }
 
 

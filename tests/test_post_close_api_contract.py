@@ -70,6 +70,11 @@ def valid_api_payloads() -> dict:
                 "market_regime_code": record["market_regime_code"],
                 "market_regime_label": record["market_regime_label"],
                 "market_regime_layer": record["market_regime_layer"],
+                "trend_state": record["trend_state"],
+                "trend_state_label": record["trend_state_label"],
+                "trend_strength": record["trend_strength"],
+                "trend_duration": record["trend_duration"],
+                "market_trend_layer": record["market_trend_layer"],
             },
             "position_policy_map": {
                 "position_policy_version": record["position_policy_version"],

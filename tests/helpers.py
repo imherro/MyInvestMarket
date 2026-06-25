@@ -63,4 +63,27 @@ def attach_allocation_policy(record: dict[str, Any]) -> dict[str, Any]:
             "inputs": {},
         },
     )
+    record.setdefault("trend_state", "early_trend")
+    record.setdefault("trend_state_label", "趋势初期")
+    record.setdefault("trend_strength", 60.0)
+    record.setdefault("trend_duration", 6)
+    record.setdefault(
+        "market_trend_layer",
+        {
+            "version": "market_trend_v1",
+            "trend_state": record["trend_state"],
+            "label": record["trend_state_label"],
+            "trend_strength": record["trend_strength"],
+            "trend_duration": record["trend_duration"],
+            "signals": [
+                {
+                    "name": "test",
+                    "value": None,
+                    "score": 1.0,
+                    "note": "test fixture",
+                }
+            ],
+            "inputs": {},
+        },
+    )
     return record

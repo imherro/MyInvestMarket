@@ -330,7 +330,7 @@ def write_report(snapshot: dict[str, Any], record: dict[str, Any]) -> Path:
 
 ## 结论
 
-当前市场状态为“{record.get('market_regime')}”，结构区制为“{record.get('market_regime_label') or ((record.get('market_regime_layer') or {}).get('label')) or '--'}”。模型按股票账户口径输出官方推荐权益仓位；波动率只用于风险扣分、风险上限和提示，不再按8%年化目标波动率缩放股票账户仓位。
+当前市场状态为“{record.get('market_regime')}”，结构区制为“{record.get('market_regime_label') or ((record.get('market_regime_layer') or {}).get('label')) or '--'}”，趋势结构为“{record.get('trend_state_label') or ((record.get('market_trend_layer') or {}).get('label')) or '--'}”。模型按股票账户口径输出官方推荐权益仓位；波动率只用于风险扣分、风险上限和提示，不再按8%年化目标波动率缩放股票账户仓位。
 
 ## 评分摘要
 
@@ -347,6 +347,9 @@ def write_report(snapshot: dict[str, Any], record: dict[str, Any]) -> Path:
 | 市场状态 | {record.get('market_regime')} |
 | 结构区制 | {record.get('market_regime_label') or ((record.get('market_regime_layer') or {}).get('label')) or '--'} |
 | 结构区制编码 | {record.get('market_regime_code') or ((record.get('market_regime_layer') or {}).get('regime')) or '--'} |
+| 趋势结构 | {record.get('trend_state_label') or ((record.get('market_trend_layer') or {}).get('label')) or '--'} |
+| 趋势强度 | {fmt(record.get('trend_strength'))} |
+| 趋势持续度 | {fmt(record.get('trend_duration'))} |
 | 配置状态 | {record.get('allocation_state')} |
 | 置信度 | {record.get('confidence')} |
 
@@ -445,6 +448,8 @@ def validate_api_payloads(payloads: dict[str, dict[str, Any]]) -> dict[str, Any]
     require_api(bool(index_summary.get("recommended_equity_position_range")), "/api/index.summary.recommended_equity_position_range is missing")
     require_api(bool(index_summary.get("market_regime_code")), "/api/index.summary.market_regime_code is missing")
     require_api(isinstance(index_summary.get("market_regime_layer"), dict), "/api/index.summary.market_regime_layer is missing")
+    require_api(bool(index_summary.get("trend_state")), "/api/index.summary.trend_state is missing")
+    require_api(isinstance(index_summary.get("market_trend_layer"), dict), "/api/index.summary.market_trend_layer is missing")
     require_api(bool(policy_map.get("position_policy_version")), "/api/index.position_policy_map.position_policy_version is missing")
     require_api(
         policy_map.get("position_policy_version") == local_position_policy_version,
@@ -480,6 +485,12 @@ def validate_api_payloads(payloads: dict[str, dict[str, Any]]) -> dict[str, Any]
         latest_record.get("market_regime_code") == (latest_record.get("market_regime_layer") or {}).get("regime"),
         "latest market score market_regime_code does not match market_regime_layer.regime",
     )
+    require_api(bool(latest_record.get("trend_state")), "latest market score trend_state is missing")
+    require_api(isinstance(latest_record.get("market_trend_layer"), dict), "latest market score market_trend_layer is missing")
+    require_api(
+        latest_record.get("trend_state") == (latest_record.get("market_trend_layer") or {}).get("trend_state"),
+        "latest market score trend_state does not match market_trend_layer.trend_state",
+    )
     require_api(index_summary.get("run_id") == latest_record.get("run_id"), "/api/index summary run_id does not match latest score")
     require_api(
         index_summary.get("basis_trade_date") == latest_record.get("basis_trade_date"),
@@ -488,6 +499,10 @@ def validate_api_payloads(payloads: dict[str, dict[str, Any]]) -> dict[str, Any]
     require_api(
         index_summary.get("market_regime_code") == latest_record.get("market_regime_code"),
         "/api/index summary market_regime_code does not match latest score",
+    )
+    require_api(
+        index_summary.get("trend_state") == latest_record.get("trend_state"),
+        "/api/index summary trend_state does not match latest score",
     )
 
     require_api(bool(analysis_payload.get("available")), "/api/research/latest/market-analysis is not available")
@@ -719,6 +734,10 @@ def main() -> None:
             "market_regime": record.get("market_regime"),
             "market_regime_code": record.get("market_regime_code"),
             "market_regime_label": record.get("market_regime_label") or ((record.get("market_regime_layer") or {}).get("label")),
+            "trend_state": record.get("trend_state"),
+            "trend_state_label": record.get("trend_state_label") or ((record.get("market_trend_layer") or {}).get("label")),
+            "trend_strength": record.get("trend_strength"),
+            "trend_duration": record.get("trend_duration"),
             "report": str(report_path.relative_to(ROOT)),
             "api": api,
             "git": git_result,

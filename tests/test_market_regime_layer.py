@@ -81,7 +81,7 @@ class MarketRegimeLayerTest(unittest.TestCase):
         validation = market_scoring.validate_score_record(record)
 
         self.assertTrue(validation["ok"])
-        self.assertEqual(record["model_version"], "v3.0_regime")
+        self.assertEqual(record["model_version"], "v3.1_trend")
         self.assertEqual(record["market_regime_code"], record["market_regime_layer"]["regime"])
         self.assertEqual(record["market_regime_layer"]["version"], "market_regime_v1")
         self.assertIn("market_regime_layer", validation["checked_required_fields"])
