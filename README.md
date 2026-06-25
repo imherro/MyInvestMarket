@@ -88,6 +88,7 @@
 - `GET /api/research/latest`：最新市场快照、评分和研究报告绑定结果。
 - `GET /api/research/latest/market-analysis`：最新 Markdown 市场研究报告。
 - `GET /api/research/latest/model-validation`：最新回测与模型验证报告。
+- `GET /api/research/latest/model-health`：模型漂移、滚动表现、健康分和校准触发建议。
 
 ## 模型验证
 
@@ -96,9 +97,19 @@ Phase 6 增加回测与验证层，用来检查策略是否只是“看起来合
 ```powershell
 python .\scripts\backtest_engine.py --include-legacy
 python .\scripts\report_generator.py --include-legacy
+python .\scripts\calibration_trigger.py --include-legacy
 ```
 
 验证层固定使用至少 1 个交易日延迟的仓位信号，避免用当天收盘评分解释当天收盘到收盘收益。当前真实 v3 历史样本仍短，因此报告会明确标出样本不足，不把短样本结果包装成统计结论。
+
+## 生产保护层
+
+Phase 7 增加模型漂移与健康监控：
+
+- `scripts/drift_detector.py`：检测 market regime、trend transition、risk penalty 分布漂移。
+- `scripts/rolling_monitor.py`：计算滚动 Sharpe、滚动回撤和区制命中率。
+- `scripts/model_health.py`：输出 `health_score` 与 `healthy / warning / degraded` 状态。
+- `scripts/calibration_trigger.py`：当漂移过高或健康分过低时，只给出校准建议，不自动改实盘参数。
 
 ## 每日更新
 

@@ -361,6 +361,28 @@ def latest_model_validation_result() -> dict[str, object]:
     }
 
 
+def latest_model_health_result() -> dict[str, object]:
+    try:
+        import calibration_trigger
+
+        records = score_records(include_legacy=True)
+        payload = calibration_trigger.evaluate_calibration_trigger(records)
+        return {
+            "available": bool(payload.get("available")),
+            "kind": "model_health",
+            "endpoint": "/api/research/latest/model-health",
+            "payload": payload,
+        }
+    except Exception as exc:
+        return {
+            "available": False,
+            "kind": "model_health",
+            "endpoint": "/api/research/latest/model-health",
+            "error": str(exc),
+            "type": exc.__class__.__name__,
+        }
+
+
 def latest_research_bundle() -> dict[str, object]:
     return {
         "schema_version": 1,
@@ -374,6 +396,7 @@ def latest_research_bundle() -> dict[str, object]:
             "market_score": "/api/research/latest/market-score",
             "market_analysis": "/api/research/latest/market-analysis",
             "model_validation": "/api/research/latest/model-validation",
+            "model_health": "/api/research/latest/model-health",
             "score_history": "/api/history",
             "score_history_with_legacy": "/api/history?include_legacy=true",
         },
@@ -383,6 +406,7 @@ def latest_research_bundle() -> dict[str, object]:
             "market_score": latest_market_score_result(),
             "market_analysis": latest_market_analysis_result(),
             "model_validation": latest_model_validation_result(),
+            "model_health": latest_model_health_result(),
         },
     }
 
@@ -976,6 +1000,7 @@ def homepage_index_result() -> dict[str, object]:
             "latest_snapshot": "/api/research/latest/market-snapshot",
             "latest_analysis": "/api/research/latest/market-analysis",
             "latest_model_validation": "/api/research/latest/model-validation",
+            "latest_model_health": "/api/research/latest/model-health",
         },
     }
 
@@ -1008,6 +1033,9 @@ class MarketWebHandler(BaseHTTPRequestHandler):
                 return
             if path == "/api/research/latest/model-validation":
                 self.send_json(latest_model_validation_result())
+                return
+            if path == "/api/research/latest/model-health":
+                self.send_json(latest_model_health_result())
                 return
             if path == "/api/history":
                 include_legacy = (query.get("include_legacy", ["false"])[0] or "").lower() == "true"
