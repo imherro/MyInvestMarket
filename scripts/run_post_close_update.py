@@ -338,6 +338,9 @@ def write_report(snapshot: dict[str, Any], record: dict[str, Any]) -> Path:
 |---|---:|
 | 市场机会分 | {fmt(record.get('market_opportunity_score'))} |
 | 拥挤惩罚 | {fmt(record.get('crowding_penalty'))} |
+| 连续风险分 | {fmt(record.get('risk_penalty_score'))} |
+| 风险折扣 | {fmt(record.get('risk_discount'))} |
+| 风险折扣后仓位分 | {fmt(record.get('risk_adjusted_market_position_score'))} |
 | 扣上限前仓位分 | {fmt(record.get('pre_cap_market_position_score'))} |
 | 股票账户仓位分 | {fmt(record.get('market_position_score'))} |
 | 官方推荐权益区间 | {fmt(record.get('recommended_equity_position_range') or record.get('base_equity_position_range') or record.get('equity_position_range'))} |
@@ -446,6 +449,8 @@ def validate_api_payloads(payloads: dict[str, dict[str, Any]]) -> dict[str, Any]
     require_api(bool(index_summary.get("run_id")), "/api/index.summary.run_id is missing")
     require_api(bool(index_summary.get("basis_trade_date")), "/api/index.summary.basis_trade_date is missing")
     require_api(bool(index_summary.get("recommended_equity_position_range")), "/api/index.summary.recommended_equity_position_range is missing")
+    require_api(index_summary.get("risk_penalty_score") is not None, "/api/index.summary.risk_penalty_score is missing")
+    require_api(isinstance(index_summary.get("risk_engine"), dict), "/api/index.summary.risk_engine is missing")
     require_api(bool(index_summary.get("market_regime_code")), "/api/index.summary.market_regime_code is missing")
     require_api(isinstance(index_summary.get("market_regime_layer"), dict), "/api/index.summary.market_regime_layer is missing")
     require_api(bool(index_summary.get("trend_state")), "/api/index.summary.trend_state is missing")
@@ -479,6 +484,12 @@ def validate_api_payloads(payloads: dict[str, dict[str, Any]]) -> dict[str, Any]
     )
     require_api(len(((latest_record.get("allocation_policy") or {}).get("sleeves") or [])) == 5, "latest market score allocation_policy.sleeves must contain five sleeves")
     require_api(bool(latest_record.get("recommended_equity_position_range")), "latest market score recommended_equity_position_range is missing")
+    require_api(latest_record.get("risk_penalty_score") is not None, "latest market score risk_penalty_score is missing")
+    require_api(isinstance(latest_record.get("risk_engine"), dict), "latest market score risk_engine is missing")
+    require_api(
+        latest_record.get("risk_penalty_score") == (latest_record.get("risk_engine") or {}).get("risk_penalty_score"),
+        "latest market score risk_penalty_score does not match risk_engine.risk_penalty_score",
+    )
     require_api(bool(latest_record.get("market_regime_code")), "latest market score market_regime_code is missing")
     require_api(isinstance(latest_record.get("market_regime_layer"), dict), "latest market score market_regime_layer is missing")
     require_api(
@@ -503,6 +514,10 @@ def validate_api_payloads(payloads: dict[str, dict[str, Any]]) -> dict[str, Any]
     require_api(
         index_summary.get("trend_state") == latest_record.get("trend_state"),
         "/api/index summary trend_state does not match latest score",
+    )
+    require_api(
+        index_summary.get("risk_penalty_score") == latest_record.get("risk_penalty_score"),
+        "/api/index summary risk_penalty_score does not match latest score",
     )
 
     require_api(bool(analysis_payload.get("available")), "/api/research/latest/market-analysis is not available")
@@ -725,6 +740,10 @@ def main() -> None:
             "audit_event": score_result.get("audit_event"),
             "market_opportunity_score": record.get("market_opportunity_score"),
             "crowding_penalty": record.get("crowding_penalty"),
+            "risk_penalty_score": record.get("risk_penalty_score"),
+            "risk_discount": record.get("risk_discount"),
+            "risk_level": (record.get("risk_engine") or {}).get("risk_level") if isinstance(record.get("risk_engine"), dict) else None,
+            "risk_adjusted_market_position_score": record.get("risk_adjusted_market_position_score"),
             "pre_cap_market_position_score": record.get("pre_cap_market_position_score"),
             "market_position_score": record.get("market_position_score"),
             "recommended_equity_position_range": record.get("recommended_equity_position_range")

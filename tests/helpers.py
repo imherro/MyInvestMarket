@@ -86,4 +86,27 @@ def attach_allocation_policy(record: dict[str, Any]) -> dict[str, Any]:
             "inputs": {},
         },
     )
+    record.setdefault("risk_penalty_score", 25.0)
+    record.setdefault("risk_discount", 0.98)
+    record.setdefault("risk_adjusted_market_position_score", record.get("pre_cap_market_position_score", record.get("market_position_score", 35)))
+    record.setdefault(
+        "risk_engine",
+        {
+            "version": "risk_engine_v1",
+            "risk_penalty_score": record["risk_penalty_score"],
+            "risk_level": "中性风险",
+            "risk_discount": record["risk_discount"],
+            "components": [
+                {
+                    "name": "test",
+                    "score": record["risk_penalty_score"],
+                    "weight": 1.0,
+                    "weighted_score": record["risk_penalty_score"],
+                    "evidence": {},
+                    "note": "test fixture",
+                }
+            ],
+            "inputs": {},
+        },
+    )
     return record

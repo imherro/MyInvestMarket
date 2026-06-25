@@ -743,6 +743,10 @@ def homepage_index_result() -> dict[str, object]:
             "market_position_score": latest.get("market_position_score"),
             "market_opportunity_score": latest.get("market_opportunity_score"),
             "crowding_penalty": latest.get("crowding_penalty"),
+            "risk_penalty_score": latest.get("risk_penalty_score"),
+            "risk_discount": latest.get("risk_discount"),
+            "risk_adjusted_market_position_score": latest.get("risk_adjusted_market_position_score"),
+            "risk_engine": latest.get("risk_engine", {}),
             "shanghai_composite": latest.get("shanghai_composite"),
             "market_regime": latest.get("market_regime"),
             "market_regime_code": latest.get("market_regime_code"),
@@ -794,6 +798,13 @@ def homepage_index_result() -> dict[str, object]:
                     "value": latest.get("crowding_penalty"),
                     "max": 30,
                     "detail": "30分上限",
+                },
+                {
+                    "id": "risk_penalty_score",
+                    "label": "连续风险分",
+                    "value": latest.get("risk_penalty_score"),
+                    "max": 100,
+                    "detail": latest.get("risk_engine", {}).get("risk_level") if isinstance(latest.get("risk_engine"), dict) else None,
                 },
                 {
                     "id": "pre_cap_position",
@@ -897,6 +908,9 @@ def homepage_index_result() -> dict[str, object]:
                     "basis_trade_date": row.get("basis_trade_date"),
                     "market_opportunity_score": row.get("market_opportunity_score"),
                     "crowding_penalty": row.get("crowding_penalty"),
+                    "risk_penalty_score": row.get("risk_penalty_score"),
+                    "risk_discount": row.get("risk_discount"),
+                    "risk_adjusted_market_position_score": row.get("risk_adjusted_market_position_score"),
                     "pre_cap_market_position_score": row.get("pre_cap_market_position_score")
                     or row.get("base_market_position_score")
                     or row.get("market_position_score"),

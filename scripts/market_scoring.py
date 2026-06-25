@@ -11,6 +11,7 @@ from uuid import uuid4
 from zoneinfo import ZoneInfo
 
 from market_regime import compute_market_regime
+from market_risk import compute_risk_engine
 from market_trend import compute_market_trend
 
 
@@ -20,9 +21,9 @@ DEFAULT_SNAPSHOT_PATH = DATA_DIR / "latest_market_snapshot.json"
 DEFAULT_HISTORY_PATH = DATA_DIR / "market_score_history.json"
 DEFAULT_AUDIT_LOG_PATH = DATA_DIR / "market_score_history_audit.jsonl"
 TZ = ZoneInfo("Asia/Shanghai")
-MODEL_VERSION = "v3.1_trend"
-SCORE_SCHEMA_VERSION = "2.2"
-FEATURE_SCHEMA_VERSION = "1.5"
+MODEL_VERSION = "v3.2_risk"
+SCORE_SCHEMA_VERSION = "2.3"
+FEATURE_SCHEMA_VERSION = "1.6"
 POSITION_POLICY_VERSION = "stock_account_position_policy_v3"
 ALLOCATION_POLICY_VERSION = "allocation_policy_v1"
 HISTORY_SCHEMA_VERSION = 3
@@ -55,12 +56,15 @@ TREND_STATES = {"early_trend", "strong_trend", "late_trend", "weakening_trend"}
 REQUIRED_SCORE_RECORD_NUMERIC_RANGES = {
     "market_opportunity_score": (0, 100),
     "crowding_penalty": (0, 30),
+    "risk_penalty_score": (0, 100),
+    "risk_discount": (0, 1),
     "pre_cap_market_position_score": (0, 100),
     "market_position_score": (0, 100),
 }
 OPTIONAL_SCORE_RECORD_NUMERIC_RANGES = {
     "opportunity_score": (0, 100),
     "base_market_position_score": (0, 100),
+    "risk_adjusted_market_position_score": (0, 100),
     "legacy_vol_adjusted_market_position_score": (0, 100),
 }
 SCORE_RECORD_PERCENT_RANGE_FIELDS = (
@@ -1551,9 +1555,15 @@ def apply_position_policy(
     modules: dict[str, Any],
     snapshot: dict[str, Any],
     data_quality: dict[str, Any],
+    risk_engine: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     crowding_penalty_value = as_float(crowding.get("penalty")) or 0
-    pre_cap_score = round2(clamp(opportunity_score - crowding_penalty_value, 0, 100)) or 0
+    risk_engine = risk_engine or compute_risk_engine(snapshot, modules, crowding)
+    base_score = round2(clamp(opportunity_score - crowding_penalty_value, 0, 100)) or 0
+    risk_discount_value = as_float(risk_engine.get("risk_discount"))
+    if risk_discount_value is None:
+        risk_discount_value = 1.0
+    pre_cap_score = round2(clamp(base_score * risk_discount_value, 0, 100)) or 0
     caps = evaluate_risk_caps(pre_cap_score, opportunity_score, crowding_penalty_value, modules, snapshot, data_quality)
     applied_cap, discarded_caps = resolve_risk_caps(caps)
     applied_cap_value = as_float((applied_cap or {}).get("score_cap"))
@@ -1563,6 +1573,11 @@ def apply_position_policy(
         "account_scope": "stock_account",
         "position_policy_version": POSITION_POLICY_VERSION,
         "allocation_policy_version": ALLOCATION_POLICY_VERSION,
+        "base_market_position_score": base_score,
+        "risk_penalty_score": risk_engine.get("risk_penalty_score"),
+        "risk_discount": round2(risk_discount_value),
+        "risk_adjusted_market_position_score": pre_cap_score,
+        "risk_engine": risk_engine,
         "pre_cap_market_position_score": pre_cap_score,
         "market_position_score": final_score,
         "risk_caps": caps,
@@ -1809,9 +1824,10 @@ def score_snapshot(snapshot: dict[str, Any], snapshot_path: Path | None = None, 
     }
     opportunity = round2(sum(as_float(module["score"]) or 0 for module in modules.values())) or 0
     crowding = crowding_penalty(snapshot, modules)
+    risk_engine = compute_risk_engine(snapshot, modules, crowding)
     market_regime_layer = compute_market_regime(snapshot)
     market_trend_layer = compute_market_trend(snapshot, modules, rolling)
-    position_policy = apply_position_policy(opportunity, crowding, modules, snapshot, quality)
+    position_policy = apply_position_policy(opportunity, crowding, modules, snapshot, quality, risk_engine)
     final_score = position_policy["market_position_score"]
     pre_cap_score = position_policy["pre_cap_market_position_score"]
     recommended_range = position_policy["recommended_equity_position_range"]
@@ -1873,9 +1889,13 @@ def score_snapshot(snapshot: dict[str, Any], snapshot_path: Path | None = None, 
         "market_opportunity_score": opportunity,
         "opportunity_score": opportunity,
         "crowding_penalty": crowding["penalty"],
+        "risk_penalty_score": position_policy["risk_penalty_score"],
+        "risk_discount": position_policy["risk_discount"],
+        "risk_adjusted_market_position_score": position_policy["risk_adjusted_market_position_score"],
+        "risk_engine": position_policy["risk_engine"],
         "pre_cap_market_position_score": pre_cap_score,
         "market_position_score": final_score,
-        "base_market_position_score": final_score,
+        "base_market_position_score": position_policy["base_market_position_score"],
         "recommended_equity_position_range": recommended_range,
         "confidence": confidence(snapshot, quality),
         "equity_position_range": recommended_range,
@@ -1913,6 +1933,7 @@ def score_snapshot(snapshot: dict[str, Any], snapshot_path: Path | None = None, 
             "allocation_policy_v1 replaces the old four-sleeve summary with five stock-account sleeves: core wide ETF, mainline ETF, leader alpha, defensive quality, and cash-like",
             "market_regime_v1 adds a structural layer for accumulation, expansion, distribution, and contraction classification",
             "market_trend_v1 adds trend_state, trend_strength, and trend_duration from index trend, breadth persistence, and liquidity slope",
+            "risk_engine_v1 adds continuous risk_penalty_score and risk_discount before hard risk_cap constraints",
         ],
         "key_constraints": key_constraints,
         "data_quality": quality,
@@ -2159,6 +2180,25 @@ def validate_market_trend_layer(layer: Any, errors: list[str]) -> None:
         add_validation_error(errors, "market_trend_layer.signals", "required list")
 
 
+def validate_risk_engine(engine: Any, errors: list[str]) -> None:
+    if not isinstance(engine, dict):
+        add_validation_error(errors, "risk_engine", "required object")
+        return
+    if not isinstance(engine.get("version"), str) or not engine.get("version"):
+        add_validation_error(errors, "risk_engine.version", "required non-empty string")
+    risk_score = as_float(engine.get("risk_penalty_score"))
+    if risk_score is None or risk_score < 0 or risk_score > 100:
+        add_validation_error(errors, "risk_engine.risk_penalty_score", "must be numeric and between 0 and 100")
+    discount = as_float(engine.get("risk_discount"))
+    if discount is None or discount < 0 or discount > 1:
+        add_validation_error(errors, "risk_engine.risk_discount", "must be numeric and between 0 and 1")
+    if not isinstance(engine.get("risk_level"), str) or not engine.get("risk_level"):
+        add_validation_error(errors, "risk_engine.risk_level", "required non-empty string")
+    components = engine.get("components")
+    if not isinstance(components, list) or not components:
+        add_validation_error(errors, "risk_engine.components", "required non-empty list")
+
+
 def validate_allocation_policy(policy: Any, errors: list[str]) -> None:
     if not isinstance(policy, dict):
         add_validation_error(errors, "allocation_policy", "required object")
@@ -2220,6 +2260,12 @@ def validate_score_record(record: dict[str, Any]) -> dict[str, Any]:
     validate_market_trend_layer(record.get("market_trend_layer"), errors)
     if isinstance(record.get("market_trend_layer"), dict) and record.get("trend_state") != record["market_trend_layer"].get("trend_state"):
         add_validation_error(errors, "trend_state", "must match market_trend_layer.trend_state")
+    validate_risk_engine(record.get("risk_engine"), errors)
+    if isinstance(record.get("risk_engine"), dict):
+        if record.get("risk_penalty_score") != record["risk_engine"].get("risk_penalty_score"):
+            add_validation_error(errors, "risk_penalty_score", "must match risk_engine.risk_penalty_score")
+        if record.get("risk_discount") != record["risk_engine"].get("risk_discount"):
+            add_validation_error(errors, "risk_discount", "must match risk_engine.risk_discount")
     if parse_date_value(record.get("basis_trade_date")) is None:
         add_validation_error(errors, "basis_trade_date", "must be parseable as a date")
     scored_at = record.get("scored_at")
@@ -2243,7 +2289,7 @@ def validate_score_record(record: dict[str, Any]) -> dict[str, Any]:
         "schema_version": SCORE_SCHEMA_VERSION,
         "checked_required_fields": list(REQUIRED_SCORE_RECORD_STRING_FIELDS)
         + list(REQUIRED_SCORE_RECORD_NUMERIC_RANGES.keys())
-        + ["modules", "risk_caps", "allocation_policy", "market_regime_layer", "market_trend_layer", "crowding", "data_quality"],
+        + ["modules", "risk_caps", "allocation_policy", "market_regime_layer", "market_trend_layer", "risk_engine", "crowding", "data_quality"],
     }
 
 
