@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import html
 import json
 import mimetypes
 import traceback
@@ -33,6 +34,7 @@ PORT = 8011
 TZ = ZoneInfo("Asia/Shanghai")
 SERVICE_NAME = "MyInvestMarketWeb"
 SERVICE_API_VERSION = 1
+DEFAULT_BASE_URL = f"http://127.0.0.1:{PORT}"
 
 
 def stable_release_result() -> dict[str, object]:
@@ -260,6 +262,404 @@ def service_version_result() -> dict[str, object]:
         "history_schema_version": HISTORY_SCHEMA_VERSION,
         "stable_release": stable_release_result(),
     }
+
+
+def api_endpoint(
+    method: str,
+    path: str,
+    purpose: str,
+    response: str,
+    *,
+    read_only: bool = True,
+    parameters: list[dict[str, object]] | None = None,
+    safety_note: str | None = None,
+    alias_of: str | None = None,
+) -> dict[str, object]:
+    item: dict[str, object] = {
+        "method": method,
+        "path": path,
+        "purpose": purpose,
+        "parameters": parameters or [],
+        "response": response,
+        "read_only": read_only,
+    }
+    if safety_note:
+        item["safety_note"] = safety_note
+    if alias_of:
+        item["alias_of"] = alias_of
+    return item
+
+
+def api_groups_result() -> list[dict[str, object]]:
+    return [
+        {
+            "key": "documentation",
+            "label": "文档入口",
+            "description": "面向浏览器和机器读取的接口说明入口。",
+            "endpoints": [
+                api_endpoint(
+                    "GET",
+                    "/",
+                    "Web 首页，展示最新市场评分、历史曲线、仓位映射和接口说明。",
+                    "HTML 页面。",
+                    read_only=True,
+                ),
+                api_endpoint(
+                    "GET",
+                    "/api",
+                    "统一接口目录，列出当前系统所有公开接口及安全边界。",
+                    "接口目录 JSON；不触发重计算、写入、交易或同步。",
+                    read_only=True,
+                    safety_note="只返回静态说明与目录元数据。",
+                ),
+                api_endpoint(
+                    "GET",
+                    "/docs",
+                    "浏览器版接口目录。",
+                    "HTML 文档页，由 /api 目录生成。",
+                    read_only=True,
+                ),
+                api_endpoint(
+                    "GET",
+                    "/redoc",
+                    "浏览器版精简接口目录，保留给 Redoc 风格入口。",
+                    "HTML 文档页，由 /api 目录生成。",
+                    read_only=True,
+                ),
+                api_endpoint(
+                    "GET",
+                    "/openapi.json",
+                    "OpenAPI 风格的机器可读接口摘要。",
+                    "OpenAPI JSON，字段从 /api 目录生成。",
+                    read_only=True,
+                ),
+            ],
+        },
+        {
+            "key": "system_status",
+            "label": "系统状态",
+            "description": "查看服务、模型和策略版本。",
+            "endpoints": [
+                api_endpoint(
+                    "GET",
+                    "/api/service",
+                    "服务版本、模型版本、仓位策略版本、配置策略版本和稳定发布锁。",
+                    "service、api_version、model_version、position_policy_version、allocation_policy_version、stable_release。",
+                    read_only=True,
+                ),
+            ],
+        },
+        {
+            "key": "current_data",
+            "label": "当前数据",
+            "description": "读取首页当前态、最新研究束和原始快照。",
+            "endpoints": [
+                api_endpoint(
+                    "GET",
+                    "/api/index",
+                    "主页核心内容，供 Web 首页一次性渲染。",
+                    "评分摘要、风险概览、五仓配置、仓位映射、周期示意、历史曲线、接口目录摘要。",
+                    read_only=True,
+                ),
+                api_endpoint(
+                    "GET",
+                    "/api/research/latest",
+                    "最新市场研究结果聚合入口。",
+                    "service、market_snapshot、market_score、market_analysis、model_validation、model_health、strategy_robustness。",
+                    read_only=True,
+                ),
+                api_endpoint(
+                    "GET",
+                    "/api/latest",
+                    "兼容旧调用方的最新研究结果聚合入口。",
+                    "与 /api/research/latest 相同。",
+                    read_only=True,
+                    alias_of="/api/research/latest",
+                ),
+                api_endpoint(
+                    "GET",
+                    "/api/research/latest/market-snapshot",
+                    "最新市场数据快照。",
+                    "快照文件元数据、basis_trade_date 和完整 payload。",
+                    read_only=True,
+                ),
+                api_endpoint(
+                    "GET",
+                    "/api/snapshot",
+                    "最新市场快照的原始 JSON。",
+                    "latest_market_snapshot.json 的原始内容。",
+                    read_only=True,
+                ),
+            ],
+        },
+        {
+            "key": "analysis_results",
+            "label": "分析结果",
+            "description": "读取评分、报告、模型健康和稳健性分析。",
+            "endpoints": [
+                api_endpoint(
+                    "GET",
+                    "/api/research/latest/market-score",
+                    "最新市场评分记录。",
+                    "最新 current-version 评分 record、历史入口和文件元数据。",
+                    read_only=True,
+                ),
+                api_endpoint(
+                    "GET",
+                    "/api/research/latest/market-analysis",
+                    "最新 Markdown 市场研究报告。",
+                    "报告标题、Markdown 内容、文件元数据和 run_id/basis_trade_date 绑定校验。",
+                    read_only=True,
+                ),
+                api_endpoint(
+                    "GET",
+                    "/api/research/latest/model-validation",
+                    "最新模型验证报告。",
+                    "验证 JSON payload、Markdown 内容和文件元数据。",
+                    read_only=True,
+                ),
+                api_endpoint(
+                    "GET",
+                    "/api/research/latest/model-health",
+                    "模型漂移、滚动表现、健康分和校准触发建议。",
+                    "calibration trigger payload。",
+                    read_only=True,
+                ),
+                api_endpoint(
+                    "GET",
+                    "/api/research/latest/strategy-robustness",
+                    "策略稳健性分析。",
+                    "因果代理、样本外验证、压力测试和 robustness payload。",
+                    read_only=True,
+                ),
+            ],
+        },
+        {
+            "key": "history_data",
+            "label": "历史数据",
+            "description": "读取评分历史和版本过滤结果。",
+            "endpoints": [
+                api_endpoint(
+                    "GET",
+                    "/api/history",
+                    "当前模型版本评分历史；可选包含旧版本。",
+                    "history、record_count、total_record_count、legacy_record_count、version_filter。",
+                    read_only=True,
+                    parameters=[
+                        {
+                            "name": "include_legacy",
+                            "in": "query",
+                            "required": False,
+                            "type": "boolean",
+                            "default": False,
+                            "description": "true 时返回包含旧模型版本的完整历史。",
+                        }
+                    ],
+                ),
+            ],
+        },
+        {
+            "key": "write_actions",
+            "label": "写入动作",
+            "description": "会改变本地评分历史的接口；不执行交易。",
+            "endpoints": [
+                api_endpoint(
+                    "POST",
+                    "/api/score",
+                    "根据本地 latest_market_snapshot.json 记录一次当前评分。",
+                    "appended、duplicate、dedupe_key、record、history。",
+                    read_only=False,
+                    safety_note="会写入本地评分历史；不下单、不同步 GitHub、不触发交易。",
+                ),
+            ],
+        },
+    ]
+
+
+def api_catalog_result(base_url: str = DEFAULT_BASE_URL) -> dict[str, object]:
+    groups = api_groups_result()
+    total_endpoints = sum(len(group.get("endpoints", [])) for group in groups)
+    description = "MyInvest A股市场研究与股票账户仓位评分系统。"
+    return {
+        "system_name": SERVICE_NAME,
+        "version": SERVICE_API_VERSION,
+        "description": description,
+        "system": {
+            "name": SERVICE_NAME,
+            "version": SERVICE_API_VERSION,
+            "model_version": MODEL_VERSION,
+            "position_policy_version": POSITION_POLICY_VERSION,
+            "allocation_policy_version": ALLOCATION_POLICY_VERSION,
+            "description": description,
+        },
+        "base_url": base_url,
+        "generated_at": now_iso(),
+        "docs": {
+            "docs": "/docs",
+            "redoc": "/redoc",
+            "openapi_json": "/openapi.json",
+            "catalog": "/api",
+        },
+        "recommended_entrypoints": [
+            {
+                "method": "GET",
+                "path": "/api/index",
+                "purpose": "Web 首页和外部系统读取主页主要内容的首选入口。",
+            },
+            {
+                "method": "GET",
+                "path": "/api/research/latest",
+                "purpose": "一次性读取最新研究结果聚合包。",
+            },
+            {
+                "method": "GET",
+                "path": "/api/research/latest/market-score",
+                "purpose": "只需要最新市场分、仓位分和评分依据时使用。",
+            },
+            {
+                "method": "GET",
+                "path": "/api/history?include_legacy=true",
+                "purpose": "需要复盘完整历史和旧模型记录时使用。",
+            },
+            {
+                "method": "GET",
+                "path": "/api/research/latest/model-health",
+                "purpose": "检查模型漂移、校准触发和健康状态。",
+            },
+        ],
+        "safety": {
+            "catalog_read_only": True,
+            "boundaries": [
+                "/api 只做接口说明，不触发重计算、写入、交易或同步。",
+                "GET 接口仅读取本地已生成研究文件或当前服务版本信息。",
+                "POST /api/score 会写入本地评分历史，但不下单、不同步 GitHub、不连接 QMT 交易。",
+                "所有输出是研究和仓位框架参考，不是自动交易指令。",
+                "接口不返回 .env、token、账户金额、下单数量等敏感执行信息。",
+            ],
+        },
+        "groups": groups,
+        "total_endpoints": total_endpoints,
+    }
+
+
+def api_catalog_summary_result() -> dict[str, object]:
+    catalog = api_catalog_result()
+    return {
+        "endpoint": "/api",
+        "total_endpoints": catalog["total_endpoints"],
+        "docs": catalog["docs"],
+        "recommended_entrypoints": catalog["recommended_entrypoints"],
+        "safety": catalog["safety"],
+        "groups": [
+            {
+                "key": group.get("key"),
+                "label": group.get("label"),
+                "description": group.get("description"),
+                "endpoint_count": len(group.get("endpoints", [])),
+            }
+            for group in catalog["groups"]
+        ],
+    }
+
+
+def openapi_result() -> dict[str, object]:
+    catalog = api_catalog_result()
+    paths: dict[str, object] = {}
+    for group in catalog["groups"]:
+        tag = group.get("label") or group.get("key")
+        for endpoint in group.get("endpoints", []):
+            if not isinstance(endpoint, dict):
+                continue
+            method = str(endpoint.get("method", "GET")).lower()
+            path = str(endpoint.get("path", ""))
+            operation = {
+                "tags": [tag],
+                "summary": endpoint.get("purpose"),
+                "description": endpoint.get("response"),
+                "parameters": [
+                    {
+                        "name": parameter.get("name"),
+                        "in": parameter.get("in", "query"),
+                        "required": bool(parameter.get("required")),
+                        "description": parameter.get("description", ""),
+                        "schema": {
+                            "type": parameter.get("type", "string"),
+                            **({"default": parameter.get("default")} if "default" in parameter else {}),
+                        },
+                    }
+                    for parameter in endpoint.get("parameters", [])
+                    if isinstance(parameter, dict)
+                ],
+                "responses": {
+                    "200": {
+                        "description": endpoint.get("response") or "OK",
+                    }
+                },
+                "x-read-only": endpoint.get("read_only"),
+            }
+            if method == "post":
+                operation["responses"]["201"] = {"description": "Created when a new record is appended."}
+            paths.setdefault(path, {})[method] = operation
+    return {
+        "openapi": "3.1.0",
+        "info": {
+            "title": catalog["system"]["description"],
+            "version": str(catalog["system"]["version"]),
+        },
+        "servers": [{"url": catalog["base_url"]}],
+        "paths": paths,
+    }
+
+
+def api_docs_html(title: str) -> str:
+    catalog = api_catalog_result()
+    rows: list[str] = []
+    for group in catalog["groups"]:
+        rows.append(f"<h2>{html.escape(str(group.get('label', '')))}</h2>")
+        rows.append(f"<p>{html.escape(str(group.get('description', '')))}</p>")
+        rows.append("<table><thead><tr><th>方法</th><th>路径</th><th>用途</th><th>只读</th></tr></thead><tbody>")
+        for endpoint in group.get("endpoints", []):
+            if not isinstance(endpoint, dict):
+                continue
+            rows.append(
+                "<tr>"
+                f"<td><code>{html.escape(str(endpoint.get('method', '')))}</code></td>"
+                f"<td><code>{html.escape(str(endpoint.get('path', '')))}</code></td>"
+                f"<td>{html.escape(str(endpoint.get('purpose', '')))}</td>"
+                f"<td>{'是' if endpoint.get('read_only') else '否'}</td>"
+                "</tr>"
+            )
+        rows.append("</tbody></table>")
+    safety_items = "".join(f"<li>{html.escape(text)}</li>" for text in catalog["safety"]["boundaries"])
+    return f"""<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{html.escape(title)}</title>
+    <style>
+      body {{ margin: 0; padding: 24px; background: #f5f7f6; color: #17211f; font-family: "Microsoft YaHei", "Segoe UI", system-ui, sans-serif; }}
+      main {{ max-width: 1120px; margin: 0 auto; }}
+      h1 {{ font-size: 1.6rem; }}
+      h2 {{ margin-top: 28px; font-size: 1.1rem; }}
+      a, code {{ color: #047d73; }}
+      table {{ width: 100%; border-collapse: collapse; margin-top: 10px; background: #fff; }}
+      th, td {{ padding: 10px; border: 1px solid #d9e1dd; text-align: left; vertical-align: top; }}
+      th {{ background: #eef4f1; }}
+      li {{ margin: 6px 0; }}
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>{html.escape(title)}</h1>
+      <p>{html.escape(str(catalog["system"]["description"]))} base_url: <code>{html.escape(str(catalog["base_url"]))}</code></p>
+      <p><a href="/api">/api</a> · <a href="/openapi.json">/openapi.json</a> · <a href="/">Web 首页</a></p>
+      <h2>安全边界</h2>
+      <ul>{safety_items}</ul>
+      {''.join(rows)}
+    </main>
+  </body>
+</html>"""
 
 
 def latest_market_score_result() -> dict[str, object]:
@@ -915,6 +1315,7 @@ def homepage_index_result() -> dict[str, object]:
             "items": api_available,
             "endpoints": latest_research.get("endpoints", {}),
         },
+        "api_catalog": api_catalog_summary_result(),
         "position_policy_map": policy_map,
         "position_map": {**policy_map, "legacy_alias_of": "position_policy_map"},
         "allocation_policy": allocation_map,
@@ -1038,6 +1439,18 @@ class MarketWebHandler(BaseHTTPRequestHandler):
             parsed = urlparse(self.path)
             path = unquote(parsed.path)
             query = parse_qs(parsed.query)
+            if path == "/api":
+                self.send_json(api_catalog_result())
+                return
+            if path == "/openapi.json":
+                self.send_json(openapi_result())
+                return
+            if path == "/docs":
+                self.send_html(api_docs_html("MyInvestMarket API 文档"))
+                return
+            if path == "/redoc":
+                self.send_html(api_docs_html("MyInvestMarket API Redoc"))
+                return
             if path == "/api/service":
                 self.send_json(service_version_result())
                 return
@@ -1137,6 +1550,15 @@ class MarketWebHandler(BaseHTTPRequestHandler):
         data = target.read_bytes()
         self.send_response(200)
         self.send_header("Content-Type", f"{content_type}; charset=utf-8")
+        self.send_header("Content-Length", str(len(data)))
+        self.send_header("Cache-Control", "no-store")
+        self.end_headers()
+        self.wfile.write(data)
+
+    def send_html(self, content: str, status: int = 200) -> None:
+        data = content.encode("utf-8")
+        self.send_response(status)
+        self.send_header("Content-Type", "text/html; charset=utf-8")
         self.send_header("Content-Length", str(len(data)))
         self.send_header("Cache-Control", "no-store")
         self.end_headers()

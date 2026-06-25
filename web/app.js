@@ -153,6 +153,7 @@ function renderAll() {
   renderModuleGrid();
   renderModuleDetails();
   renderHistoryTable();
+  renderApiCatalog();
 }
 
 function renderSummary() {
@@ -719,6 +720,56 @@ function renderMarketCycleProfile(profile) {
       </ul>
     </article>
   `;
+}
+
+function renderApiCatalog() {
+  const catalog = state.index?.api_catalog || {};
+  const total = numeric(catalog.total_endpoints);
+  setText("apiCatalogTotal", total === null ? "--" : `${formatNumber(total, 0)} 个公开接口`);
+
+  const recommendedContainer = document.getElementById("apiRecommendedEntrypoints");
+  const groupsContainer = document.getElementById("apiCatalogGroups");
+  const safetyContainer = document.getElementById("apiSafetyNotes");
+  if (!recommendedContainer || !groupsContainer || !safetyContainer) return;
+
+  const recommended = Array.isArray(catalog.recommended_entrypoints) ? catalog.recommended_entrypoints : [];
+  recommendedContainer.innerHTML = recommended.length
+    ? recommended
+        .slice(0, 6)
+        .map(
+          (item) => `
+            <a class="api-chip" href="${escapeHtml(apiPathOnly(item.path || ""))}" target="_blank" rel="noreferrer">
+              <b>${escapeHtml(item.method || "GET")}</b>
+              <span>${escapeHtml(item.path || "--")}</span>
+            </a>
+          `,
+        )
+        .join("")
+    : `<span class="api-chip muted">暂无推荐入口</span>`;
+
+  const groups = Array.isArray(catalog.groups) ? catalog.groups : [];
+  groupsContainer.innerHTML = groups.length
+    ? groups
+        .map(
+          (group) => `
+            <span class="api-chip">
+              <b>${escapeHtml(group.label || group.key || "--")}</b>
+              <span>${formatNumber(group.endpoint_count, 0)} 个</span>
+            </span>
+          `,
+        )
+        .join("")
+    : `<span class="api-chip muted">暂无分组</span>`;
+
+  const boundaries = Array.isArray(catalog.safety?.boundaries) ? catalog.safety.boundaries : [];
+  safetyContainer.innerHTML = boundaries.length
+    ? boundaries.slice(0, 5).map((text) => `<li>${escapeHtml(text)}</li>`).join("")
+    : `<li>暂无安全边界说明</li>`;
+}
+
+function apiPathOnly(path) {
+  const value = String(path || "");
+  return value.includes("?") ? value.slice(0, value.indexOf("?")) : value || "/api";
 }
 
 function currentPositionPolicyMap() {

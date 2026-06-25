@@ -79,7 +79,17 @@
 
 ## API
 
-主要接口：
+统一目录：
+
+- `GET /api`：公开接口目录，返回系统名称、版本、说明、`base_url`、`docs`、推荐入口、安全边界、接口分组和 `total_endpoints`。该接口只做说明，不触发重计算、写入、交易或同步。
+
+文档入口：
+
+- `GET /docs`：浏览器版接口目录。
+- `GET /redoc`：浏览器版精简接口目录。
+- `GET /openapi.json`：OpenAPI 风格机器可读接口摘要。
+
+主要数据接口：
 
 - `GET /api/index`：主页核心内容、评分摘要、五仓配置、仓位映射、风险概览和历史曲线数据。
 - `GET /api/service`：服务版本、模型版本、配置策略版本和允许的风险上限类型。
@@ -90,6 +100,10 @@
 - `GET /api/research/latest/model-validation`：最新回测与模型验证报告。
 - `GET /api/research/latest/model-health`：模型漂移、滚动表现、健康分和校准触发建议。
 - `GET /api/research/latest/strategy-robustness`：因果代理分析、样本外验证、压力测试和策略稳健性评分。
+
+写入接口：
+
+- `POST /api/score`：根据本地最新市场快照记录一次评分，会更新本地评分历史；不下单、不同步 GitHub、不连接交易系统。
 
 ## 模型验证
 

@@ -139,6 +139,7 @@ select {
 .allocation-band,
 .position-map-band,
 .market-cycle-band,
+.api-catalog-band,
 .history-section,
 .evidence-table {
   border: 1px solid var(--line);
@@ -295,6 +296,82 @@ select {
   background: var(--surface-soft);
   color: var(--ink);
   font-size: 0.83rem;
+}
+
+.api-catalog-band {
+  margin-top: 24px;
+  padding: 18px;
+}
+
+.api-catalog-band .section-head {
+  margin-top: 0;
+}
+
+.api-catalog-grid {
+  display: grid;
+  grid-template-columns: 1.1fr 0.9fr 1.4fr;
+  gap: 12px;
+}
+
+.api-catalog-panel {
+  min-height: 160px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-soft);
+}
+
+.api-catalog-panel > span {
+  display: block;
+  margin-bottom: 10px;
+  color: var(--muted);
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
+.api-chip-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.api-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  max-width: 100%;
+  padding: 7px 9px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 0.82rem;
+  line-height: 1.35;
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+
+.api-chip b {
+  color: var(--teal);
+  font-size: 0.76rem;
+}
+
+.api-chip span {
+  overflow-wrap: anywhere;
+}
+
+.api-chip.muted {
+  color: var(--muted);
+}
+
+.api-safety-list {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding-left: 18px;
+  color: var(--ink);
+  font-size: 0.86rem;
+  line-height: 1.55;
 }
 
 .allocation-band {
@@ -1078,6 +1155,10 @@ td.score-risk {
     grid-template-columns: 1fr;
   }
 
+  .api-catalog-grid {
+    grid-template-columns: 1fr;
+  }
+
   .market-cycle-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -1117,6 +1198,7 @@ td.score-risk {
   .risk-overview-grid,
   .module-grid,
   .position-benchmark-grid,
+  .api-catalog-grid,
   .market-cycle-grid,
   .metric-grid {
     grid-template-columns: 1fr;
