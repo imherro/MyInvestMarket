@@ -109,4 +109,27 @@ def attach_allocation_policy(record: dict[str, Any]) -> dict[str, Any]:
             "inputs": {},
         },
     )
+    record.setdefault(
+        "position_model",
+        {
+            "version": "position_model_v1",
+            "formula": "base_position_score * trend_multiplier * regime_multiplier * risk_discount",
+            "base_position_score": record.get("base_market_position_score", record.get("market_position_score", 35)),
+            "trend_multiplier": 1.0,
+            "regime_multiplier": 1.0,
+            "risk_discount": record["risk_discount"],
+            "adjusted_position_score": record.get("pre_cap_market_position_score", record.get("market_position_score", 35)),
+            "factors": {},
+        },
+    )
+    record.setdefault(
+        "decision_explain",
+        {
+            "version": "decision_explain_v1",
+            "why_position_changed": ["test fixture"],
+            "risk_factors": ["test fixture"],
+            "trend_factors": ["test fixture"],
+            "regime_factors": ["test fixture"],
+        },
+    )
     return record

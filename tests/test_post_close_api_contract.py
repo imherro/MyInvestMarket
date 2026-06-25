@@ -70,6 +70,8 @@ def valid_api_payloads() -> dict:
                 "risk_penalty_score": record["risk_penalty_score"],
                 "risk_discount": record["risk_discount"],
                 "risk_engine": record["risk_engine"],
+                "position_model": record["position_model"],
+                "decision_explain": record["decision_explain"],
                 "market_regime_code": record["market_regime_code"],
                 "market_regime_label": record["market_regime_label"],
                 "market_regime_layer": record["market_regime_layer"],

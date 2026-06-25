@@ -20,7 +20,7 @@ class MarketRiskEngineTest(unittest.TestCase):
 
         self.assertLessEqual(record["risk_penalty_score"], 20)
         self.assertEqual(record["risk_discount"], 1.0)
-        self.assertEqual(record["pre_cap_market_position_score"], record["base_market_position_score"])
+        self.assertGreaterEqual(record["pre_cap_market_position_score"], record["base_market_position_score"])
         self.assertEqual(record["risk_engine"]["risk_level"], "安全")
 
     def test_high_risk_uses_continuous_discount_before_cap(self) -> None:
@@ -51,7 +51,7 @@ class MarketRiskEngineTest(unittest.TestCase):
         validation = market_scoring.validate_score_record(record)
 
         self.assertTrue(validation["ok"])
-        self.assertEqual(record["model_version"], "v3.2_risk")
+        self.assertEqual(record["model_version"], "v3.3_position")
         self.assertEqual(record["risk_penalty_score"], record["risk_engine"]["risk_penalty_score"])
         self.assertIn("risk_engine", validation["checked_required_fields"])
 

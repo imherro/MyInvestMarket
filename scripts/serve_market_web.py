@@ -747,6 +747,8 @@ def homepage_index_result() -> dict[str, object]:
             "risk_discount": latest.get("risk_discount"),
             "risk_adjusted_market_position_score": latest.get("risk_adjusted_market_position_score"),
             "risk_engine": latest.get("risk_engine", {}),
+            "position_model": latest.get("position_model", {}),
+            "decision_explain": latest.get("decision_explain", {}),
             "shanghai_composite": latest.get("shanghai_composite"),
             "market_regime": latest.get("market_regime"),
             "market_regime_code": latest.get("market_regime_code"),
@@ -911,6 +913,7 @@ def homepage_index_result() -> dict[str, object]:
                     "risk_penalty_score": row.get("risk_penalty_score"),
                     "risk_discount": row.get("risk_discount"),
                     "risk_adjusted_market_position_score": row.get("risk_adjusted_market_position_score"),
+                    "position_model_version": (row.get("position_model") or {}).get("version") if isinstance(row.get("position_model"), dict) else None,
                     "pre_cap_market_position_score": row.get("pre_cap_market_position_score")
                     or row.get("base_market_position_score")
                     or row.get("market_position_score"),

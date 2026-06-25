@@ -340,6 +340,8 @@ def write_report(snapshot: dict[str, Any], record: dict[str, Any]) -> Path:
 | 拥挤惩罚 | {fmt(record.get('crowding_penalty'))} |
 | 连续风险分 | {fmt(record.get('risk_penalty_score'))} |
 | 风险折扣 | {fmt(record.get('risk_discount'))} |
+| 趋势乘数 | {fmt((record.get('position_model') or {}).get('trend_multiplier') if isinstance(record.get('position_model'), dict) else None)} |
+| 区制乘数 | {fmt((record.get('position_model') or {}).get('regime_multiplier') if isinstance(record.get('position_model'), dict) else None)} |
 | 风险折扣后仓位分 | {fmt(record.get('risk_adjusted_market_position_score'))} |
 | 扣上限前仓位分 | {fmt(record.get('pre_cap_market_position_score'))} |
 | 股票账户仓位分 | {fmt(record.get('market_position_score'))} |
@@ -451,6 +453,8 @@ def validate_api_payloads(payloads: dict[str, dict[str, Any]]) -> dict[str, Any]
     require_api(bool(index_summary.get("recommended_equity_position_range")), "/api/index.summary.recommended_equity_position_range is missing")
     require_api(index_summary.get("risk_penalty_score") is not None, "/api/index.summary.risk_penalty_score is missing")
     require_api(isinstance(index_summary.get("risk_engine"), dict), "/api/index.summary.risk_engine is missing")
+    require_api(isinstance(index_summary.get("position_model"), dict), "/api/index.summary.position_model is missing")
+    require_api(isinstance(index_summary.get("decision_explain"), dict), "/api/index.summary.decision_explain is missing")
     require_api(bool(index_summary.get("market_regime_code")), "/api/index.summary.market_regime_code is missing")
     require_api(isinstance(index_summary.get("market_regime_layer"), dict), "/api/index.summary.market_regime_layer is missing")
     require_api(bool(index_summary.get("trend_state")), "/api/index.summary.trend_state is missing")
@@ -486,6 +490,8 @@ def validate_api_payloads(payloads: dict[str, dict[str, Any]]) -> dict[str, Any]
     require_api(bool(latest_record.get("recommended_equity_position_range")), "latest market score recommended_equity_position_range is missing")
     require_api(latest_record.get("risk_penalty_score") is not None, "latest market score risk_penalty_score is missing")
     require_api(isinstance(latest_record.get("risk_engine"), dict), "latest market score risk_engine is missing")
+    require_api(isinstance(latest_record.get("position_model"), dict), "latest market score position_model is missing")
+    require_api(isinstance(latest_record.get("decision_explain"), dict), "latest market score decision_explain is missing")
     require_api(
         latest_record.get("risk_penalty_score") == (latest_record.get("risk_engine") or {}).get("risk_penalty_score"),
         "latest market score risk_penalty_score does not match risk_engine.risk_penalty_score",
@@ -743,6 +749,9 @@ def main() -> None:
             "risk_penalty_score": record.get("risk_penalty_score"),
             "risk_discount": record.get("risk_discount"),
             "risk_level": (record.get("risk_engine") or {}).get("risk_level") if isinstance(record.get("risk_engine"), dict) else None,
+            "trend_multiplier": (record.get("position_model") or {}).get("trend_multiplier") if isinstance(record.get("position_model"), dict) else None,
+            "regime_multiplier": (record.get("position_model") or {}).get("regime_multiplier") if isinstance(record.get("position_model"), dict) else None,
+            "decision_explain_version": (record.get("decision_explain") or {}).get("version") if isinstance(record.get("decision_explain"), dict) else None,
             "risk_adjusted_market_position_score": record.get("risk_adjusted_market_position_score"),
             "pre_cap_market_position_score": record.get("pre_cap_market_position_score"),
             "market_position_score": record.get("market_position_score"),

@@ -21,9 +21,9 @@ DEFAULT_SNAPSHOT_PATH = DATA_DIR / "latest_market_snapshot.json"
 DEFAULT_HISTORY_PATH = DATA_DIR / "market_score_history.json"
 DEFAULT_AUDIT_LOG_PATH = DATA_DIR / "market_score_history_audit.jsonl"
 TZ = ZoneInfo("Asia/Shanghai")
-MODEL_VERSION = "v3.2_risk"
-SCORE_SCHEMA_VERSION = "2.3"
-FEATURE_SCHEMA_VERSION = "1.6"
+MODEL_VERSION = "v3.3_position"
+SCORE_SCHEMA_VERSION = "2.4"
+FEATURE_SCHEMA_VERSION = "1.7"
 POSITION_POLICY_VERSION = "stock_account_position_policy_v3"
 ALLOCATION_POLICY_VERSION = "allocation_policy_v1"
 HISTORY_SCHEMA_VERSION = 3
@@ -1549,6 +1549,112 @@ def evaluate_risk_caps(
     return caps
 
 
+def trend_multiplier(trend_layer: dict[str, Any] | None) -> tuple[float, str]:
+    state = (trend_layer or {}).get("trend_state")
+    if state == "strong_trend":
+        return 1.10, "强趋势提高仓位承载。"
+    if state == "early_trend":
+        return 1.02, "趋势初期小幅提高试探仓位。"
+    if state == "late_trend":
+        return 0.90, "趋势末期降低追高仓位。"
+    if state == "weakening_trend":
+        return 0.78, "趋势转弱明显降低仓位承载。"
+    return 1.0, "趋势结构不足，保持中性乘数。"
+
+
+def regime_multiplier(regime_layer: dict[str, Any] | None) -> tuple[float, str]:
+    regime_code = (regime_layer or {}).get("regime")
+    if regime_code == "accumulation":
+        return 1.05, "底部吸筹区制允许小幅提高左侧仓位。"
+    if regime_code == "expansion":
+        return 1.12, "主升扩张区制提高风险资产承载。"
+    if regime_code == "distribution":
+        return 0.82, "高位派发区制降低仓位，避免越热越追。"
+    if regime_code == "contraction":
+        return 0.70, "下行收缩区制明显降低仓位。"
+    return 1.0, "区制不足，保持中性乘数。"
+
+
+def build_position_model(
+    base_score: float,
+    risk_engine: dict[str, Any],
+    regime_layer: dict[str, Any] | None,
+    trend_layer: dict[str, Any] | None,
+) -> dict[str, Any]:
+    trend_mult, trend_note = trend_multiplier(trend_layer)
+    regime_mult, regime_note = regime_multiplier(regime_layer)
+    risk_discount_value = as_float(risk_engine.get("risk_discount"))
+    if risk_discount_value is None:
+        risk_discount_value = 1.0
+    raw_score = base_score * trend_mult * regime_mult * risk_discount_value
+    adjusted_score = round2(clamp(raw_score, 0, 100)) or 0
+    return {
+        "version": "position_model_v1",
+        "formula": "base_position_score * trend_multiplier * regime_multiplier * risk_discount",
+        "base_position_score": round2(base_score),
+        "trend_multiplier": round2(trend_mult),
+        "regime_multiplier": round2(regime_mult),
+        "risk_discount": round2(risk_discount_value),
+        "adjusted_position_score": adjusted_score,
+        "factors": {
+            "trend": {
+                "state": (trend_layer or {}).get("trend_state"),
+                "label": (trend_layer or {}).get("label"),
+                "multiplier": round2(trend_mult),
+                "note": trend_note,
+            },
+            "regime": {
+                "regime": (regime_layer or {}).get("regime"),
+                "label": (regime_layer or {}).get("label"),
+                "multiplier": round2(regime_mult),
+                "note": regime_note,
+            },
+            "risk": {
+                "risk_penalty_score": risk_engine.get("risk_penalty_score"),
+                "risk_level": risk_engine.get("risk_level"),
+                "discount": round2(risk_discount_value),
+                "note": "连续风险分先平滑折扣仓位，硬性风险上限只做兜底。",
+            },
+        },
+    }
+
+
+def build_decision_explain(
+    base_score: float,
+    pre_cap_score: float,
+    final_score: float,
+    position_model: dict[str, Any],
+    risk_engine: dict[str, Any],
+    risk_caps: list[dict[str, Any]],
+    applied_cap: dict[str, Any] | None,
+) -> dict[str, Any]:
+    factors = position_model.get("factors", {}) if isinstance(position_model.get("factors"), dict) else {}
+    why = [
+        f"基础仓位分 {round2(base_score)} 由机会分扣除拥挤惩罚得到。",
+        f"乘数调整后仓位分 {round2(pre_cap_score)}，最终仓位分 {round2(final_score)}。",
+    ]
+    if applied_cap:
+        why.append(f"硬性风险上限 {applied_cap.get('reason')} 生效，上限 {applied_cap.get('score_cap')}。")
+    elif risk_caps:
+        why.append("存在风险上限信号，但连续风险折扣后仓位已经不高于最严格上限。")
+    else:
+        why.append("未触发硬性风险上限，最终仓位由乘数模型决定。")
+    return {
+        "version": "decision_explain_v1",
+        "why_position_changed": why,
+        "risk_factors": [
+            f"连续风险分 {risk_engine.get('risk_penalty_score')}，风险等级 {risk_engine.get('risk_level')}，折扣 {risk_engine.get('risk_discount')}。",
+            *[
+                f"{item.get('name')}: {item.get('score')} x {item.get('weight')} = {item.get('weighted_score')}"
+                for item in risk_engine.get("components", [])
+                if isinstance(item, dict)
+            ],
+        ],
+        "trend_factors": [str((factors.get("trend") or {}).get("note") or "")],
+        "regime_factors": [str((factors.get("regime") or {}).get("note") or "")],
+    }
+
+
 def apply_position_policy(
     opportunity_score: float,
     crowding: dict[str, Any],
@@ -1556,28 +1662,31 @@ def apply_position_policy(
     snapshot: dict[str, Any],
     data_quality: dict[str, Any],
     risk_engine: dict[str, Any] | None = None,
+    regime_layer: dict[str, Any] | None = None,
+    trend_layer: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     crowding_penalty_value = as_float(crowding.get("penalty")) or 0
     risk_engine = risk_engine or compute_risk_engine(snapshot, modules, crowding)
     base_score = round2(clamp(opportunity_score - crowding_penalty_value, 0, 100)) or 0
-    risk_discount_value = as_float(risk_engine.get("risk_discount"))
-    if risk_discount_value is None:
-        risk_discount_value = 1.0
-    pre_cap_score = round2(clamp(base_score * risk_discount_value, 0, 100)) or 0
+    position_model = build_position_model(base_score, risk_engine, regime_layer, trend_layer)
+    pre_cap_score = as_float(position_model.get("adjusted_position_score")) or 0
     caps = evaluate_risk_caps(pre_cap_score, opportunity_score, crowding_penalty_value, modules, snapshot, data_quality)
     applied_cap, discarded_caps = resolve_risk_caps(caps)
     applied_cap_value = as_float((applied_cap or {}).get("score_cap"))
     final_score = round2(clamp(min(pre_cap_score, applied_cap_value) if applied_cap_value is not None else pre_cap_score, 0, 100)) or 0
     recommended_range = position_range(final_score)
+    decision_explain = build_decision_explain(base_score, pre_cap_score, final_score, position_model, risk_engine, caps, applied_cap)
     return {
         "account_scope": "stock_account",
         "position_policy_version": POSITION_POLICY_VERSION,
         "allocation_policy_version": ALLOCATION_POLICY_VERSION,
         "base_market_position_score": base_score,
         "risk_penalty_score": risk_engine.get("risk_penalty_score"),
-        "risk_discount": round2(risk_discount_value),
+        "risk_discount": risk_engine.get("risk_discount"),
         "risk_adjusted_market_position_score": pre_cap_score,
         "risk_engine": risk_engine,
+        "position_model": position_model,
+        "decision_explain": decision_explain,
         "pre_cap_market_position_score": pre_cap_score,
         "market_position_score": final_score,
         "risk_caps": caps,
@@ -1827,7 +1936,7 @@ def score_snapshot(snapshot: dict[str, Any], snapshot_path: Path | None = None, 
     risk_engine = compute_risk_engine(snapshot, modules, crowding)
     market_regime_layer = compute_market_regime(snapshot)
     market_trend_layer = compute_market_trend(snapshot, modules, rolling)
-    position_policy = apply_position_policy(opportunity, crowding, modules, snapshot, quality, risk_engine)
+    position_policy = apply_position_policy(opportunity, crowding, modules, snapshot, quality, risk_engine, market_regime_layer, market_trend_layer)
     final_score = position_policy["market_position_score"]
     pre_cap_score = position_policy["pre_cap_market_position_score"]
     recommended_range = position_policy["recommended_equity_position_range"]
@@ -1893,6 +2002,8 @@ def score_snapshot(snapshot: dict[str, Any], snapshot_path: Path | None = None, 
         "risk_discount": position_policy["risk_discount"],
         "risk_adjusted_market_position_score": position_policy["risk_adjusted_market_position_score"],
         "risk_engine": position_policy["risk_engine"],
+        "position_model": position_policy["position_model"],
+        "decision_explain": position_policy["decision_explain"],
         "pre_cap_market_position_score": pre_cap_score,
         "market_position_score": final_score,
         "base_market_position_score": position_policy["base_market_position_score"],
@@ -1934,6 +2045,7 @@ def score_snapshot(snapshot: dict[str, Any], snapshot_path: Path | None = None, 
             "market_regime_v1 adds a structural layer for accumulation, expansion, distribution, and contraction classification",
             "market_trend_v1 adds trend_state, trend_strength, and trend_duration from index trend, breadth persistence, and liquidity slope",
             "risk_engine_v1 adds continuous risk_penalty_score and risk_discount before hard risk_cap constraints",
+            "position_model_v1 maps base position through trend, regime, and risk multipliers before hard risk_cap constraints",
         ],
         "key_constraints": key_constraints,
         "data_quality": quality,
@@ -2199,6 +2311,31 @@ def validate_risk_engine(engine: Any, errors: list[str]) -> None:
         add_validation_error(errors, "risk_engine.components", "required non-empty list")
 
 
+def validate_position_model(model: Any, errors: list[str]) -> None:
+    if not isinstance(model, dict):
+        add_validation_error(errors, "position_model", "required object")
+        return
+    if not isinstance(model.get("version"), str) or not model.get("version"):
+        add_validation_error(errors, "position_model.version", "required non-empty string")
+    for field in ["base_position_score", "trend_multiplier", "regime_multiplier", "risk_discount", "adjusted_position_score"]:
+        value = as_float(model.get(field))
+        if value is None:
+            add_validation_error(errors, f"position_model.{field}", "required number")
+    if not isinstance(model.get("factors"), dict):
+        add_validation_error(errors, "position_model.factors", "required object")
+
+
+def validate_decision_explain(explain: Any, errors: list[str]) -> None:
+    if not isinstance(explain, dict):
+        add_validation_error(errors, "decision_explain", "required object")
+        return
+    if not isinstance(explain.get("version"), str) or not explain.get("version"):
+        add_validation_error(errors, "decision_explain.version", "required non-empty string")
+    for field in ["why_position_changed", "risk_factors", "trend_factors", "regime_factors"]:
+        if not isinstance(explain.get(field), list):
+            add_validation_error(errors, f"decision_explain.{field}", "required list")
+
+
 def validate_allocation_policy(policy: Any, errors: list[str]) -> None:
     if not isinstance(policy, dict):
         add_validation_error(errors, "allocation_policy", "required object")
@@ -2266,6 +2403,8 @@ def validate_score_record(record: dict[str, Any]) -> dict[str, Any]:
             add_validation_error(errors, "risk_penalty_score", "must match risk_engine.risk_penalty_score")
         if record.get("risk_discount") != record["risk_engine"].get("risk_discount"):
             add_validation_error(errors, "risk_discount", "must match risk_engine.risk_discount")
+    validate_position_model(record.get("position_model"), errors)
+    validate_decision_explain(record.get("decision_explain"), errors)
     if parse_date_value(record.get("basis_trade_date")) is None:
         add_validation_error(errors, "basis_trade_date", "must be parseable as a date")
     scored_at = record.get("scored_at")
@@ -2289,7 +2428,18 @@ def validate_score_record(record: dict[str, Any]) -> dict[str, Any]:
         "schema_version": SCORE_SCHEMA_VERSION,
         "checked_required_fields": list(REQUIRED_SCORE_RECORD_STRING_FIELDS)
         + list(REQUIRED_SCORE_RECORD_NUMERIC_RANGES.keys())
-        + ["modules", "risk_caps", "allocation_policy", "market_regime_layer", "market_trend_layer", "risk_engine", "crowding", "data_quality"],
+        + [
+            "modules",
+            "risk_caps",
+            "allocation_policy",
+            "market_regime_layer",
+            "market_trend_layer",
+            "risk_engine",
+            "position_model",
+            "decision_explain",
+            "crowding",
+            "data_quality",
+        ],
     }
 
 
