@@ -263,7 +263,7 @@ def allocation_rows(record: dict[str, Any]) -> str:
     policy = record.get("allocation_policy", {}) if isinstance(record.get("allocation_policy"), dict) else {}
     sleeves = policy.get("sleeves", []) if isinstance(policy.get("sleeves"), list) else []
     if not sleeves:
-        return "暂无五仓配置。"
+        return "暂无四仓配置。"
     rows = ["| 仓位 | 资产 | 建议区间 | 角色 |", "|---|---|---:|---|"]
     for sleeve in sleeves:
         if not isinstance(sleeve, dict):
@@ -383,7 +383,7 @@ def write_report(snapshot: dict[str, Any], record: dict[str, Any]) -> Path:
 
 {crowding_rows(record)}
 
-## 五仓配置
+## 四仓配置
 
 {allocation_rows(record)}
 
@@ -470,7 +470,7 @@ def validate_api_payloads(payloads: dict[str, dict[str, Any]]) -> dict[str, Any]
     require_api(bool((policy_map.get("current") or {}).get("market_position_score") is not None), "/api/index.position_policy_map.current.market_position_score is missing")
     require_api(allocation_policy.get("version") == local_allocation_policy_version, "/api/index.allocation_policy.version does not match local ALLOCATION_POLICY_VERSION")
     require_api(bool(allocation_policy.get("state")), "/api/index.allocation_policy.state is missing")
-    require_api(len(allocation_policy.get("sleeves") or []) == 5, "/api/index.allocation_policy.sleeves must contain five sleeves")
+    require_api(len(allocation_policy.get("sleeves") or []) == 4, "/api/index.allocation_policy.sleeves must contain four sleeves")
     require_api(bool(allocation_policy.get("history")), "/api/index.allocation_policy.history is missing")
     require_api(bool(cycle_reference.get("waves")), "/api/index.market_cycle_reference.waves is missing")
     require_api(bool(cycle_profile.get("available")), "/api/index.market_cycle_reference.current_profile is not available")
@@ -489,7 +489,7 @@ def validate_api_payloads(payloads: dict[str, dict[str, Any]]) -> dict[str, Any]
         latest_record.get("allocation_policy_version") == local_allocation_policy_version,
         "latest market score ALLOCATION_POLICY_VERSION does not match local ALLOCATION_POLICY_VERSION",
     )
-    require_api(len(((latest_record.get("allocation_policy") or {}).get("sleeves") or [])) == 5, "latest market score allocation_policy.sleeves must contain five sleeves")
+    require_api(len(((latest_record.get("allocation_policy") or {}).get("sleeves") or [])) == 4, "latest market score allocation_policy.sleeves must contain four sleeves")
     require_api(bool(latest_record.get("recommended_equity_position_range")), "latest market score recommended_equity_position_range is missing")
     require_api(latest_record.get("risk_penalty_score") is not None, "latest market score risk_penalty_score is missing")
     require_api(isinstance(latest_record.get("risk_engine"), dict), "latest market score risk_engine is missing")

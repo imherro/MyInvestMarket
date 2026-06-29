@@ -37,7 +37,7 @@ class StableReleaseLockTest(unittest.TestCase):
     def test_model_version_is_stable_release(self) -> None:
         self.assertEqual(market_scoring.MODEL_VERSION, "v3.3_position")
         self.assertEqual(market_scoring.POSITION_POLICY_VERSION, "stock_account_position_policy_v3")
-        self.assertEqual(market_scoring.ALLOCATION_POLICY_VERSION, "allocation_policy_v1")
+        self.assertEqual(market_scoring.ALLOCATION_POLICY_VERSION, "allocation_policy_v2")
 
     def test_risk_cap_reasons_are_frozen(self) -> None:
         self.assertEqual(market_scoring.STABLE_RISK_CAP_REASONS, EXPECTED_STABLE_RISK_CAP_REASONS)
@@ -53,7 +53,7 @@ class StableReleaseLockTest(unittest.TestCase):
         self.assertEqual(service["stable_release"]["risk_cap_reasons"], list(EXPECTED_STABLE_RISK_CAP_REASONS))
         self.assertEqual(index["stable_release"]["model_version"], "v3.3_position")
         self.assertTrue(index["stable_release"]["core_rules_frozen"])
-        self.assertEqual(service["stable_release"]["allocation_policy_version"], "allocation_policy_v1")
+        self.assertEqual(service["stable_release"]["allocation_policy_version"], "allocation_policy_v2")
 
     def test_historical_snapshot_score_is_locked(self) -> None:
         snapshot_path = ROOT / "data" / "market_snapshot_2026-06-18.json"
@@ -84,7 +84,7 @@ class StableReleaseLockTest(unittest.TestCase):
             )
 
         self.assertEqual(record["model_version"], "v3.3_position")
-        self.assertEqual(record["allocation_policy_version"], "allocation_policy_v1")
+        self.assertEqual(record["allocation_policy_version"], "allocation_policy_v2")
         self.assertEqual(record["market_opportunity_score"], 56.11)
         self.assertEqual(record["crowding_penalty"], 19.91)
         self.assertEqual(record["base_market_position_score"], 36.2)
@@ -104,7 +104,11 @@ class StableReleaseLockTest(unittest.TestCase):
         self.assertEqual(record["trend_strength"], 66.95)
         self.assertEqual(record["trend_duration"], 16)
         self.assertEqual(record["confidence"], "medium")
-        self.assertEqual(len(record["allocation_policy"]["sleeves"]), 5)
+        self.assertEqual(len(record["allocation_policy"]["sleeves"]), 4)
+        self.assertEqual(
+            [sleeve["key"] for sleeve in record["allocation_policy"]["sleeves"]],
+            ["beta_core", "alpha_active", "defensive_factor", "liquidity"],
+        )
         self.assertEqual(record["allocation_state"], "弱修复期")
         self.assertEqual(
             [cap["reason"] for cap in record["risk_caps"]],

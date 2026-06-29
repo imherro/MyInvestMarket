@@ -13,6 +13,7 @@ from zoneinfo import ZoneInfo
 
 from market_scoring import (
     ALLOCATION_POLICY_VERSION,
+    ALLOCATION_SLEEVE_ORDER,
     DATA_DIR,
     DEFAULT_HISTORY_PATH,
     DEFAULT_SNAPSHOT_PATH,
@@ -358,7 +359,7 @@ def api_groups_result() -> list[dict[str, object]]:
                     "GET",
                     "/api/index",
                     "主页核心内容，供 Web 首页一次性渲染。",
-                    "评分摘要、风险概览、五仓配置、仓位映射、周期示意、历史曲线、接口目录摘要。",
+                    "评分摘要、风险概览、四仓配置、仓位映射、周期示意、历史曲线、接口目录摘要。",
                     read_only=True,
                 ),
                 api_endpoint(
@@ -952,15 +953,98 @@ def position_policy_map_result(latest: dict[str, object]) -> dict[str, object]:
     }
 
 
+LEGACY_ALLOCATION_MAPPING = {
+    "beta_core": ["core_wide_etf"],
+    "alpha_active": ["mainline_etf", "leader_alpha"],
+    "defensive_factor": ["defensive_quality"],
+    "liquidity": ["cash_like"],
+}
+
+
+def parse_range_bounds(value: object) -> tuple[float, float] | None:
+    if not isinstance(value, str) or "-" not in value:
+        return None
+    try:
+        left, right = value.replace("%", "").split("-", 1)
+        return float(left), float(right)
+    except ValueError:
+        return None
+
+
+def format_range_bounds(low: float, high: float) -> str:
+    if low > high:
+        low, high = high, low
+    return f"{round(max(0, min(100, low)))}%-{round(max(0, min(100, high)))}%"
+
+
+def convert_legacy_sleeves_for_display(policy: dict[str, object]) -> list[dict[str, object]]:
+    sleeves = policy.get("sleeves") if isinstance(policy, dict) else []
+    if not isinstance(sleeves, list):
+        return []
+    sleeve_by_key = {str(item.get("key")): item for item in sleeves if isinstance(item, dict) and item.get("key")}
+    if all(key in sleeve_by_key for key in ALLOCATION_SLEEVE_ORDER):
+        return [sleeve_by_key[key] for key in ALLOCATION_SLEEVE_ORDER]
+
+    meta = {
+        "beta_core": ("β核心仓（宽基ETF）", "宽基ETF", "市场β底盘"),
+        "alpha_active": ("α主动仓（行业ETF + 龙头个股）", "主线行业ETF/龙头个股", "主动超额收益"),
+        "defensive_factor": ("防御因子仓（红利/低波/自由现金流）", "红利低波/自由现金流/质量因子", "权益防御与质量暴露"),
+        "liquidity": ("流动性仓（货币/短债）", "货币/短债/现金管理", "等待权与回撤缓冲"),
+    }
+    converted: list[dict[str, object]] = []
+    for key in ALLOCATION_SLEEVE_ORDER:
+        source_keys = LEGACY_ALLOCATION_MAPPING[key]
+        source_items = [sleeve_by_key[source_key] for source_key in source_keys if source_key in sleeve_by_key]
+        bounds = [parse_range_bounds(item.get("target_range")) for item in source_items]
+        clean_bounds = [item for item in bounds if item is not None]
+        midpoint = sum(number_or_none(item.get("midpoint")) or 0 for item in source_items) if source_items else None
+        if clean_bounds:
+            target_range = format_range_bounds(sum(item[0] for item in clean_bounds), sum(item[1] for item in clean_bounds))
+        else:
+            target_range = source_items[0].get("target_range") if source_items else None
+        label, asset, role = meta[key]
+        converted.append(
+            {
+                "key": key,
+                "label": label,
+                "name": label,
+                "asset": asset,
+                "role": role,
+                "driver": "由旧 allocation_policy_v1 映射到四仓展示。",
+                "examples": [],
+                "target_range": target_range,
+                "midpoint": round(midpoint, 2) if midpoint is not None else None,
+                "legacy_source_keys": source_keys,
+            }
+        )
+    return converted
+
+
+def allocation_policy_for_display(policy: dict[str, object]) -> dict[str, object]:
+    if not isinstance(policy, dict) or not policy:
+        return {}
+    displayed = dict(policy)
+    displayed["display_version"] = ALLOCATION_POLICY_VERSION
+    displayed["display_mapping"] = "allocation_policy_v2" if policy.get("version") == ALLOCATION_POLICY_VERSION else "legacy_v1_to_v2"
+    displayed["sleeves"] = convert_legacy_sleeves_for_display(policy)
+    if not displayed.get("risk_asset_formula"):
+        displayed["risk_asset_formula"] = "beta_core + alpha_active + defensive_factor"
+    if not displayed.get("liquidity_formula"):
+        displayed["liquidity_formula"] = "100% - total_risk_asset_range"
+    return displayed
+
+
 def allocation_policy_result(latest: dict[str, object], records: list[dict[str, object]] | None = None) -> dict[str, object]:
-    policy = latest.get("allocation_policy") if isinstance(latest.get("allocation_policy"), dict) else {}
+    raw_policy = latest.get("allocation_policy") if isinstance(latest.get("allocation_policy"), dict) else {}
+    policy = allocation_policy_for_display(raw_policy)
     sleeves = policy.get("sleeves") if isinstance(policy, dict) else []
     if not isinstance(sleeves, list):
         sleeves = []
 
     history = []
     for record in records or []:
-        allocation = record.get("allocation_policy") if isinstance(record.get("allocation_policy"), dict) else {}
+        raw_allocation = record.get("allocation_policy") if isinstance(record.get("allocation_policy"), dict) else {}
+        allocation = allocation_policy_for_display(raw_allocation)
         record_sleeves = allocation.get("sleeves") if isinstance(allocation, dict) else []
         if not isinstance(record_sleeves, list):
             record_sleeves = []
@@ -984,11 +1068,16 @@ def allocation_policy_result(latest: dict[str, object], records: list[dict[str, 
 
     return {
         "available": bool(policy),
-        "title": "股票账户五仓配置",
+        "title": "股票账户四仓配置",
         "version": policy.get("version") or ALLOCATION_POLICY_VERSION,
+        "display_version": policy.get("display_version") or ALLOCATION_POLICY_VERSION,
+        "display_mapping": policy.get("display_mapping"),
         "account_scope": policy.get("account_scope") or "stock_account",
         "state": policy.get("state"),
         "total_risk_asset_range": policy.get("total_risk_asset_range") or recommended_equity_position_range(latest),
+        "risk_asset_formula": policy.get("risk_asset_formula"),
+        "liquidity_formula": policy.get("liquidity_formula"),
+        "alpha_active_components": policy.get("alpha_active_components") if isinstance(policy.get("alpha_active_components"), dict) else {},
         "principles": policy.get("principles", []) if isinstance(policy.get("principles"), list) else [],
         "score_inputs": policy.get("score_inputs", {}) if isinstance(policy.get("score_inputs"), dict) else {},
         "sleeves": sleeves,
@@ -1000,7 +1089,8 @@ def allocation_policy_result(latest: dict[str, object], records: list[dict[str, 
 
 def allocation_sleeve_midpoint(record: dict[str, object], key: str) -> object:
     allocation = record.get("allocation_policy") if isinstance(record.get("allocation_policy"), dict) else {}
-    sleeves = allocation.get("sleeves") if isinstance(allocation, dict) else []
+    displayed = allocation_policy_for_display(allocation)
+    sleeves = displayed.get("sleeves") if isinstance(displayed, dict) else []
     if not isinstance(sleeves, list):
         return None
     for sleeve in sleeves:
@@ -1321,7 +1411,7 @@ def homepage_index_result() -> dict[str, object]:
         "allocation_policy": allocation_map,
         "market_cycle_reference": market_cycle_reference_result(latest),
         "allocation_chart": {
-            "title": "五仓配置历史",
+            "title": "四仓配置历史",
             "record_count": len(records),
             "series": {
                 key: [
@@ -1332,7 +1422,7 @@ def homepage_index_result() -> dict[str, object]:
                     }
                     for row in records
                 ]
-                for key in ["core_wide_etf", "mainline_etf", "leader_alpha", "defensive_quality", "cash_like"]
+                for key in ALLOCATION_SLEEVE_ORDER
             },
         },
         "overview_chart": {

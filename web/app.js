@@ -24,19 +24,17 @@ const chartColors = {
   opportunity: "#2c68a0",
   shanghai: "#b7791f",
   penalty: "#bf3d2b",
-  coreWide: "#2c68a0",
-  mainlineEtf: "#bf3d2b",
-  leaderAlpha: "#b7791f",
-  defensiveQuality: "#2f7d4f",
-  cashLike: "#6b7280",
+  betaCore: "#2c68a0",
+  alphaActive: "#bf3d2b",
+  defensiveFactor: "#2f7d4f",
+  liquidity: "#6b7280",
 };
 
 const allocationColors = {
-  core_wide_etf: chartColors.coreWide,
-  mainline_etf: chartColors.mainlineEtf,
-  leader_alpha: chartColors.leaderAlpha,
-  defensive_quality: chartColors.defensiveQuality,
-  cash_like: chartColors.cashLike,
+  beta_core: chartColors.betaCore,
+  alpha_active: chartColors.alphaActive,
+  defensive_factor: chartColors.defensiveFactor,
+  liquidity: chartColors.liquidity,
 };
 
 // Compatibility fallback only. The default page uses /api/index.position_policy_map.bands.
@@ -290,7 +288,7 @@ function renderAllocationPolicy() {
   const triggerBox = document.getElementById("allocationTriggers");
   if (!policy || !policy.available && !Array.isArray(policy.sleeves)) {
     setText("allocationState", "暂无配置研究");
-    renderEmpty(cards, "暂无五仓配置");
+    renderEmpty(cards, "暂无四仓配置");
     renderEmpty(chart, "暂无配置曲线");
     renderEmpty(triggerBox, "暂无配置依据");
     return;

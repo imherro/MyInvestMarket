@@ -25,7 +25,7 @@ MODEL_VERSION = "v3.3_position"
 SCORE_SCHEMA_VERSION = "2.4"
 FEATURE_SCHEMA_VERSION = "1.7"
 POSITION_POLICY_VERSION = "stock_account_position_policy_v3"
-ALLOCATION_POLICY_VERSION = "allocation_policy_v1"
+ALLOCATION_POLICY_VERSION = "allocation_policy_v2"
 HISTORY_SCHEMA_VERSION = 3
 HISTORY_DEDUPE_KEY_FIELDS = (
     "basis_trade_date",
@@ -921,49 +921,41 @@ def position_range(score: float) -> str:
 
 
 ALLOCATION_SLEEVE_ORDER = (
-    "core_wide_etf",
-    "mainline_etf",
-    "leader_alpha",
-    "defensive_quality",
-    "cash_like",
+    "beta_core",
+    "alpha_active",
+    "defensive_factor",
+    "liquidity",
 )
 
 
 ALLOCATION_SLEEVE_META = {
-    "core_wide_etf": {
-        "label": "核心仓",
+    "beta_core": {
+        "label": "β核心仓（宽基ETF）",
         "asset": "宽基ETF",
-        "role": "宏观β底座",
-        "driver": "流动性、估值分位、宽基趋势、风险溢价",
-        "examples": ["沪深300ETF", "中证A500ETF", "中证500ETF"],
+        "role": "市场β底盘",
+        "driver": "风险资产总仓位、宽基趋势、估值分位、市场宽度",
+        "examples": ["沪深300ETF", "中证A500ETF", "中证500ETF", "纳指ETF"],
     },
-    "mainline_etf": {
-        "label": "主线仓",
-        "asset": "行业/主题ETF",
-        "role": "产业β增强",
-        "driver": "主线强度、资金集中、成交额、行业持续性",
-        "examples": ["半导体ETF", "人工智能ETF", "机器人ETF"],
+    "alpha_active": {
+        "label": "α主动仓（行业ETF + 龙头个股）",
+        "asset": "主线行业ETF/龙头个股",
+        "role": "主动超额收益",
+        "driver": "主线强度、资金持续性、成交额、拥挤退潮风险",
+        "examples": ["半导体ETF", "人工智能ETF", "主线龙头", "细分龙头"],
     },
-    "leader_alpha": {
-        "label": "龙头仓",
-        "asset": "龙头个股",
-        "role": "资金α弹性",
-        "driver": "资金选择、强度排序、龙头稳定性、退潮风险",
-        "examples": ["主线龙头", "细分龙头"],
+    "defensive_factor": {
+        "label": "防御因子仓（红利/低波/自由现金流）",
+        "asset": "红利低波/自由现金流/质量因子",
+        "role": "权益防御与质量暴露",
+        "driver": "风险偏好、利率环境、低波质量因子、相对抗跌",
+        "examples": ["红利低波ETF", "自由现金流ETF", "质量因子ETF"],
     },
-    "defensive_quality": {
-        "label": "收益防御仓",
-        "asset": "红利低波/自由现金流ETF",
-        "role": "低波动权益防御",
-        "driver": "风险偏好、利率环境、质量因子、相对抗跌",
-        "examples": ["红利低波ETF", "自由现金流ETF"],
-    },
-    "cash_like": {
-        "label": "现金替代仓",
-        "asset": "短融ETF/货币工具",
+    "liquidity": {
+        "label": "流动性仓（货币/短债）",
+        "asset": "货币/短债/现金管理",
         "role": "等待权与回撤缓冲",
-        "driver": "风险上限、波动率、资金退潮、机会等待",
-        "examples": ["短融ETF", "货币基金"],
+        "driver": "风险上限、波动率、资金退潮、数据置信度",
+        "examples": ["货币基金", "短债基金", "短融ETF", "国债逆回购"],
     },
 }
 
@@ -986,6 +978,32 @@ def allocation_range(low: float, high: float) -> str:
 def module_pct_value(modules: dict[str, Any], key: str) -> float:
     value = module_score_pct(modules, key)
     return round2((value or 0) * 100) or 0
+
+
+def allocation_share_range(total_range: str, share_low: float, share_high: float) -> str:
+    parsed = parse_percent_range(total_range)
+    if parsed is None:
+        return "0%-0%"
+    total_low, total_high = parsed
+    low = total_low * clamp(share_low, 0, 1)
+    high = total_high * clamp(share_high, 0, 1)
+    return allocation_range(low, high)
+
+
+def liquidity_range_from_risk_asset_range(total_range: str) -> str:
+    parsed = parse_percent_range(total_range)
+    if parsed is None:
+        return "0%-100%"
+    total_low, total_high = parsed
+    return allocation_range(100 - total_high, 100 - total_low)
+
+
+def clamp_share_range(value: list[float]) -> list[float]:
+    low = clamp(value[0], 0, 1)
+    high = clamp(value[1], 0, 1)
+    if low > high:
+        low, high = high, low
+    return [round(low, 4), round(high, 4)]
 
 
 def allocation_state(
@@ -1048,87 +1066,79 @@ def allocation_policy(
     cheap_market = valuation_pct >= 65
     expensive_market = valuation_pct <= 35
 
-    base_ranges = {
+    share_ranges = {
         "防守期": {
-            "core_wide_etf": (0, 15),
-            "mainline_etf": (0, 5),
-            "leader_alpha": (0, 0),
-            "defensive_quality": (20, 40),
-            "cash_like": (50, 75),
+            "beta_core": [0.20, 0.40],
+            "alpha_active": [0.00, 0.08],
+            "defensive_factor": [0.55, 0.85],
         },
         "弱修复期": {
-            "core_wide_etf": (15, 30),
-            "mainline_etf": (0, 10),
-            "leader_alpha": (0, 3),
-            "defensive_quality": (25, 45),
-            "cash_like": (30, 55),
+            "beta_core": [0.35, 0.55],
+            "alpha_active": [0.05, 0.15],
+            "defensive_factor": [0.35, 0.55],
         },
         "震荡轮动期": {
-            "core_wide_etf": (25, 40),
-            "mainline_etf": (10, 25),
-            "leader_alpha": (0, 8),
-            "defensive_quality": (20, 35),
-            "cash_like": (10, 30),
+            "beta_core": [0.42, 0.58],
+            "alpha_active": [0.12, 0.28],
+            "defensive_factor": [0.22, 0.38],
         },
         "结构主线期": {
-            "core_wide_etf": (30, 45),
-            "mainline_etf": (20, 35),
-            "leader_alpha": (5, 12),
-            "defensive_quality": (10, 25),
-            "cash_like": (5, 20),
+            "beta_core": [0.40, 0.55],
+            "alpha_active": [0.28, 0.45],
+            "defensive_factor": [0.10, 0.25],
         },
         "趋势扩张期": {
-            "core_wide_etf": (35, 50),
-            "mainline_etf": (25, 40),
-            "leader_alpha": (10, 20),
-            "defensive_quality": (5, 15),
-            "cash_like": (0, 10),
+            "beta_core": [0.42, 0.56],
+            "alpha_active": [0.32, 0.48],
+            "defensive_factor": [0.04, 0.16],
         },
         "低拥挤强趋势期": {
-            "core_wide_etf": (35, 55),
-            "mainline_etf": (25, 45),
-            "leader_alpha": (10, 25),
-            "defensive_quality": (0, 10),
-            "cash_like": (0, 5),
+            "beta_core": [0.42, 0.58],
+            "alpha_active": [0.35, 0.52],
+            "defensive_factor": [0.00, 0.12],
         },
         "高位过热风控": {
-            "core_wide_etf": (20, 35),
-            "mainline_etf": (5, 18),
-            "leader_alpha": (0, 5),
-            "defensive_quality": (25, 40),
-            "cash_like": (25, 45),
+            "beta_core": [0.35, 0.52],
+            "alpha_active": [0.05, 0.18],
+            "defensive_factor": [0.30, 0.55],
         },
     }
-    ranges = {key: list(value) for key, value in base_ranges[state].items()}
+    shares = {key: list(value) for key, value in share_ranges[state].items()}
 
     if cheap_market and state in {"弱修复期", "震荡轮动期"}:
-        ranges["core_wide_etf"][0] += 5
-        ranges["core_wide_etf"][1] += 5
-        ranges["cash_like"][0] -= 5
-        ranges["cash_like"][1] -= 5
+        shares["beta_core"][0] += 0.08
+        shares["beta_core"][1] += 0.08
+        shares["defensive_factor"][0] -= 0.05
+        shares["defensive_factor"][1] -= 0.05
     if expensive_market or risk_reasons & {"expensive_valuation", "extreme_expensive_valuation", "bubble_top_combo"}:
-        ranges["cash_like"][0] += 5
-        ranges["cash_like"][1] += 10
-        ranges["leader_alpha"][1] = min(ranges["leader_alpha"][1], 8)
+        shares["alpha_active"][1] = min(shares["alpha_active"][1], 0.22)
+        shares["defensive_factor"][0] += 0.08
+        shares["defensive_factor"][1] += 0.08
     if mainline_pct < 45:
-        ranges["mainline_etf"][1] = min(ranges["mainline_etf"][1], 15)
-        ranges["leader_alpha"][1] = min(ranges["leader_alpha"][1], 3)
-        ranges["defensive_quality"][0] += 5
+        shares["alpha_active"][1] = min(shares["alpha_active"][1], 0.22)
+        shares["defensive_factor"][0] += 0.08
     if leader_enabled:
-        ranges["leader_alpha"][0] = max(ranges["leader_alpha"][0], 8)
-        ranges["leader_alpha"][1] = max(ranges["leader_alpha"][1], 18)
+        shares["alpha_active"][0] = max(shares["alpha_active"][0], 0.25)
+        shares["alpha_active"][1] = max(shares["alpha_active"][1], 0.42)
     if risk_reasons & {"capital_outflow_combo", "extreme_high_volatility", "high_volatility"}:
-        ranges["cash_like"][0] += 10
-        ranges["cash_like"][1] += 10
-        ranges["leader_alpha"][1] = min(ranges["leader_alpha"][1], 5)
+        shares["alpha_active"][1] = min(shares["alpha_active"][1], 0.16)
+        shares["defensive_factor"][0] += 0.10
+        shares["defensive_factor"][1] += 0.10
     if state == "高位过热风控":
-        ranges["mainline_etf"][1] = min(ranges["mainline_etf"][1], 18)
-        ranges["leader_alpha"][1] = min(ranges["leader_alpha"][1], 5)
+        shares["alpha_active"][1] = min(shares["alpha_active"][1], 0.18)
+
+    shares = {key: clamp_share_range(value) for key, value in shares.items()}
+    target_ranges = {
+        "beta_core": allocation_share_range(recommended_range, *shares["beta_core"]),
+        "alpha_active": allocation_share_range(recommended_range, *shares["alpha_active"]),
+        "defensive_factor": allocation_share_range(recommended_range, *shares["defensive_factor"]),
+        "liquidity": liquidity_range_from_risk_asset_range(recommended_range),
+    }
 
     sleeve_items: list[dict[str, Any]] = []
     for key in ALLOCATION_SLEEVE_ORDER:
         meta = ALLOCATION_SLEEVE_META[key]
-        range_text = allocation_range(ranges[key][0], ranges[key][1])
+        range_text = target_ranges[key]
         sleeve_items.append(
             {
                 "key": key,
@@ -1146,21 +1156,28 @@ def allocation_policy(
     triggers = [
         f"指数趋势 {index_pct}%，宽度 {breadth_pct}%，主线 {mainline_pct}%，资金 {capital_pct}%。",
         f"估值便宜度 {valuation_pct}%，宏观环境 {macro_pct}%，拥挤惩罚 {round2(crowding_penalty_value)}。",
-        f"官方风险资产区间 {recommended_range}；短融/现金仓用于承接未配置风险资产和等待机会。",
+        f"风险资产总区间 {recommended_range}；流动性仓 = 100% - 风险资产总仓位。",
     ]
     if risk_caps:
         labels = "、".join(str(cap.get("reason")) for cap in risk_caps if isinstance(cap, dict))
         triggers.append(f"风险上限已触发：{labels}。")
     if leader_enabled:
-        triggers.append("主线强、成交与宽度配合，龙头仓可打开；否则龙头仓保持小仓或关闭。")
+        triggers.append("主线强、成交与宽度配合，α主动仓可提高；其中龙头个股仍应受 α 仓内部上限约束。")
     else:
-        triggers.append("龙头仓未充分打开：需要主线强度、成交持续和宽度同时确认。")
+        triggers.append("α主动仓未充分打开：需要主线强度、成交持续和宽度同时确认。")
 
     return {
         "version": ALLOCATION_POLICY_VERSION,
         "account_scope": "stock_account",
         "state": state,
         "total_risk_asset_range": recommended_range,
+        "risk_asset_formula": "beta_core + alpha_active + defensive_factor",
+        "liquidity_formula": "100% - total_risk_asset_range",
+        "alpha_active_components": {
+            "industry_theme_etf": "α主动仓基础部分，承接主线行业和主题 ETF。",
+            "leader_stock": "α主动仓增强部分，只在主线、成交和宽度确认时开放。",
+            "leader_stock_internal_cap": "龙头个股合计建议不超过 α主动仓的 30%-40%，退潮时优先收缩。",
+        },
         "score_inputs": {
             "market_position_score": round2(position_score),
             "market_opportunity_score": round2(opportunity_score),
@@ -1175,17 +1192,18 @@ def allocation_policy(
             "macro_score_pct": macro_pct,
         },
         "principles": [
-            "总仓位分决定股票账户承担多少风险，五仓配置决定风险放在哪里。",
-            "宽基ETF按宏观流动性和估值趋势管理，不用主线短炒逻辑。",
-            "主线ETF看趋势和资金，估值是风险背景，不是直接买卖开关。",
-            "龙头仓只有在主线强且资金集中时开放，退潮或高波动时最先收缩。",
-            "红利低波/自由现金流是收益型防御，短融ETF才是现金替代。",
+            "风险资产总仓位由最终仓位分决定，β核心仓、α主动仓、防御因子仓共享这部分风险资产。",
+            "β核心仓只承接宽基 ETF，不承担主线押注任务。",
+            "α主动仓合并主线行业 ETF 和龙头个股，主线退潮或高波动时最先收缩。",
+            "防御因子仓仍是权益资产，承担红利、低波、自由现金流和质量因子暴露。",
+            "流动性仓承接未配置风险资产，是现金管理和再平衡弹药。",
         ],
         "sleeves": sleeve_items,
         "triggers": triggers,
         "notes": [
             "所有比例为股票账户内部配置区间，不代表总资产配置。",
             "单个 ETF、行业、个股仍需由标的研究系统单独确认；本模块只做市场层资金分配。",
+            "旧 allocation_policy_v1 的主线 ETF 与龙头仓在展示层会折算为 α主动仓。",
         ],
     }
 
@@ -2041,7 +2059,7 @@ def score_snapshot(snapshot: dict[str, Any], snapshot_path: Path | None = None, 
             "confidence now distinguishes core, important, and auxiliary missing fields",
             "valuation now scores 5-year index PE/PB percentiles instead of a neutral placeholder",
             "capital flow and mainline modules use rolling persistence features",
-            "allocation_policy_v1 replaces the old four-sleeve summary with five stock-account sleeves: core wide ETF, mainline ETF, leader alpha, defensive quality, and cash-like",
+            "allocation_policy_v2 uses four stock-account sleeves: beta core, alpha active, defensive factor, and liquidity; mainline ETF plus leader stock are merged into alpha active",
             "market_regime_v1 adds a structural layer for accumulation, expansion, distribution, and contraction classification",
             "market_trend_v1 adds trend_state, trend_strength, and trend_duration from index trend, breadth persistence, and liquidity slope",
             "risk_engine_v1 adds continuous risk_penalty_score and risk_discount before hard risk_cap constraints",

@@ -21,7 +21,7 @@ python .\scripts\run_post_close_update.py
 4. 如服务未加载最新代码，重启 8011 服务后复验。
 5. 若产生文件更新，完成测试、提交并推送 GitHub main；若没有更新，保持工作区干净。
 
-最后用中文简报：基准交易日、run_id、市场机会分、拥挤惩罚、股票账户仓位分、推荐权益区间、配置状态、五仓配置区间、触发的风险上限、数据质量、API验证结果、commit 或跳过原因。
+最后用中文简报：基准交易日、run_id、市场机会分、拥挤惩罚、股票账户仓位分、推荐权益区间、配置状态、四仓配置区间、触发的风险上限、数据质量、API验证结果、commit 或跳过原因。
 ```
 
 ## 脚本行为
@@ -31,7 +31,7 @@ python .\scripts\run_post_close_update.py
 - 若最新评分已经覆盖同一基准日且快照内容未变，不重复写入历史。
 - 写入 `data/market_analysis_*.md` 市场研究报告。
 - 验证 `/api/index`、`/api/research/latest/market-score`、`/api/research/latest/market-analysis`。
-- `/api/index.allocation_policy` 输出 `allocation_policy_v1` 五仓配置：核心宽基、主线 ETF、龙头、收益防御、现金替代。
+- `/api/index.allocation_policy` 输出 `allocation_policy_v2` 四仓配置：β核心仓、α主动仓、防御因子仓、流动性仓。
 - 有更新时提交并推送到 `origin main`。
 
 ## 手工测试

@@ -68,7 +68,7 @@ class PositionMapContractTest(unittest.TestCase):
         self.assertIsInstance(allocation, dict)
         self.assertEqual(allocation.get("version"), market_scoring.ALLOCATION_POLICY_VERSION)
         if payload.get("available"):
-            self.assertEqual(len(allocation.get("sleeves") or []), 5)
+            self.assertEqual(len(allocation.get("sleeves") or []), 4)
             self.assertTrue(allocation.get("state"))
             self.assertTrue(allocation.get("history"))
 
