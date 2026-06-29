@@ -1,7 +1,7 @@
 {
   "schema_version": 3,
   "model_version": "v3.3_position",
-  "updated_at": "2026-06-25T20:53:08+08:00",
+  "updated_at": "2026-06-29T09:42:13+08:00",
   "records": [
     {
       "run_id": "20260618T105237-646d4fde",
@@ -16116,6 +16116,1436 @@
       "snapshot_validation": {
         "ok": true,
         "basis_trade_date": "2026-06-25",
+        "checked_fields": [
+          "date",
+          "market.indices",
+          "breadth",
+          "capital_flow",
+          "sector_rotation",
+          "valuation.market",
+          "volatility.market",
+          "macro",
+          "data_quality"
+        ]
+      }
+    },
+    {
+      "run_id": "20260629T094213-6f8ca307",
+      "model_version": "v3.3_position",
+      "score_schema_version": "2.4",
+      "feature_schema_version": "1.7",
+      "account_scope": "stock_account",
+      "position_policy_version": "stock_account_position_policy_v3",
+      "allocation_policy_version": "allocation_policy_v1",
+      "scored_at": "2026-06-29T09:42:13+08:00",
+      "basis_trade_date": "2026-06-26",
+      "snapshot_file": "data\\latest_market_snapshot.json",
+      "snapshot_sha256": "593b54849a8034716f287d253d2254b03c5fd434dfd97e98f421421aae2e04bf",
+      "market_regime": "防守或弱修复",
+      "market_regime_code": "distribution",
+      "market_regime_label": "高位派发",
+      "market_regime_layer": {
+        "version": "market_regime_v1",
+        "regime": "distribution",
+        "label": "高位派发",
+        "confidence": 0.21,
+        "scores": {
+          "accumulation": 1.2,
+          "expansion": 2.0,
+          "distribution": 6.9,
+          "contraction": 6.7
+        },
+        "signals": [
+          {
+            "name": "breadth",
+            "value": {
+              "advancer_ratio": 0.14,
+              "industry_up_ratio": 0.06,
+              "median_pct_change": -2.88
+            },
+            "direction": "negative",
+            "scores": {
+              "accumulation": 1.2,
+              "expansion": 0.0,
+              "distribution": 0.7,
+              "contraction": 5.5
+            },
+            "note": "Width expansion supports expansion; weak breadth supports contraction or distribution."
+          },
+          {
+            "name": "liquidity",
+            "value": {
+              "avg_volume_ratio": 0.99,
+              "active_turnover_share": 0.78
+            },
+            "direction": "positive",
+            "scores": {
+              "accumulation": 0.0,
+              "expansion": 2.0,
+              "distribution": 0.0,
+              "contraction": 0.0
+            },
+            "note": "Moderate volume and active turnover support expansion; shrinkage supports contraction."
+          },
+          {
+            "name": "valuation",
+            "value": {
+              "valuation_score": 12.32
+            },
+            "direction": "expensive",
+            "scores": {
+              "accumulation": 0.0,
+              "expansion": 0.0,
+              "distribution": 2.0,
+              "contraction": 0.0
+            },
+            "note": "Cheap valuation supports accumulation; expensive valuation supports distribution risk."
+          },
+          {
+            "name": "capital_flow",
+            "value": {
+              "northbound_net_inflow_100m_cny": 41.31,
+              "main_net_inflow_100m_cny": -1809.88
+            },
+            "direction": "negative",
+            "scores": {
+              "accumulation": 0.0,
+              "expansion": 0.0,
+              "distribution": 4.2,
+              "contraction": 1.2
+            },
+            "note": "Persistent inflow supports expansion; main outflow or divergence supports distribution/contraction."
+          }
+        ],
+        "inputs": {
+          "advancer_ratio": 0.14,
+          "industry_up_ratio": 0.06,
+          "median_pct_change": -2.88,
+          "avg_volume_ratio": 0.99,
+          "active_turnover_share": 0.78,
+          "valuation_score": 12.32,
+          "northbound_net_inflow_100m_cny": 41.31,
+          "main_net_inflow_100m_cny": -1809.88
+        }
+      },
+      "trend_state": "weakening_trend",
+      "trend_state_label": "趋势转弱",
+      "trend_strength": 26.18,
+      "trend_duration": 0,
+      "market_trend_layer": {
+        "version": "market_trend_v1",
+        "trend_state": "weakening_trend",
+        "label": "趋势转弱",
+        "trend_strength": 26.18,
+        "trend_duration": 0,
+        "signals": [
+          {
+            "name": "index_trend",
+            "value": {
+              "score_pct": 47.04,
+              "return_5d_pct": -1.08,
+              "return_20d_pct": -0.51
+            },
+            "score": 9.63,
+            "note": "Index trend score and 5/20 day momentum define the trend backbone."
+          },
+          {
+            "name": "breadth_persistence",
+            "value": {
+              "current_advancer_ratio_pct": 14.33,
+              "advancer_ratio_5d_avg_pct": 33.15,
+              "breadth_score_pct": 6.56
+            },
+            "score": 0,
+            "note": "Breadth persistence separates broad trend from narrow index movement."
+          },
+          {
+            "name": "liquidity_slope",
+            "value": {
+              "avg_volume_ratio": 0.99,
+              "avg_volume_ratio_slope_5d": -0.19,
+              "liquidity_score_pct": 74.72
+            },
+            "score": 11.92,
+            "note": "Liquidity expansion supports early and strong trends; contraction flags weakening."
+          },
+          {
+            "name": "trend_maturity",
+            "value": {
+              "trend_duration": 0,
+              "ma20_deviation_pct": 0.76
+            },
+            "score": 4.63,
+            "note": "Duration and MA20 deviation distinguish early trend from late trend."
+          }
+        ],
+        "inputs": {
+          "index_score_pct": 47.04,
+          "breadth_score_pct": 6.56,
+          "liquidity_score_pct": 74.72,
+          "return_5d_pct": -1.08,
+          "return_20d_pct": -0.51,
+          "ma20_deviation_pct": 0.76,
+          "current_advancer_ratio_pct": 14.33,
+          "breadth_5d_avg_pct": 33.15,
+          "avg_volume_ratio": 0.99,
+          "avg_volume_ratio_slope_5d": -0.19
+        }
+      },
+      "market_opportunity_score": 37.68,
+      "opportunity_score": 37.68,
+      "crowding_penalty": 12.72,
+      "risk_penalty_score": 65.03,
+      "risk_discount": 0.82,
+      "risk_adjusted_market_position_score": 13.09,
+      "risk_engine": {
+        "version": "risk_engine_v1",
+        "risk_penalty_score": 65.03,
+        "risk_level": "高风险",
+        "risk_discount": 0.82,
+        "components": [
+          {
+            "name": "valuation_risk",
+            "score": 79.8,
+            "weight": 0.35,
+            "weighted_score": 27.93,
+            "evidence": {
+              "valuation_score_pct": 0.2
+            },
+            "note": "Valuation risk rises as valuation score falls."
+          },
+          {
+            "name": "volatility_risk",
+            "score": 53.2,
+            "weight": 0.25,
+            "weighted_score": 13.3,
+            "evidence": {
+              "realized_volatility_30d": 0.28
+            },
+            "note": "Volatility risk rises with 30-day realized annualized volatility."
+          },
+          {
+            "name": "crowding_risk",
+            "score": 42.4,
+            "weight": 0.25,
+            "weighted_score": 10.6,
+            "evidence": {
+              "crowding_penalty": 12.72
+            },
+            "note": "Crowding risk reuses the existing gradient crowding penalty as one component."
+          },
+          {
+            "name": "flow_reversal_risk",
+            "score": 88.0,
+            "weight": 0.15,
+            "weighted_score": 13.2,
+            "evidence": {
+              "northbound_net_inflow_100m_cny": 41.31,
+              "main_net_inflow_100m_cny": -1809.88
+            },
+            "note": "Flow reversal risk rises when main money or northbound money exits."
+          }
+        ],
+        "inputs": {
+          "valuation_score_pct": 0.2,
+          "realized_volatility_30d": 0.28,
+          "crowding_penalty": 12.72,
+          "northbound_net_inflow_100m_cny": 41.31,
+          "main_net_inflow_100m_cny": -1809.88
+        }
+      },
+      "position_model": {
+        "version": "position_model_v1",
+        "formula": "base_position_score * trend_multiplier * regime_multiplier * risk_discount",
+        "base_position_score": 24.96,
+        "trend_multiplier": 0.78,
+        "regime_multiplier": 0.82,
+        "risk_discount": 0.82,
+        "adjusted_position_score": 13.09,
+        "factors": {
+          "trend": {
+            "state": "weakening_trend",
+            "label": "趋势转弱",
+            "multiplier": 0.78,
+            "note": "趋势转弱明显降低仓位承载。"
+          },
+          "regime": {
+            "regime": "distribution",
+            "label": "高位派发",
+            "multiplier": 0.82,
+            "note": "高位派发区制降低仓位，避免越热越追。"
+          },
+          "risk": {
+            "risk_penalty_score": 65.03,
+            "risk_level": "高风险",
+            "discount": 0.82,
+            "note": "连续风险分先平滑折扣仓位，硬性风险上限只做兜底。"
+          }
+        }
+      },
+      "decision_explain": {
+        "version": "decision_explain_v1",
+        "why_position_changed": [
+          "基础仓位分 24.96 由机会分扣除拥挤惩罚得到。",
+          "乘数调整后仓位分 13.09，最终仓位分 13.09。",
+          "硬性风险上限 bubble_top_combo 生效，上限 35。"
+        ],
+        "risk_factors": [
+          "连续风险分 65.03，风险等级 高风险，折扣 0.82。",
+          "valuation_risk: 79.8 x 0.35 = 27.93",
+          "volatility_risk: 53.2 x 0.25 = 13.3",
+          "crowding_risk: 42.4 x 0.25 = 10.6",
+          "flow_reversal_risk: 88.0 x 0.15 = 13.2"
+        ],
+        "trend_factors": [
+          "趋势转弱明显降低仓位承载。"
+        ],
+        "regime_factors": [
+          "高位派发区制降低仓位，避免越热越追。"
+        ]
+      },
+      "pre_cap_market_position_score": 13.09,
+      "market_position_score": 13.09,
+      "base_market_position_score": 24.96,
+      "recommended_equity_position_range": "0%-20%",
+      "confidence": "high",
+      "equity_position_range": "0%-20%",
+      "base_equity_position_range": "0%-20%",
+      "risk_caps": [
+        {
+          "reason": "expensive_valuation",
+          "score_cap": 55,
+          "severity": "medium",
+          "evidence": {
+            "pre_cap_market_position_score": 13.09,
+            "opportunity_score": 37.68,
+            "crowding_penalty": 12.72,
+            "valuation_score_pct": 0.2,
+            "realized_volatility_30d": 0.28
+          },
+          "message": "估值模块得分偏低，股票账户仓位分上限限制为55。"
+        },
+        {
+          "reason": "bubble_top_combo",
+          "score_cap": 35,
+          "severity": "high",
+          "evidence": {
+            "pre_cap_market_position_score": 13.09,
+            "opportunity_score": 37.68,
+            "crowding_penalty": 12.72,
+            "valuation_score_pct": 0.2,
+            "realized_volatility_30d": 0.28
+          },
+          "message": "估值极贵且波动率偏高，泡沫顶部风险触发强仓位上限。"
+        }
+      ],
+      "applied_cap": {
+        "reason": "bubble_top_combo",
+        "score_cap": 35,
+        "severity": "high",
+        "evidence": {
+          "pre_cap_market_position_score": 13.09,
+          "opportunity_score": 37.68,
+          "crowding_penalty": 12.72,
+          "valuation_score_pct": 0.2,
+          "realized_volatility_30d": 0.28
+        },
+        "message": "估值极贵且波动率偏高，泡沫顶部风险触发强仓位上限。",
+        "applied": true,
+        "priority_basis": "lowest_score_cap_then_highest_severity"
+      },
+      "discarded_caps": [
+        {
+          "reason": "expensive_valuation",
+          "score_cap": 55,
+          "severity": "medium",
+          "evidence": {
+            "pre_cap_market_position_score": 13.09,
+            "opportunity_score": 37.68,
+            "crowding_penalty": 12.72,
+            "valuation_score_pct": 0.2,
+            "realized_volatility_30d": 0.28
+          },
+          "message": "估值模块得分偏低，股票账户仓位分上限限制为55。",
+          "discarded_by": "bubble_top_combo",
+          "priority_basis": "covered_by_stricter_score_cap_or_severity_tie_break"
+        }
+      ],
+      "volatility_policy": {
+        "mode": "risk_indicator_only",
+        "target_annual_vol": null,
+        "realized_volatility_30d": 0.28,
+        "status": "available",
+        "note": "股票账户仓位不再按8%年化目标波动率缩放；波动率仅用于风险扣分、风险上限和提示。"
+      },
+      "vol_adjusted_market_position_score": null,
+      "vol_adjusted_equity_position_range": null,
+      "legacy_vol_adjusted_market_position_score": 3.7,
+      "legacy_vol_adjusted_equity_position_range": "0%-6%",
+      "legacy_vol_adjusted_deprecated": true,
+      "allocation_state": "防守期",
+      "allocation_policy": {
+        "version": "allocation_policy_v1",
+        "account_scope": "stock_account",
+        "state": "防守期",
+        "total_risk_asset_range": "0%-20%",
+        "score_inputs": {
+          "market_position_score": 13.09,
+          "market_opportunity_score": 37.68,
+          "pre_cap_market_position_score": 13.09,
+          "crowding_penalty": 12.72,
+          "index_trend_score_pct": 47.04,
+          "breadth_score_pct": 6.56,
+          "liquidity_score_pct": 74.72,
+          "capital_flow_score_pct": 32.34,
+          "mainline_score_pct": 31.6,
+          "valuation_score_pct": 20.2,
+          "macro_score_pct": 72.04
+        },
+        "principles": [
+          "总仓位分决定股票账户承担多少风险，五仓配置决定风险放在哪里。",
+          "宽基ETF按宏观流动性和估值趋势管理，不用主线短炒逻辑。",
+          "主线ETF看趋势和资金，估值是风险背景，不是直接买卖开关。",
+          "龙头仓只有在主线强且资金集中时开放，退潮或高波动时最先收缩。",
+          "红利低波/自由现金流是收益型防御，短融ETF才是现金替代。"
+        ],
+        "sleeves": [
+          {
+            "key": "core_wide_etf",
+            "label": "核心仓",
+            "name": "核心仓",
+            "asset": "宽基ETF",
+            "role": "宏观β底座",
+            "driver": "流动性、估值分位、宽基趋势、风险溢价",
+            "examples": [
+              "沪深300ETF",
+              "中证A500ETF",
+              "中证500ETF"
+            ],
+            "target_range": "0%-15%",
+            "midpoint": 7.5
+          },
+          {
+            "key": "mainline_etf",
+            "label": "主线仓",
+            "name": "主线仓",
+            "asset": "行业/主题ETF",
+            "role": "产业β增强",
+            "driver": "主线强度、资金集中、成交额、行业持续性",
+            "examples": [
+              "半导体ETF",
+              "人工智能ETF",
+              "机器人ETF"
+            ],
+            "target_range": "0%-5%",
+            "midpoint": 2.5
+          },
+          {
+            "key": "leader_alpha",
+            "label": "龙头仓",
+            "name": "龙头仓",
+            "asset": "龙头个股",
+            "role": "资金α弹性",
+            "driver": "资金选择、强度排序、龙头稳定性、退潮风险",
+            "examples": [
+              "主线龙头",
+              "细分龙头"
+            ],
+            "target_range": "0%-0%",
+            "midpoint": 0.0
+          },
+          {
+            "key": "defensive_quality",
+            "label": "收益防御仓",
+            "name": "收益防御仓",
+            "asset": "红利低波/自由现金流ETF",
+            "role": "低波动权益防御",
+            "driver": "风险偏好、利率环境、质量因子、相对抗跌",
+            "examples": [
+              "红利低波ETF",
+              "自由现金流ETF"
+            ],
+            "target_range": "25%-40%",
+            "midpoint": 32.5
+          },
+          {
+            "key": "cash_like",
+            "label": "现金替代仓",
+            "name": "现金替代仓",
+            "asset": "短融ETF/货币工具",
+            "role": "等待权与回撤缓冲",
+            "driver": "风险上限、波动率、资金退潮、机会等待",
+            "examples": [
+              "短融ETF",
+              "货币基金"
+            ],
+            "target_range": "55%-85%",
+            "midpoint": 70.0
+          }
+        ],
+        "triggers": [
+          "指数趋势 47.04%，宽度 6.56%，主线 31.6%，资金 32.34%。",
+          "估值便宜度 20.2%，宏观环境 72.04%，拥挤惩罚 12.72。",
+          "官方风险资产区间 0%-20%；短融/现金仓用于承接未配置风险资产和等待机会。",
+          "风险上限已触发：expensive_valuation、bubble_top_combo。",
+          "龙头仓未充分打开：需要主线强度、成交持续和宽度同时确认。"
+        ],
+        "notes": [
+          "所有比例为股票账户内部配置区间，不代表总资产配置。",
+          "单个 ETF、行业、个股仍需由标的研究系统单独确认；本模块只做市场层资金分配。"
+        ]
+      },
+      "sleeve_allocation": [
+        {
+          "key": "core_wide_etf",
+          "label": "核心仓",
+          "name": "核心仓",
+          "asset": "宽基ETF",
+          "role": "宏观β底座",
+          "driver": "流动性、估值分位、宽基趋势、风险溢价",
+          "examples": [
+            "沪深300ETF",
+            "中证A500ETF",
+            "中证500ETF"
+          ],
+          "target_range": "0%-15%",
+          "midpoint": 7.5
+        },
+        {
+          "key": "mainline_etf",
+          "label": "主线仓",
+          "name": "主线仓",
+          "asset": "行业/主题ETF",
+          "role": "产业β增强",
+          "driver": "主线强度、资金集中、成交额、行业持续性",
+          "examples": [
+            "半导体ETF",
+            "人工智能ETF",
+            "机器人ETF"
+          ],
+          "target_range": "0%-5%",
+          "midpoint": 2.5
+        },
+        {
+          "key": "leader_alpha",
+          "label": "龙头仓",
+          "name": "龙头仓",
+          "asset": "龙头个股",
+          "role": "资金α弹性",
+          "driver": "资金选择、强度排序、龙头稳定性、退潮风险",
+          "examples": [
+            "主线龙头",
+            "细分龙头"
+          ],
+          "target_range": "0%-0%",
+          "midpoint": 0.0
+        },
+        {
+          "key": "defensive_quality",
+          "label": "收益防御仓",
+          "name": "收益防御仓",
+          "asset": "红利低波/自由现金流ETF",
+          "role": "低波动权益防御",
+          "driver": "风险偏好、利率环境、质量因子、相对抗跌",
+          "examples": [
+            "红利低波ETF",
+            "自由现金流ETF"
+          ],
+          "target_range": "25%-40%",
+          "midpoint": 32.5
+        },
+        {
+          "key": "cash_like",
+          "label": "现金替代仓",
+          "name": "现金替代仓",
+          "asset": "短融ETF/货币工具",
+          "role": "等待权与回撤缓冲",
+          "driver": "风险上限、波动率、资金退潮、机会等待",
+          "examples": [
+            "短融ETF",
+            "货币基金"
+          ],
+          "target_range": "55%-85%",
+          "midpoint": 70.0
+        }
+      ],
+      "legacy_sleeve_mix": {
+        "core": "20%-30%",
+        "offensive": "0%-15%",
+        "defensive": "55%-75%",
+        "thematic": "0%-5%"
+      },
+      "shanghai_composite": 4027.26,
+      "modules": {
+        "index_trend": {
+          "label": "指数趋势",
+          "weight": 20,
+          "score": 9.41,
+          "score_pct": 47.04,
+          "summary": "指数趋势中性，2/4个指数站上MA20，20日平均涨跌-0.51%。",
+          "evidence": [
+            {
+              "label": "站上MA20指数数",
+              "value": 2.0,
+              "unit": "个",
+              "score": 3.0,
+              "max_score": 6,
+              "note": "越多越说明指数层面修复更广。"
+            },
+            {
+              "label": "指数平均5日涨跌",
+              "value": -1.08,
+              "unit": "%",
+              "score": 1.07,
+              "max_score": 5,
+              "note": "短期动量衡量反弹强度。"
+            },
+            {
+              "label": "指数平均20日涨跌",
+              "value": -0.51,
+              "unit": "%",
+              "score": 2.34,
+              "max_score": 5,
+              "note": "20日趋势决定是否从反弹进入趋势。"
+            },
+            {
+              "label": "平均MA20偏离",
+              "value": 0.76,
+              "unit": "%",
+              "score": 2.0,
+              "max_score": 2,
+              "note": "温和站上均线最好，过热或深跌都降分。"
+            },
+            {
+              "label": "沪深创趋势一致性",
+              "value": "",
+              "unit": "",
+              "score": 1.0,
+              "max_score": 2,
+              "note": "大盘和成长同时走强时更稳。"
+            }
+          ],
+          "metrics": {
+            "shanghai_close": {
+              "label": "上证收盘",
+              "value": 4027.26,
+              "unit": "点",
+              "higher_is_better": true
+            },
+            "above_ma20_count": {
+              "label": "站上MA20指数数",
+              "value": 2.0,
+              "unit": "个",
+              "higher_is_better": true
+            },
+            "avg_return_5d_pct": {
+              "label": "指数平均5日涨跌",
+              "value": -1.08,
+              "unit": "%",
+              "higher_is_better": true
+            },
+            "avg_return_20d_pct": {
+              "label": "指数平均20日涨跌",
+              "value": -0.51,
+              "unit": "%",
+              "higher_is_better": true
+            },
+            "avg_ma20_deviation_pct": {
+              "label": "平均MA20偏离",
+              "value": 0.76,
+              "unit": "%",
+              "higher_is_better": null
+            },
+            "chinext_return_5d_pct": {
+              "label": "创业板5日涨跌",
+              "value": -1.37,
+              "unit": "%",
+              "higher_is_better": true
+            }
+          }
+        },
+        "breadth": {
+          "label": "市场宽度",
+          "weight": 15,
+          "score": 0.98,
+          "score_pct": 6.56,
+          "summary": "市场宽度偏弱，上涨家数占比14.33%，赚钱效应扩散不足。",
+          "evidence": [
+            {
+              "label": "上涨家数占比",
+              "value": 14.33,
+              "unit": "%",
+              "score": 0.0,
+              "max_score": 4,
+              "note": "宽度不足时，指数上涨容易变成少数主线行情。"
+            },
+            {
+              "label": "行业上涨占比",
+              "value": 6.45,
+              "unit": "%",
+              "score": 0.0,
+              "max_score": 3,
+              "note": "行业扩散越充分，行情越健康。"
+            },
+            {
+              "label": "个股中位数涨跌",
+              "value": -2.88,
+              "unit": "%",
+              "score": 0.0,
+              "max_score": 2.5,
+              "note": "中位数涨跌能直接衡量多数股票的真实赚钱效应。"
+            },
+            {
+              "label": "强势股-弱势股占比差",
+              "value": -41.2,
+              "unit": "%",
+              "score": 0.0,
+              "max_score": 2,
+              "note": "涨幅超3%多于跌幅超3%时，赚钱效应更扎实。"
+            },
+            {
+              "label": "涨跌停结构",
+              "value": "60/30",
+              "unit": "涨停/跌停",
+              "score": 0.0,
+              "max_score": 2,
+              "note": "涨停多且跌停少代表情绪仍可用。"
+            },
+            {
+              "label": "最高连板",
+              "value": 6.0,
+              "unit": "板",
+              "score": 0.83,
+              "max_score": 1,
+              "note": "连板高度衡量短线风险偏好。"
+            },
+            {
+              "label": "指数与宽度一致性",
+              "value": "",
+              "unit": "",
+              "score": 0.15,
+              "max_score": 0.5,
+              "note": "指数强但宽度弱时降分。"
+            }
+          ],
+          "metrics": {
+            "advancer_ratio_pct": {
+              "label": "上涨家数占比",
+              "value": 14.33,
+              "unit": "%",
+              "higher_is_better": true
+            },
+            "industry_up_ratio_pct": {
+              "label": "行业上涨占比",
+              "value": 6.45,
+              "unit": "%",
+              "higher_is_better": true
+            },
+            "median_pct_change": {
+              "label": "个股中位数涨跌",
+              "value": -2.88,
+              "unit": "%",
+              "higher_is_better": true
+            },
+            "strong_advancers_gt3_pct": {
+              "label": "涨幅超过3%占比",
+              "value": 6.58,
+              "unit": "%",
+              "higher_is_better": true
+            },
+            "strong_decliners_lt_minus3_pct": {
+              "label": "跌幅超过3%占比",
+              "value": 47.78,
+              "unit": "%",
+              "higher_is_better": false
+            },
+            "strong_spread_pct": {
+              "label": "强势股-弱势股占比差",
+              "value": -41.2,
+              "unit": "%",
+              "higher_is_better": true
+            },
+            "limit_up": {
+              "label": "涨停数",
+              "value": 60.0,
+              "unit": "家",
+              "higher_is_better": true
+            },
+            "limit_down": {
+              "label": "跌停数",
+              "value": 30.0,
+              "unit": "家",
+              "higher_is_better": false
+            },
+            "max_limit_up_streak": {
+              "label": "最高连板",
+              "value": 6.0,
+              "unit": "板",
+              "higher_is_better": true
+            }
+          }
+        },
+        "liquidity": {
+          "label": "成交与流动性",
+          "weight": 10,
+          "score": 7.47,
+          "score_pct": 74.72,
+          "summary": "成交与流动性偏强，指数平均量能比0.99倍，中小盘成交占比78.42%。",
+          "evidence": [
+            {
+              "label": "指数平均量能比",
+              "value": 0.99,
+              "unit": "倍",
+              "score": 3.97,
+              "max_score": 5,
+              "note": "温和放量优于缩量或爆量。"
+            },
+            {
+              "label": "中小盘成交占比",
+              "value": 78.42,
+              "unit": "%",
+              "score": 2.66,
+              "max_score": 3,
+              "note": "中小盘活跃代表风险偏好抬升。"
+            },
+            {
+              "label": "大盘成交占比",
+              "value": 21.58,
+              "unit": "%",
+              "score": 0.83,
+              "max_score": 2,
+              "note": "大盘承接不足会降低趋势稳定性。"
+            }
+          ],
+          "metrics": {
+            "avg_volume_ratio": {
+              "label": "指数平均量能比",
+              "value": 0.99,
+              "unit": "倍",
+              "higher_is_better": true
+            },
+            "large_turnover_share_pct": {
+              "label": "大盘成交占比",
+              "value": 21.58,
+              "unit": "%",
+              "higher_is_better": true
+            },
+            "mid_turnover_share_pct": {
+              "label": "中盘成交占比",
+              "value": 41.84,
+              "unit": "%",
+              "higher_is_better": null
+            },
+            "small_turnover_share_pct": {
+              "label": "小盘成交占比",
+              "value": 36.58,
+              "unit": "%",
+              "higher_is_better": null
+            },
+            "mid_small_turnover_share_pct": {
+              "label": "中小盘成交占比",
+              "value": 78.42,
+              "unit": "%",
+              "higher_is_better": true
+            }
+          }
+        },
+        "capital_flow": {
+          "label": "资金与风险偏好",
+          "weight": 15,
+          "score": 4.85,
+          "score_pct": 32.34,
+          "summary": "资金面偏弱，北向流入但主力流出，5日样本北向5日、主力5日。",
+          "evidence": [
+            {
+              "label": "北向当日净流入",
+              "value": 41.31,
+              "unit": "亿元",
+              "score": 2.11,
+              "max_score": 3,
+              "note": "外资当日方向对风险偏好有边际影响。"
+            },
+            {
+              "label": "主力当日净流入",
+              "value": -1809.88,
+              "unit": "亿元",
+              "score": 0.0,
+              "max_score": 4,
+              "note": "主力资金代表内资承接和兑现压力。"
+            },
+            {
+              "label": "内外资一致性",
+              "value": "",
+              "unit": "",
+              "score": 0.9,
+              "max_score": 3,
+              "note": "北向和主力同向时更可靠，背离时降分。"
+            },
+            {
+              "label": "北向5日持续性",
+              "value": 218.75,
+              "unit": "亿元",
+              "score": 1.84,
+              "max_score": 2,
+              "note": "样本少于4日时最多按中性持续性计分。"
+            },
+            {
+              "label": "主力5日持续性",
+              "value": -4509.61,
+              "unit": "亿元",
+              "score": 0.0,
+              "max_score": 3,
+              "note": "样本少于4日时最多按中性资金确认计分。"
+            }
+          ],
+          "metrics": {
+            "northbound_net_inflow_100m_cny": {
+              "label": "北向净流入",
+              "value": 41.31,
+              "unit": "亿元",
+              "higher_is_better": true
+            },
+            "main_net_inflow_100m_cny": {
+              "label": "主力净流入",
+              "value": -1809.88,
+              "unit": "亿元",
+              "higher_is_better": true
+            },
+            "northbound_5d_sum_100m_cny": {
+              "label": "北向5日净流入",
+              "value": 218.75,
+              "unit": "亿元",
+              "higher_is_better": true
+            },
+            "main_5d_sum_100m_cny": {
+              "label": "主力5日净流入",
+              "value": -4509.61,
+              "unit": "亿元",
+              "higher_is_better": true
+            },
+            "northbound_5d_sample_count": {
+              "label": "北向滚动样本数",
+              "value": 5.0,
+              "unit": "日",
+              "higher_is_better": true
+            },
+            "main_5d_sample_count": {
+              "label": "主力滚动样本数",
+              "value": 5.0,
+              "unit": "日",
+              "higher_is_better": true
+            },
+            "flow_direction_pair": {
+              "label": "内外资方向",
+              "value": "分歧或偏弱",
+              "unit": "",
+              "higher_is_better": true
+            }
+          }
+        },
+        "mainline": {
+          "label": "主线强度",
+          "weight": 15,
+          "score": 4.74,
+          "score_pct": 31.6,
+          "summary": "主线强度偏弱，价量重合0组，资金和涨幅共振不足。",
+          "evidence": [
+            {
+              "label": "涨幅前五行业均值",
+              "value": 0.09,
+              "unit": "%",
+              "score": 0.08,
+              "max_score": 3.5,
+              "note": "领涨行业涨幅越强，主线越清晰。"
+            },
+            {
+              "label": "前五行业净流入合计",
+              "value": 95.0,
+              "unit": "亿元",
+              "score": 1.33,
+              "max_score": 3.5,
+              "note": "资金集中流入说明主线有承接。"
+            },
+            {
+              "label": "价量重合主线数",
+              "value": 0.0,
+              "unit": "组",
+              "score": 0.0,
+              "max_score": 3,
+              "note": "涨幅榜和资金榜重合越高越可靠。"
+            },
+            {
+              "label": "资金主线组数",
+              "value": 3.0,
+              "unit": "组",
+              "score": 1.33,
+              "max_score": 2,
+              "note": "主线过窄时降低扩仓质量。"
+            },
+            {
+              "label": "当前主线5日重复率",
+              "value": 60.0,
+              "unit": "%",
+              "score": 2.0,
+              "max_score": 3,
+              "note": "样本少于4日时最多按中性连续性计分。"
+            }
+          ],
+          "metrics": {
+            "top5_return_avg_pct": {
+              "label": "涨幅前五行业均值",
+              "value": 0.09,
+              "unit": "%",
+              "higher_is_better": true
+            },
+            "top5_industry_inflow_sum_100m_cny": {
+              "label": "前五行业净流入合计",
+              "value": 95.0,
+              "unit": "亿元",
+              "higher_is_better": true
+            },
+            "top5_industry_inflow_5d_sum_100m_cny": {
+              "label": "前五行业5日净流入合计",
+              "value": 1364.0,
+              "unit": "亿元",
+              "higher_is_better": true
+            },
+            "price_flow_overlap_count": {
+              "label": "价量重合主线数",
+              "value": 0.0,
+              "unit": "组",
+              "higher_is_better": true
+            },
+            "flow_group_count": {
+              "label": "资金主线组数",
+              "value": 3.0,
+              "unit": "组",
+              "higher_is_better": true
+            },
+            "current_group_repeat_ratio_5d_pct": {
+              "label": "当前主线5日重复率",
+              "value": 60.0,
+              "unit": "%",
+              "higher_is_better": true
+            },
+            "mainline_rolling_sample_count": {
+              "label": "主线连续性样本数",
+              "value": 5.0,
+              "unit": "日",
+              "higher_is_better": true
+            },
+            "top_flow_concentration_pct": {
+              "label": "第一主线资金占比",
+              "value": 47.37,
+              "unit": "%",
+              "higher_is_better": false
+            }
+          }
+        },
+        "valuation": {
+          "label": "估值与再定价",
+          "weight": 15,
+          "score": 3.03,
+          "score_pct": 20.2,
+          "summary": "宽基估值相对五年历史偏贵，趋势行情需要更强风控约束。",
+          "evidence": [
+            {
+              "label": "综合估值便宜度",
+              "value": 12.32,
+              "unit": "%",
+              "score": 0.74,
+              "max_score": 6,
+              "note": "分数越高代表相对五年分位越便宜。"
+            },
+            {
+              "label": "PE便宜度",
+              "value": 8.85,
+              "unit": "%",
+              "score": 0.27,
+              "max_score": 3,
+              "note": "盈利口径估值越低越有安全边际。"
+            },
+            {
+              "label": "PB便宜度",
+              "value": 17.52,
+              "unit": "%",
+              "score": 0.53,
+              "max_score": 3,
+              "note": "净资产口径用于约束泡沫风险。"
+            },
+            {
+              "label": "股债性价比",
+              "value": "缺失",
+              "unit": "%",
+              "score": 1.5,
+              "max_score": 3,
+              "note": "缺少ERP时先给中性，后续可接入股债利差。"
+            }
+          ],
+          "metrics": {
+            "valuation_data_available": {
+              "label": "估值数据可用",
+              "value": 1.0,
+              "unit": "",
+              "higher_is_better": true
+            },
+            "market_valuation_score_pct": {
+              "label": "市场估值便宜度",
+              "value": 12.32,
+              "unit": "%",
+              "higher_is_better": true
+            },
+            "index_pe_value_score_pct": {
+              "label": "PE便宜度",
+              "value": 8.85,
+              "unit": "%",
+              "higher_is_better": true
+            },
+            "index_pb_value_score_pct": {
+              "label": "PB便宜度",
+              "value": 17.52,
+              "unit": "%",
+              "higher_is_better": true
+            },
+            "erp_value_score_pct": {
+              "label": "股债性价比便宜度",
+              "value": null,
+              "unit": "%",
+              "higher_is_better": true
+            },
+            "valuation_index_count": {
+              "label": "估值指数样本数",
+              "value": 3.0,
+              "unit": "个",
+              "higher_is_better": true
+            }
+          }
+        },
+        "macro": {
+          "label": "宏观与外部环境",
+          "weight": 10,
+          "score": 7.2,
+          "score_pct": 72.04,
+          "summary": "宏观与外部环境偏强，中国10Y为1.73%，美元指数101.36。",
+          "evidence": [
+            {
+              "label": "中国10Y国债",
+              "value": 1.73,
+              "unit": "%",
+              "score": 3.9,
+              "max_score": 4,
+              "note": "国内利率低，对权益流动性有支撑。"
+            },
+            {
+              "label": "美国10Y国债",
+              "value": 4.4,
+              "unit": "%",
+              "score": 1.0,
+              "max_score": 2.5,
+              "note": "海外利率高会压制成长资产估值。"
+            },
+            {
+              "label": "美元指数",
+              "value": 101.36,
+              "unit": "",
+              "score": 1.03,
+              "max_score": 2,
+              "note": "美元偏强时风险偏好承压。"
+            },
+            {
+              "label": "美元兑人民币",
+              "value": 6.79,
+              "unit": "",
+              "score": 1.28,
+              "max_score": 1.5,
+              "note": "人民币稳定有利于外资和风险偏好。"
+            }
+          ],
+          "metrics": {
+            "china_10y_yield_pct": {
+              "label": "中国10Y国债",
+              "value": 1.73,
+              "unit": "%",
+              "higher_is_better": false
+            },
+            "us_10y_yield_pct": {
+              "label": "美国10Y国债",
+              "value": 4.4,
+              "unit": "%",
+              "higher_is_better": false
+            },
+            "dxy": {
+              "label": "美元指数",
+              "value": 101.36,
+              "unit": "",
+              "higher_is_better": false
+            },
+            "usd_cny": {
+              "label": "美元兑人民币",
+              "value": 6.79,
+              "unit": "",
+              "higher_is_better": false
+            }
+          }
+        }
+      },
+      "crowding": {
+        "penalty": 12.72,
+        "items": [
+          {
+            "label": "成长方向短线过热",
+            "penalty": 0.04,
+            "basis": "创业板5日 -1.37%，MA20偏离 3.04%"
+          },
+          {
+            "label": "北向流入但主力大幅流出",
+            "penalty": 4.0,
+            "basis": "北向 41.31 亿，主力 -1809.88 亿"
+          },
+          {
+            "label": "全市场估值偏贵",
+            "penalty": 5.0,
+            "basis": "估值便宜度 12.32%"
+          },
+          {
+            "label": "市场波动率偏高",
+            "penalty": 3.68,
+            "basis": "30日年化波动 28.3%"
+          }
+        ],
+        "metrics": {
+          "advancer_ratio_pct": {
+            "label": "上涨家数占比",
+            "value": 14.33,
+            "unit": "%",
+            "higher_is_better": true
+          },
+          "chinext_return_5d_pct": {
+            "label": "创业板5日涨跌",
+            "value": -1.37,
+            "unit": "%",
+            "higher_is_better": false
+          },
+          "main_net_inflow_100m_cny": {
+            "label": "主力净流入",
+            "value": -1809.88,
+            "unit": "亿元",
+            "higher_is_better": true
+          },
+          "top_flow_concentration_pct": {
+            "label": "第一主线资金占比",
+            "value": 47.37,
+            "unit": "%",
+            "higher_is_better": false
+          },
+          "market_valuation_score_pct": {
+            "label": "市场估值便宜度",
+            "value": 12.32,
+            "unit": "%",
+            "higher_is_better": true
+          },
+          "realized_vol_30d_pct": {
+            "label": "30日年化波动率",
+            "value": 28.3,
+            "unit": "%",
+            "higher_is_better": false
+          },
+          "avg_volume_ratio": {
+            "label": "指数平均量能比",
+            "value": 0.99,
+            "unit": "倍",
+            "higher_is_better": true
+          }
+        }
+      },
+      "rolling_features": {
+        "sample_count": 9,
+        "basis_trade_date": "2026-06-26",
+        "capital_flow": {
+          "northbound_5d_sum_100m_cny": 218.75,
+          "main_5d_sum_100m_cny": -4509.61,
+          "northbound_sample_count": 5,
+          "main_sample_count": 5
+        },
+        "breadth": {
+          "advancer_ratio_5d_avg_pct": 33.15,
+          "sample_count": 5
+        },
+        "liquidity": {
+          "avg_volume_ratio_5d": 1.05,
+          "avg_volume_ratio_slope_5d": -0.19,
+          "sample_count": 5
+        },
+        "mainline": {
+          "top_flow_5d_sum_100m_cny": 1364.0,
+          "current_group_repeat_ratio_5d": 0.6,
+          "sample_count": 5
+        }
+      },
+      "volatility_targeting": {
+        "status": "active",
+        "target_annual_vol": 0.08,
+        "realized_vol_30d": 0.28,
+        "scale_factor": 0.28,
+        "base_position_score": 13.09,
+        "adjusted_position_score": 3.7,
+        "base_equity_position_range": "0%-20%",
+        "adjusted_equity_position_range": "0%-6%",
+        "deprecated": true,
+        "note": "旧版8%目标波动率缩放结果已废弃，仅供历史兼容，不作为股票账户官方仓位建议。"
+      },
+      "factor_changes": [
+        "stock account position policy v2 uses recommended_equity_position_range as the official position output",
+        "risk_caps are resolved by lowest score_cap with severity as tie-breaker, and records expose applied_cap plus discarded_caps for conflict review",
+        "risk_caps can cap final market_position_score for bubble, blowoff volume, sector concentration, high volatility, crowding, missing risk data, and strong-index weak-breadth regimes",
+        "8% target-volatility scaling is deprecated and no longer changes the official stock-account position range",
+        "position ranges now use stock-account exposure and can reach 90%-100% in low-crowding strong trends",
+        "capital_flow removed duplicate mid/small turnover and top industry inflow scoring",
+        "breadth added median and strong advancer/decliner placeholders when available",
+        "crowding penalties changed from hard thresholds to gradients",
+        "confidence now distinguishes core, important, and auxiliary missing fields",
+        "valuation now scores 5-year index PE/PB percentiles instead of a neutral placeholder",
+        "capital flow and mainline modules use rolling persistence features",
+        "allocation_policy_v1 replaces the old four-sleeve summary with five stock-account sleeves: core wide ETF, mainline ETF, leader alpha, defensive quality, and cash-like",
+        "market_regime_v1 adds a structural layer for accumulation, expansion, distribution, and contraction classification",
+        "market_trend_v1 adds trend_state, trend_strength, and trend_duration from index trend, breadth persistence, and liquidity slope",
+        "risk_engine_v1 adds continuous risk_penalty_score and risk_discount before hard risk_cap constraints",
+        "position_model_v1 maps base position through trend, regime, and risk multipliers before hard risk_cap constraints"
+      ],
+      "key_constraints": [
+        "上涨家数和行业上涨占比不足时，不把指数强势直接等同于全面加仓。",
+        "主力资金持续流出时，进攻仓只做主线，不扩散到弱势行业。",
+        "估值分位偏贵时，即使趋势强也要用拥挤惩罚和风险上限约束泡沫风险。",
+        "北向与主力资金同时大幅流出时，即使趋势分高也触发资金退潮仓位上限。",
+        "成交额或换手极端放量且估值/波动偏高时，按爆量顶部风险限制股票账户仓位。",
+        "前五行业资金或涨幅高度集中且估值/波动偏高时，按主线拥挤顶部风险限制股票账户仓位。",
+        "股票账户官方仓位不再按8%目标波动率缩放，波动率仅作为风险扣分、上限和提示。"
+      ],
+      "data_quality": {
+        "missing_fields": [],
+        "sources_used": [
+          "Tushare.trade_cal",
+          "Tushare.daily",
+          "Tushare.index_daily",
+          "Tushare.index_classify",
+          "Tushare.sw_daily",
+          "Tushare.limit_list_d",
+          "Tushare.limit_step",
+          "Tushare.moneyflow_hsgt",
+          "Tushare.moneyflow",
+          "Tushare.daily_basic",
+          "Tushare.moneyflow_ind_ths",
+          "Tushare.index_dailybasic",
+          "FRED.DGS10",
+          "yfinance.DX-Y.NYB",
+          "yfinance.CNY=X",
+          "Eastmoney.RPTA_WEB_TREASURYYIELD",
+          "FRED.FEDFUNDS",
+          "FRED.DFF",
+          "FRED.CPIAUCSL",
+          "FRED.PCEPI",
+          "BaoStock.query_history_k_data_plus"
+        ],
+        "warnings": [],
+        "feature_freshness": {
+          "macro.us_10y_treasury_yield_pct": {
+            "basis_date": "2026-06-26",
+            "observation_date": "2026-06-25",
+            "lag_days": 1,
+            "source": "FRED:DGS10",
+            "status": "available",
+            "ignored_future_observations": 0
+          },
+          "macro.dxy": {
+            "basis_date": "2026-06-26",
+            "observation_date": "2026-06-26",
+            "lag_days": 0,
+            "source": "yfinance:DX-Y.NYB",
+            "status": "available",
+            "ignored_future_observations": 0
+          },
+          "macro.usd_cny": {
+            "basis_date": "2026-06-26",
+            "observation_date": "2026-06-26",
+            "lag_days": 0,
+            "source": "yfinance:CNY=X",
+            "status": "available",
+            "ignored_future_observations": 0
+          },
+          "macro.china_10y_government_bond_yield_pct": {
+            "basis_date": "2026-06-26",
+            "observation_date": "2026-06-26",
+            "lag_days": 0,
+            "source": "Eastmoney:RPTA_WEB_TREASURYYIELD",
+            "status": "available",
+            "ignored_future_observations": 0
+          },
+          "macro.fred_key_indicators.FEDFUNDS": {
+            "basis_date": "2026-06-26",
+            "observation_date": "2026-05-01",
+            "lag_days": 56,
+            "source": "FRED:FEDFUNDS",
+            "status": "available",
+            "ignored_future_observations": 0
+          },
+          "macro.fred_key_indicators.DFF": {
+            "basis_date": "2026-06-26",
+            "observation_date": "2026-06-25",
+            "lag_days": 1,
+            "source": "FRED:DFF",
+            "status": "available",
+            "ignored_future_observations": 0
+          },
+          "macro.fred_key_indicators.CPIAUCSL": {
+            "basis_date": "2026-06-26",
+            "observation_date": "2026-05-01",
+            "lag_days": 56,
+            "source": "FRED:CPIAUCSL",
+            "status": "available",
+            "ignored_future_observations": 0
+          },
+          "macro.fred_key_indicators.PCEPI": {
+            "basis_date": "2026-06-26",
+            "observation_date": "2026-05-01",
+            "lag_days": 56,
+            "source": "FRED:PCEPI",
+            "status": "available",
+            "ignored_future_observations": 0
+          }
+        },
+        "generated_at": "2026-06-29T09:42:12+08:00",
+        "basis": "latest complete Tushare A-share trading day at or before as_of",
+        "notes": [
+          "optional valuation.indices.899050.BJ: empty index_dailybasic",
+          "macro.china_10y_government_bond_yield_pct: Tushare.yc_cb unavailable, Eastmoney fallback used (抱歉，您没有接口(yc_cb)访问权限，权限的具体详情访问：https://tushare.pro/document/1?doc_id=108。)",
+          "optional qmt_portfolio.positions: xtquant is not installed in the active Python environment"
+        ],
+        "cross_validation": {
+          "baostock_indices": {
+            "000001.SH": {
+              "available": true,
+              "baostock_close": 4027.2648,
+              "tushare_close": 4027.2648,
+              "close_abs_diff": 0.0
+            },
+            "399001.SZ": {
+              "available": true,
+              "baostock_close": 15782.2229,
+              "tushare_close": 15782.2229,
+              "close_abs_diff": 0.0
+            },
+            "399006.SZ": {
+              "available": true,
+              "baostock_close": 4194.2089,
+              "tushare_close": 4194.2089,
+              "close_abs_diff": 0.0
+            }
+          }
+        }
+      },
+      "snapshot_validation": {
+        "ok": true,
+        "basis_trade_date": "2026-06-26",
         "checked_fields": [
           "date",
           "market.indices",
