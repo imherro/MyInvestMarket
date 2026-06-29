@@ -980,16 +980,6 @@ def module_pct_value(modules: dict[str, Any], key: str) -> float:
     return round2((value or 0) * 100) or 0
 
 
-def allocation_share_range(total_range: str, share_low: float, share_high: float) -> str:
-    parsed = parse_percent_range(total_range)
-    if parsed is None:
-        return "0%-0%"
-    total_low, total_high = parsed
-    low = total_low * clamp(share_low, 0, 1)
-    high = total_high * clamp(share_high, 0, 1)
-    return allocation_range(low, high)
-
-
 def liquidity_range_from_risk_asset_range(total_range: str) -> str:
     parsed = parse_percent_range(total_range)
     if parsed is None:
@@ -1004,6 +994,31 @@ def clamp_share_range(value: list[float]) -> list[float]:
     if low > high:
         low, high = high, low
     return [round(low, 4), round(high, 4)]
+
+
+def allocation_ranges_from_shares(total_range: str, shares: dict[str, list[float]]) -> dict[str, str]:
+    parsed = parse_percent_range(total_range)
+    if parsed is None:
+        return {key: "0%-0%" for key in shares}
+    total_low, total_high = parsed
+    total_mid = (total_low + total_high) / 2
+    total_half_width = max((total_high - total_low) / 2, 0)
+
+    clean_shares = {key: clamp_share_range(value) for key, value in shares.items()}
+    share_midpoints = {key: (value[0] + value[1]) / 2 for key, value in clean_shares.items()}
+    midpoint_sum = sum(share_midpoints.values()) or 1
+    normalized_midpoints = {key: value / midpoint_sum for key, value in share_midpoints.items()}
+
+    raw_widths = {key: max(value[1] - value[0], 0) for key, value in clean_shares.items()}
+    width_sum = sum(raw_widths.values()) or 1
+    width_shares = {key: raw_widths[key] / width_sum for key in clean_shares}
+
+    ranges: dict[str, str] = {}
+    for key in clean_shares:
+        sleeve_mid = total_mid * normalized_midpoints[key]
+        sleeve_half_width = total_half_width * width_shares[key]
+        ranges[key] = allocation_range(sleeve_mid - sleeve_half_width, sleeve_mid + sleeve_half_width)
+    return ranges
 
 
 def allocation_state(
@@ -1128,12 +1143,8 @@ def allocation_policy(
         shares["alpha_active"][1] = min(shares["alpha_active"][1], 0.18)
 
     shares = {key: clamp_share_range(value) for key, value in shares.items()}
-    target_ranges = {
-        "beta_core": allocation_share_range(recommended_range, *shares["beta_core"]),
-        "alpha_active": allocation_share_range(recommended_range, *shares["alpha_active"]),
-        "defensive_factor": allocation_share_range(recommended_range, *shares["defensive_factor"]),
-        "liquidity": liquidity_range_from_risk_asset_range(recommended_range),
-    }
+    target_ranges = allocation_ranges_from_shares(recommended_range, shares)
+    target_ranges["liquidity"] = liquidity_range_from_risk_asset_range(recommended_range)
 
     sleeve_items: list[dict[str, Any]] = []
     for key in ALLOCATION_SLEEVE_ORDER:
@@ -1173,6 +1184,7 @@ def allocation_policy(
         "total_risk_asset_range": recommended_range,
         "risk_asset_formula": "beta_core + alpha_active + defensive_factor",
         "liquidity_formula": "100% - total_risk_asset_range",
+        "risk_asset_share_ranges": shares,
         "alpha_active_components": {
             "industry_theme_etf": "α主动仓基础部分，承接主线行业和主题 ETF。",
             "leader_stock": "α主动仓增强部分，只在主线、成交和宽度确认时开放。",

@@ -1,7 +1,7 @@
 {
   "schema_version": 3,
   "model_version": "v3.3_position",
-  "updated_at": "2026-06-29T10:19:52+08:00",
+  "updated_at": "2026-06-29T11:06:38+08:00",
   "records": [
     {
       "run_id": "20260618T105237-646d4fde",
@@ -17560,14 +17560,14 @@
       }
     },
     {
-      "run_id": "20260629T101952-66a40985",
+      "run_id": "20260629T110638-da42cd5b",
       "model_version": "v3.3_position",
       "score_schema_version": "2.4",
       "feature_schema_version": "1.7",
       "account_scope": "stock_account",
       "position_policy_version": "stock_account_position_policy_v3",
       "allocation_policy_version": "allocation_policy_v2",
-      "scored_at": "2026-06-29T10:19:52+08:00",
+      "scored_at": "2026-06-29T11:06:38+08:00",
       "basis_trade_date": "2026-06-26",
       "snapshot_file": "data\\latest_market_snapshot.json",
       "snapshot_sha256": "593b54849a8034716f287d253d2254b03c5fd434dfd97e98f421421aae2e04bf",
@@ -17921,6 +17921,20 @@
         "total_risk_asset_range": "0%-20%",
         "risk_asset_formula": "beta_core + alpha_active + defensive_factor",
         "liquidity_formula": "100% - total_risk_asset_range",
+        "risk_asset_share_ranges": {
+          "beta_core": [
+            0.2,
+            0.4
+          ],
+          "alpha_active": [
+            0,
+            0.08
+          ],
+          "defensive_factor": [
+            0.71,
+            0.93
+          ]
+        },
         "alpha_active_components": {
           "industry_theme_etf": "α主动仓基础部分，承接主线行业和主题 ETF。",
           "leader_stock": "α主动仓增强部分，只在主线、成交和宽度确认时开放。",
@@ -17960,8 +17974,8 @@
               "中证500ETF",
               "纳指ETF"
             ],
-            "target_range": "0%-8%",
-            "midpoint": 4.0
+            "target_range": "0%-7%",
+            "midpoint": 3.5
           },
           {
             "key": "alpha_active",
@@ -17991,8 +18005,8 @@
               "自由现金流ETF",
               "质量因子ETF"
             ],
-            "target_range": "0%-19%",
-            "midpoint": 9.5
+            "target_range": "3%-11%",
+            "midpoint": 7.0
           },
           {
             "key": "liquidity",
@@ -18038,8 +18052,8 @@
             "中证500ETF",
             "纳指ETF"
           ],
-          "target_range": "0%-8%",
-          "midpoint": 4.0
+          "target_range": "0%-7%",
+          "midpoint": 3.5
         },
         {
           "key": "alpha_active",
@@ -18069,8 +18083,8 @@
             "自由现金流ETF",
             "质量因子ETF"
           ],
-          "target_range": "0%-19%",
-          "midpoint": 9.5
+          "target_range": "3%-11%",
+          "midpoint": 7.0
         },
         {
           "key": "liquidity",

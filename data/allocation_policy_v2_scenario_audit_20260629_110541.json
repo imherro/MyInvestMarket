@@ -1,0 +1,989 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-06-29T11:05:41+08:00",
+  "allocation_policy_version": "allocation_policy_v2",
+  "scenario_count": 5,
+  "passed": true,
+  "scenarios": [
+    {
+      "key": "bear_bottom_repair",
+      "label": "熊末低估但趋势未确认",
+      "thesis": "底部便宜不等于直接满仓，优先提高 beta 和防御，alpha 仍小。",
+      "inputs": {
+        "position_score": 32,
+        "opportunity_score": 48,
+        "pre_cap_score": 34,
+        "crowding_penalty": 4,
+        "recommended_range": "20%-40%",
+        "risk_cap_reasons": []
+      },
+      "policy": {
+        "version": "allocation_policy_v2",
+        "account_scope": "stock_account",
+        "state": "弱修复期",
+        "total_risk_asset_range": "20%-40%",
+        "risk_asset_formula": "beta_core + alpha_active + defensive_factor",
+        "liquidity_formula": "100% - total_risk_asset_range",
+        "risk_asset_share_ranges": {
+          "beta_core": [
+            0.43,
+            0.63
+          ],
+          "alpha_active": [
+            0.05,
+            0.15
+          ],
+          "defensive_factor": [
+            0.38,
+            0.5
+          ]
+        },
+        "alpha_active_components": {
+          "industry_theme_etf": "α主动仓基础部分，承接主线行业和主题 ETF。",
+          "leader_stock": "α主动仓增强部分，只在主线、成交和宽度确认时开放。",
+          "leader_stock_internal_cap": "龙头个股合计建议不超过 α主动仓的 30%-40%，退潮时优先收缩。"
+        },
+        "score_inputs": {
+          "market_position_score": 32,
+          "market_opportunity_score": 48,
+          "pre_cap_market_position_score": 34,
+          "crowding_penalty": 4.0,
+          "index_trend_score_pct": 35.0,
+          "breadth_score_pct": 35.0,
+          "liquidity_score_pct": 38.0,
+          "capital_flow_score_pct": 30.0,
+          "mainline_score_pct": 25.0,
+          "valuation_score_pct": 90.0,
+          "macro_score_pct": 55.0
+        },
+        "principles": [
+          "风险资产总仓位由最终仓位分决定，β核心仓、α主动仓、防御因子仓共享这部分风险资产。",
+          "β核心仓只承接宽基 ETF，不承担主线押注任务。",
+          "α主动仓合并主线行业 ETF 和龙头个股，主线退潮或高波动时最先收缩。",
+          "防御因子仓仍是权益资产，承担红利、低波、自由现金流和质量因子暴露。",
+          "流动性仓承接未配置风险资产，是现金管理和再平衡弹药。"
+        ],
+        "sleeves": [
+          {
+            "key": "beta_core",
+            "label": "β核心仓（宽基ETF）",
+            "name": "β核心仓（宽基ETF）",
+            "asset": "宽基ETF",
+            "role": "市场β底盘",
+            "driver": "风险资产总仓位、宽基趋势、估值分位、市场宽度",
+            "examples": [
+              "沪深300ETF",
+              "中证A500ETF",
+              "中证500ETF",
+              "纳指ETF"
+            ],
+            "target_range": "10%-20%",
+            "midpoint": 15.0
+          },
+          {
+            "key": "alpha_active",
+            "label": "α主动仓（行业ETF + 龙头个股）",
+            "name": "α主动仓（行业ETF + 龙头个股）",
+            "asset": "主线行业ETF/龙头个股",
+            "role": "主动超额收益",
+            "driver": "主线强度、资金持续性、成交额、拥挤退潮风险",
+            "examples": [
+              "半导体ETF",
+              "人工智能ETF",
+              "主线龙头",
+              "细分龙头"
+            ],
+            "target_range": "0%-5%",
+            "midpoint": 2.5
+          },
+          {
+            "key": "defensive_factor",
+            "label": "防御因子仓（红利/低波/自由现金流）",
+            "name": "防御因子仓（红利/低波/自由现金流）",
+            "asset": "红利低波/自由现金流/质量因子",
+            "role": "权益防御与质量暴露",
+            "driver": "风险偏好、利率环境、低波质量因子、相对抗跌",
+            "examples": [
+              "红利低波ETF",
+              "自由现金流ETF",
+              "质量因子ETF"
+            ],
+            "target_range": "9%-15%",
+            "midpoint": 12.0
+          },
+          {
+            "key": "liquidity",
+            "label": "流动性仓（货币/短债）",
+            "name": "流动性仓（货币/短债）",
+            "asset": "货币/短债/现金管理",
+            "role": "等待权与回撤缓冲",
+            "driver": "风险上限、波动率、资金退潮、数据置信度",
+            "examples": [
+              "货币基金",
+              "短债基金",
+              "短融ETF",
+              "国债逆回购"
+            ],
+            "target_range": "60%-80%",
+            "midpoint": 70.0
+          }
+        ],
+        "triggers": [
+          "指数趋势 35.0%，宽度 35.0%，主线 25.0%，资金 30.0%。",
+          "估值便宜度 90.0%，宏观环境 55.0%，拥挤惩罚 4.0。",
+          "风险资产总区间 20%-40%；流动性仓 = 100% - 风险资产总仓位。",
+          "α主动仓未充分打开：需要主线强度、成交持续和宽度同时确认。"
+        ],
+        "notes": [
+          "所有比例为股票账户内部配置区间，不代表总资产配置。",
+          "单个 ETF、行业、个股仍需由标的研究系统单独确认；本模块只做市场层资金分配。",
+          "旧 allocation_policy_v1 的主线 ETF 与龙头仓在展示层会折算为 α主动仓。"
+        ]
+      },
+      "sleeve_ranges": {
+        "beta_core": "10%-20%",
+        "alpha_active": "0%-5%",
+        "defensive_factor": "9%-15%",
+        "liquidity": "60%-80%"
+      },
+      "midpoints": {
+        "beta_core": 15.0,
+        "alpha_active": 2.5,
+        "defensive_factor": 12.0,
+        "liquidity": 70.0
+      },
+      "checks": [
+        {
+          "name": "four_expected_sleeves",
+          "ok": true,
+          "detail": "actual=['beta_core', 'alpha_active', 'defensive_factor', 'liquidity']"
+        },
+        {
+          "name": "liquidity_is_complement",
+          "ok": true,
+          "detail": "liquidity=60.0-80.0, risk=20.0-40.0"
+        },
+        {
+          "name": "risk_sleeve_midpoints_match_total",
+          "ok": true,
+          "detail": "risk_mid_sum=29.5, total_mid=30.0"
+        },
+        {
+          "name": "liquidity_still_high",
+          "ok": true,
+          "detail": "底部便宜不等于直接满仓，优先提高 beta 和防御，alpha 仍小。"
+        },
+        {
+          "name": "beta_above_alpha",
+          "ok": true,
+          "detail": "底部便宜不等于直接满仓，优先提高 beta 和防御，alpha 仍小。"
+        },
+        {
+          "name": "alpha_not_open",
+          "ok": true,
+          "detail": "底部便宜不等于直接满仓，优先提高 beta 和防御，alpha 仍小。"
+        }
+      ],
+      "passed": true
+    },
+    {
+      "key": "healthy_impulse_trend",
+      "label": "健康主升共振",
+      "thesis": "趋势、宽度、资金、主线共振且不拥挤时，风险资产可接近满仓，alpha 打开。",
+      "inputs": {
+        "position_score": 88,
+        "opportunity_score": 88,
+        "pre_cap_score": 88,
+        "crowding_penalty": 2,
+        "recommended_range": "90%-100%",
+        "risk_cap_reasons": []
+      },
+      "policy": {
+        "version": "allocation_policy_v2",
+        "account_scope": "stock_account",
+        "state": "低拥挤强趋势期",
+        "total_risk_asset_range": "90%-100%",
+        "risk_asset_formula": "beta_core + alpha_active + defensive_factor",
+        "liquidity_formula": "100% - total_risk_asset_range",
+        "risk_asset_share_ranges": {
+          "beta_core": [
+            0.42,
+            0.58
+          ],
+          "alpha_active": [
+            0.35,
+            0.52
+          ],
+          "defensive_factor": [
+            0,
+            0.12
+          ]
+        },
+        "alpha_active_components": {
+          "industry_theme_etf": "α主动仓基础部分，承接主线行业和主题 ETF。",
+          "leader_stock": "α主动仓增强部分，只在主线、成交和宽度确认时开放。",
+          "leader_stock_internal_cap": "龙头个股合计建议不超过 α主动仓的 30%-40%，退潮时优先收缩。"
+        },
+        "score_inputs": {
+          "market_position_score": 88,
+          "market_opportunity_score": 88,
+          "pre_cap_market_position_score": 88,
+          "crowding_penalty": 2.0,
+          "index_trend_score_pct": 90.0,
+          "breadth_score_pct": 85.0,
+          "liquidity_score_pct": 82.0,
+          "capital_flow_score_pct": 82.0,
+          "mainline_score_pct": 88.0,
+          "valuation_score_pct": 55.0,
+          "macro_score_pct": 60.0
+        },
+        "principles": [
+          "风险资产总仓位由最终仓位分决定，β核心仓、α主动仓、防御因子仓共享这部分风险资产。",
+          "β核心仓只承接宽基 ETF，不承担主线押注任务。",
+          "α主动仓合并主线行业 ETF 和龙头个股，主线退潮或高波动时最先收缩。",
+          "防御因子仓仍是权益资产，承担红利、低波、自由现金流和质量因子暴露。",
+          "流动性仓承接未配置风险资产，是现金管理和再平衡弹药。"
+        ],
+        "sleeves": [
+          {
+            "key": "beta_core",
+            "label": "β核心仓（宽基ETF）",
+            "name": "β核心仓（宽基ETF）",
+            "asset": "宽基ETF",
+            "role": "市场β底盘",
+            "driver": "风险资产总仓位、宽基趋势、估值分位、市场宽度",
+            "examples": [
+              "沪深300ETF",
+              "中证A500ETF",
+              "中证500ETF",
+              "纳指ETF"
+            ],
+            "target_range": "46%-50%",
+            "midpoint": 48.0
+          },
+          {
+            "key": "alpha_active",
+            "label": "α主动仓（行业ETF + 龙头个股）",
+            "name": "α主动仓（行业ETF + 龙头个股）",
+            "asset": "主线行业ETF/龙头个股",
+            "role": "主动超额收益",
+            "driver": "主线强度、资金持续性、成交额、拥挤退潮风险",
+            "examples": [
+              "半导体ETF",
+              "人工智能ETF",
+              "主线龙头",
+              "细分龙头"
+            ],
+            "target_range": "40%-43%",
+            "midpoint": 41.5
+          },
+          {
+            "key": "defensive_factor",
+            "label": "防御因子仓（红利/低波/自由现金流）",
+            "name": "防御因子仓（红利/低波/自由现金流）",
+            "asset": "红利低波/自由现金流/质量因子",
+            "role": "权益防御与质量暴露",
+            "driver": "风险偏好、利率环境、低波质量因子、相对抗跌",
+            "examples": [
+              "红利低波ETF",
+              "自由现金流ETF",
+              "质量因子ETF"
+            ],
+            "target_range": "4%-7%",
+            "midpoint": 5.5
+          },
+          {
+            "key": "liquidity",
+            "label": "流动性仓（货币/短债）",
+            "name": "流动性仓（货币/短债）",
+            "asset": "货币/短债/现金管理",
+            "role": "等待权与回撤缓冲",
+            "driver": "风险上限、波动率、资金退潮、数据置信度",
+            "examples": [
+              "货币基金",
+              "短债基金",
+              "短融ETF",
+              "国债逆回购"
+            ],
+            "target_range": "0%-10%",
+            "midpoint": 5.0
+          }
+        ],
+        "triggers": [
+          "指数趋势 90.0%，宽度 85.0%，主线 88.0%，资金 82.0%。",
+          "估值便宜度 55.0%，宏观环境 60.0%，拥挤惩罚 2.0。",
+          "风险资产总区间 90%-100%；流动性仓 = 100% - 风险资产总仓位。",
+          "主线强、成交与宽度配合，α主动仓可提高；其中龙头个股仍应受 α 仓内部上限约束。"
+        ],
+        "notes": [
+          "所有比例为股票账户内部配置区间，不代表总资产配置。",
+          "单个 ETF、行业、个股仍需由标的研究系统单独确认；本模块只做市场层资金分配。",
+          "旧 allocation_policy_v1 的主线 ETF 与龙头仓在展示层会折算为 α主动仓。"
+        ]
+      },
+      "sleeve_ranges": {
+        "beta_core": "46%-50%",
+        "alpha_active": "40%-43%",
+        "defensive_factor": "4%-7%",
+        "liquidity": "0%-10%"
+      },
+      "midpoints": {
+        "beta_core": 48.0,
+        "alpha_active": 41.5,
+        "defensive_factor": 5.5,
+        "liquidity": 5.0
+      },
+      "checks": [
+        {
+          "name": "four_expected_sleeves",
+          "ok": true,
+          "detail": "actual=['beta_core', 'alpha_active', 'defensive_factor', 'liquidity']"
+        },
+        {
+          "name": "liquidity_is_complement",
+          "ok": true,
+          "detail": "liquidity=0.0-10.0, risk=90.0-100.0"
+        },
+        {
+          "name": "risk_sleeve_midpoints_match_total",
+          "ok": true,
+          "detail": "risk_mid_sum=95.0, total_mid=95.0"
+        },
+        {
+          "name": "liquidity_low",
+          "ok": true,
+          "detail": "趋势、宽度、资金、主线共振且不拥挤时，风险资产可接近满仓，alpha 打开。"
+        },
+        {
+          "name": "alpha_open",
+          "ok": true,
+          "detail": "趋势、宽度、资金、主线共振且不拥挤时，风险资产可接近满仓，alpha 打开。"
+        },
+        {
+          "name": "defensive_small",
+          "ok": true,
+          "detail": "趋势、宽度、资金、主线共振且不拥挤时，风险资产可接近满仓，alpha 打开。"
+        }
+      ],
+      "passed": true
+    },
+    {
+      "key": "bubble_top",
+      "label": "牛末泡沫冲顶",
+      "thesis": "机会分仍高但估值、拥挤和波动压仓位，优先压 alpha、抬流动性。",
+      "inputs": {
+        "position_score": 35,
+        "opportunity_score": 68,
+        "pre_cap_score": 65,
+        "crowding_penalty": 22,
+        "recommended_range": "20%-40%",
+        "risk_cap_reasons": [
+          "bubble_top_combo",
+          "high_crowding_extreme",
+          "high_volatility"
+        ]
+      },
+      "policy": {
+        "version": "allocation_policy_v2",
+        "account_scope": "stock_account",
+        "state": "高位过热风控",
+        "total_risk_asset_range": "20%-40%",
+        "risk_asset_formula": "beta_core + alpha_active + defensive_factor",
+        "liquidity_formula": "100% - total_risk_asset_range",
+        "risk_asset_share_ranges": {
+          "beta_core": [
+            0.35,
+            0.52
+          ],
+          "alpha_active": [
+            0.05,
+            0.16
+          ],
+          "defensive_factor": [
+            0.48,
+            0.73
+          ]
+        },
+        "alpha_active_components": {
+          "industry_theme_etf": "α主动仓基础部分，承接主线行业和主题 ETF。",
+          "leader_stock": "α主动仓增强部分，只在主线、成交和宽度确认时开放。",
+          "leader_stock_internal_cap": "龙头个股合计建议不超过 α主动仓的 30%-40%，退潮时优先收缩。"
+        },
+        "score_inputs": {
+          "market_position_score": 35,
+          "market_opportunity_score": 68,
+          "pre_cap_market_position_score": 65,
+          "crowding_penalty": 22.0,
+          "index_trend_score_pct": 92.0,
+          "breadth_score_pct": 75.0,
+          "liquidity_score_pct": 90.0,
+          "capital_flow_score_pct": 45.0,
+          "mainline_score_pct": 88.0,
+          "valuation_score_pct": 8.0,
+          "macro_score_pct": 45.0
+        },
+        "principles": [
+          "风险资产总仓位由最终仓位分决定，β核心仓、α主动仓、防御因子仓共享这部分风险资产。",
+          "β核心仓只承接宽基 ETF，不承担主线押注任务。",
+          "α主动仓合并主线行业 ETF 和龙头个股，主线退潮或高波动时最先收缩。",
+          "防御因子仓仍是权益资产，承担红利、低波、自由现金流和质量因子暴露。",
+          "流动性仓承接未配置风险资产，是现金管理和再平衡弹药。"
+        ],
+        "sleeves": [
+          {
+            "key": "beta_core",
+            "label": "β核心仓（宽基ETF）",
+            "name": "β核心仓（宽基ETF）",
+            "asset": "宽基ETF",
+            "role": "市场β底盘",
+            "driver": "风险资产总仓位、宽基趋势、估值分位、市场宽度",
+            "examples": [
+              "沪深300ETF",
+              "中证A500ETF",
+              "中证500ETF",
+              "纳指ETF"
+            ],
+            "target_range": "8%-15%",
+            "midpoint": 11.5
+          },
+          {
+            "key": "alpha_active",
+            "label": "α主动仓（行业ETF + 龙头个股）",
+            "name": "α主动仓（行业ETF + 龙头个股）",
+            "asset": "主线行业ETF/龙头个股",
+            "role": "主动超额收益",
+            "driver": "主线强度、资金持续性、成交额、拥挤退潮风险",
+            "examples": [
+              "半导体ETF",
+              "人工智能ETF",
+              "主线龙头",
+              "细分龙头"
+            ],
+            "target_range": "1%-5%",
+            "midpoint": 3.0
+          },
+          {
+            "key": "defensive_factor",
+            "label": "防御因子仓（红利/低波/自由现金流）",
+            "name": "防御因子仓（红利/低波/自由现金流）",
+            "asset": "红利低波/自由现金流/质量因子",
+            "role": "权益防御与质量暴露",
+            "driver": "风险偏好、利率环境、低波质量因子、相对抗跌",
+            "examples": [
+              "红利低波ETF",
+              "自由现金流ETF",
+              "质量因子ETF"
+            ],
+            "target_range": "11%-21%",
+            "midpoint": 16.0
+          },
+          {
+            "key": "liquidity",
+            "label": "流动性仓（货币/短债）",
+            "name": "流动性仓（货币/短债）",
+            "asset": "货币/短债/现金管理",
+            "role": "等待权与回撤缓冲",
+            "driver": "风险上限、波动率、资金退潮、数据置信度",
+            "examples": [
+              "货币基金",
+              "短债基金",
+              "短融ETF",
+              "国债逆回购"
+            ],
+            "target_range": "60%-80%",
+            "midpoint": 70.0
+          }
+        ],
+        "triggers": [
+          "指数趋势 92.0%，宽度 75.0%，主线 88.0%，资金 45.0%。",
+          "估值便宜度 8.0%，宏观环境 45.0%，拥挤惩罚 22.0。",
+          "风险资产总区间 20%-40%；流动性仓 = 100% - 风险资产总仓位。",
+          "风险上限已触发：bubble_top_combo、high_crowding_extreme、high_volatility。",
+          "α主动仓未充分打开：需要主线强度、成交持续和宽度同时确认。"
+        ],
+        "notes": [
+          "所有比例为股票账户内部配置区间，不代表总资产配置。",
+          "单个 ETF、行业、个股仍需由标的研究系统单独确认；本模块只做市场层资金分配。",
+          "旧 allocation_policy_v1 的主线 ETF 与龙头仓在展示层会折算为 α主动仓。"
+        ]
+      },
+      "sleeve_ranges": {
+        "beta_core": "8%-15%",
+        "alpha_active": "1%-5%",
+        "defensive_factor": "11%-21%",
+        "liquidity": "60%-80%"
+      },
+      "midpoints": {
+        "beta_core": 11.5,
+        "alpha_active": 3.0,
+        "defensive_factor": 16.0,
+        "liquidity": 70.0
+      },
+      "checks": [
+        {
+          "name": "four_expected_sleeves",
+          "ok": true,
+          "detail": "actual=['beta_core', 'alpha_active', 'defensive_factor', 'liquidity']"
+        },
+        {
+          "name": "liquidity_is_complement",
+          "ok": true,
+          "detail": "liquidity=60.0-80.0, risk=20.0-40.0"
+        },
+        {
+          "name": "risk_sleeve_midpoints_match_total",
+          "ok": true,
+          "detail": "risk_mid_sum=30.5, total_mid=30.0"
+        },
+        {
+          "name": "alpha_capped",
+          "ok": true,
+          "detail": "机会分仍高但估值、拥挤和波动压仓位，优先压 alpha、抬流动性。"
+        },
+        {
+          "name": "liquidity_high",
+          "ok": true,
+          "detail": "机会分仍高但估值、拥挤和波动压仓位，优先压 alpha、抬流动性。"
+        },
+        {
+          "name": "defensive_at_least_alpha",
+          "ok": true,
+          "detail": "机会分仍高但估值、拥挤和波动压仓位，优先压 alpha、抬流动性。"
+        }
+      ],
+      "passed": true
+    },
+    {
+      "key": "top_rebound",
+      "label": "顶部反抽但风控压制",
+      "thesis": "反抽能抬高机会分，但宽度弱和高位风险未解除，alpha 不应快速扩张。",
+      "inputs": {
+        "position_score": 38,
+        "opportunity_score": 62,
+        "pre_cap_score": 58,
+        "crowding_penalty": 14,
+        "recommended_range": "40%-60%",
+        "risk_cap_reasons": [
+          "high_crowding",
+          "strong_index_weak_breadth"
+        ]
+      },
+      "policy": {
+        "version": "allocation_policy_v2",
+        "account_scope": "stock_account",
+        "state": "高位过热风控",
+        "total_risk_asset_range": "40%-60%",
+        "risk_asset_formula": "beta_core + alpha_active + defensive_factor",
+        "liquidity_formula": "100% - total_risk_asset_range",
+        "risk_asset_share_ranges": {
+          "beta_core": [
+            0.35,
+            0.52
+          ],
+          "alpha_active": [
+            0.05,
+            0.18
+          ],
+          "defensive_factor": [
+            0.38,
+            0.63
+          ]
+        },
+        "alpha_active_components": {
+          "industry_theme_etf": "α主动仓基础部分，承接主线行业和主题 ETF。",
+          "leader_stock": "α主动仓增强部分，只在主线、成交和宽度确认时开放。",
+          "leader_stock_internal_cap": "龙头个股合计建议不超过 α主动仓的 30%-40%，退潮时优先收缩。"
+        },
+        "score_inputs": {
+          "market_position_score": 38,
+          "market_opportunity_score": 62,
+          "pre_cap_market_position_score": 58,
+          "crowding_penalty": 14.0,
+          "index_trend_score_pct": 78.0,
+          "breadth_score_pct": 38.0,
+          "liquidity_score_pct": 65.0,
+          "capital_flow_score_pct": 42.0,
+          "mainline_score_pct": 48.0,
+          "valuation_score_pct": 22.0,
+          "macro_score_pct": 45.0
+        },
+        "principles": [
+          "风险资产总仓位由最终仓位分决定，β核心仓、α主动仓、防御因子仓共享这部分风险资产。",
+          "β核心仓只承接宽基 ETF，不承担主线押注任务。",
+          "α主动仓合并主线行业 ETF 和龙头个股，主线退潮或高波动时最先收缩。",
+          "防御因子仓仍是权益资产，承担红利、低波、自由现金流和质量因子暴露。",
+          "流动性仓承接未配置风险资产，是现金管理和再平衡弹药。"
+        ],
+        "sleeves": [
+          {
+            "key": "beta_core",
+            "label": "β核心仓（宽基ETF）",
+            "name": "β核心仓（宽基ETF）",
+            "asset": "宽基ETF",
+            "role": "市场β底盘",
+            "driver": "风险资产总仓位、宽基趋势、估值分位、市场宽度",
+            "examples": [
+              "沪深300ETF",
+              "中证A500ETF",
+              "中证500ETF",
+              "纳指ETF"
+            ],
+            "target_range": "18%-24%",
+            "midpoint": 21.0
+          },
+          {
+            "key": "alpha_active",
+            "label": "α主动仓（行业ETF + 龙头个股）",
+            "name": "α主动仓（行业ETF + 龙头个股）",
+            "asset": "主线行业ETF/龙头个股",
+            "role": "主动超额收益",
+            "driver": "主线强度、资金持续性、成交额、拥挤退潮风险",
+            "examples": [
+              "半导体ETF",
+              "人工智能ETF",
+              "主线龙头",
+              "细分龙头"
+            ],
+            "target_range": "3%-8%",
+            "midpoint": 5.5
+          },
+          {
+            "key": "defensive_factor",
+            "label": "防御因子仓（红利/低波/自由现金流）",
+            "name": "防御因子仓（红利/低波/自由现金流）",
+            "asset": "红利低波/自由现金流/质量因子",
+            "role": "权益防御与质量暴露",
+            "driver": "风险偏好、利率环境、低波质量因子、相对抗跌",
+            "examples": [
+              "红利低波ETF",
+              "自由现金流ETF",
+              "质量因子ETF"
+            ],
+            "target_range": "19%-28%",
+            "midpoint": 23.5
+          },
+          {
+            "key": "liquidity",
+            "label": "流动性仓（货币/短债）",
+            "name": "流动性仓（货币/短债）",
+            "asset": "货币/短债/现金管理",
+            "role": "等待权与回撤缓冲",
+            "driver": "风险上限、波动率、资金退潮、数据置信度",
+            "examples": [
+              "货币基金",
+              "短债基金",
+              "短融ETF",
+              "国债逆回购"
+            ],
+            "target_range": "40%-60%",
+            "midpoint": 50.0
+          }
+        ],
+        "triggers": [
+          "指数趋势 78.0%，宽度 38.0%，主线 48.0%，资金 42.0%。",
+          "估值便宜度 22.0%，宏观环境 45.0%，拥挤惩罚 14.0。",
+          "风险资产总区间 40%-60%；流动性仓 = 100% - 风险资产总仓位。",
+          "风险上限已触发：high_crowding、strong_index_weak_breadth。",
+          "α主动仓未充分打开：需要主线强度、成交持续和宽度同时确认。"
+        ],
+        "notes": [
+          "所有比例为股票账户内部配置区间，不代表总资产配置。",
+          "单个 ETF、行业、个股仍需由标的研究系统单独确认；本模块只做市场层资金分配。",
+          "旧 allocation_policy_v1 的主线 ETF 与龙头仓在展示层会折算为 α主动仓。"
+        ]
+      },
+      "sleeve_ranges": {
+        "beta_core": "18%-24%",
+        "alpha_active": "3%-8%",
+        "defensive_factor": "19%-28%",
+        "liquidity": "40%-60%"
+      },
+      "midpoints": {
+        "beta_core": 21.0,
+        "alpha_active": 5.5,
+        "defensive_factor": 23.5,
+        "liquidity": 50.0
+      },
+      "checks": [
+        {
+          "name": "four_expected_sleeves",
+          "ok": true,
+          "detail": "actual=['beta_core', 'alpha_active', 'defensive_factor', 'liquidity']"
+        },
+        {
+          "name": "liquidity_is_complement",
+          "ok": true,
+          "detail": "liquidity=40.0-60.0, risk=40.0-60.0"
+        },
+        {
+          "name": "risk_sleeve_midpoints_match_total",
+          "ok": true,
+          "detail": "risk_mid_sum=50.0, total_mid=50.0"
+        },
+        {
+          "name": "alpha_capped",
+          "ok": true,
+          "detail": "反抽能抬高机会分，但宽度弱和高位风险未解除，alpha 不应快速扩张。"
+        },
+        {
+          "name": "liquidity_buffer",
+          "ok": true,
+          "detail": "反抽能抬高机会分，但宽度弱和高位风险未解除，alpha 不应快速扩张。"
+        },
+        {
+          "name": "beta_above_alpha",
+          "ok": true,
+          "detail": "反抽能抬高机会分，但宽度弱和高位风险未解除，alpha 不应快速扩张。"
+        }
+      ],
+      "passed": true
+    },
+    {
+      "key": "extreme_selloff",
+      "label": "极端杀跌",
+      "thesis": "极端下跌时便宜也不能替代趋势确认，保持高流动性和极低 alpha。",
+      "inputs": {
+        "position_score": 12,
+        "opportunity_score": 25,
+        "pre_cap_score": 20,
+        "crowding_penalty": 8,
+        "recommended_range": "0%-20%",
+        "risk_cap_reasons": [
+          "capital_outflow_combo",
+          "high_volatility"
+        ]
+      },
+      "policy": {
+        "version": "allocation_policy_v2",
+        "account_scope": "stock_account",
+        "state": "防守期",
+        "total_risk_asset_range": "0%-20%",
+        "risk_asset_formula": "beta_core + alpha_active + defensive_factor",
+        "liquidity_formula": "100% - total_risk_asset_range",
+        "risk_asset_share_ranges": {
+          "beta_core": [
+            0.2,
+            0.4
+          ],
+          "alpha_active": [
+            0,
+            0.08
+          ],
+          "defensive_factor": [
+            0.73,
+            0.95
+          ]
+        },
+        "alpha_active_components": {
+          "industry_theme_etf": "α主动仓基础部分，承接主线行业和主题 ETF。",
+          "leader_stock": "α主动仓增强部分，只在主线、成交和宽度确认时开放。",
+          "leader_stock_internal_cap": "龙头个股合计建议不超过 α主动仓的 30%-40%，退潮时优先收缩。"
+        },
+        "score_inputs": {
+          "market_position_score": 12,
+          "market_opportunity_score": 25,
+          "pre_cap_market_position_score": 20,
+          "crowding_penalty": 8.0,
+          "index_trend_score_pct": 12.0,
+          "breadth_score_pct": 10.0,
+          "liquidity_score_pct": 20.0,
+          "capital_flow_score_pct": 8.0,
+          "mainline_score_pct": 8.0,
+          "valuation_score_pct": 70.0,
+          "macro_score_pct": 35.0
+        },
+        "principles": [
+          "风险资产总仓位由最终仓位分决定，β核心仓、α主动仓、防御因子仓共享这部分风险资产。",
+          "β核心仓只承接宽基 ETF，不承担主线押注任务。",
+          "α主动仓合并主线行业 ETF 和龙头个股，主线退潮或高波动时最先收缩。",
+          "防御因子仓仍是权益资产，承担红利、低波、自由现金流和质量因子暴露。",
+          "流动性仓承接未配置风险资产，是现金管理和再平衡弹药。"
+        ],
+        "sleeves": [
+          {
+            "key": "beta_core",
+            "label": "β核心仓（宽基ETF）",
+            "name": "β核心仓（宽基ETF）",
+            "asset": "宽基ETF",
+            "role": "市场β底盘",
+            "driver": "风险资产总仓位、宽基趋势、估值分位、市场宽度",
+            "examples": [
+              "沪深300ETF",
+              "中证A500ETF",
+              "中证500ETF",
+              "纳指ETF"
+            ],
+            "target_range": "0%-7%",
+            "midpoint": 3.5
+          },
+          {
+            "key": "alpha_active",
+            "label": "α主动仓（行业ETF + 龙头个股）",
+            "name": "α主动仓（行业ETF + 龙头个股）",
+            "asset": "主线行业ETF/龙头个股",
+            "role": "主动超额收益",
+            "driver": "主线强度、资金持续性、成交额、拥挤退潮风险",
+            "examples": [
+              "半导体ETF",
+              "人工智能ETF",
+              "主线龙头",
+              "细分龙头"
+            ],
+            "target_range": "0%-2%",
+            "midpoint": 1.0
+          },
+          {
+            "key": "defensive_factor",
+            "label": "防御因子仓（红利/低波/自由现金流）",
+            "name": "防御因子仓（红利/低波/自由现金流）",
+            "asset": "红利低波/自由现金流/质量因子",
+            "role": "权益防御与质量暴露",
+            "driver": "风险偏好、利率环境、低波质量因子、相对抗跌",
+            "examples": [
+              "红利低波ETF",
+              "自由现金流ETF",
+              "质量因子ETF"
+            ],
+            "target_range": "3%-12%",
+            "midpoint": 7.5
+          },
+          {
+            "key": "liquidity",
+            "label": "流动性仓（货币/短债）",
+            "name": "流动性仓（货币/短债）",
+            "asset": "货币/短债/现金管理",
+            "role": "等待权与回撤缓冲",
+            "driver": "风险上限、波动率、资金退潮、数据置信度",
+            "examples": [
+              "货币基金",
+              "短债基金",
+              "短融ETF",
+              "国债逆回购"
+            ],
+            "target_range": "80%-100%",
+            "midpoint": 90.0
+          }
+        ],
+        "triggers": [
+          "指数趋势 12.0%，宽度 10.0%，主线 8.0%，资金 8.0%。",
+          "估值便宜度 70.0%，宏观环境 35.0%，拥挤惩罚 8.0。",
+          "风险资产总区间 0%-20%；流动性仓 = 100% - 风险资产总仓位。",
+          "风险上限已触发：capital_outflow_combo、high_volatility。",
+          "α主动仓未充分打开：需要主线强度、成交持续和宽度同时确认。"
+        ],
+        "notes": [
+          "所有比例为股票账户内部配置区间，不代表总资产配置。",
+          "单个 ETF、行业、个股仍需由标的研究系统单独确认；本模块只做市场层资金分配。",
+          "旧 allocation_policy_v1 的主线 ETF 与龙头仓在展示层会折算为 α主动仓。"
+        ]
+      },
+      "sleeve_ranges": {
+        "beta_core": "0%-7%",
+        "alpha_active": "0%-2%",
+        "defensive_factor": "3%-12%",
+        "liquidity": "80%-100%"
+      },
+      "midpoints": {
+        "beta_core": 3.5,
+        "alpha_active": 1.0,
+        "defensive_factor": 7.5,
+        "liquidity": 90.0
+      },
+      "checks": [
+        {
+          "name": "four_expected_sleeves",
+          "ok": true,
+          "detail": "actual=['beta_core', 'alpha_active', 'defensive_factor', 'liquidity']"
+        },
+        {
+          "name": "liquidity_is_complement",
+          "ok": true,
+          "detail": "liquidity=80.0-100.0, risk=0.0-20.0"
+        },
+        {
+          "name": "risk_sleeve_midpoints_match_total",
+          "ok": true,
+          "detail": "risk_mid_sum=12.0, total_mid=10.0"
+        },
+        {
+          "name": "liquidity_very_high",
+          "ok": true,
+          "detail": "极端下跌时便宜也不能替代趋势确认，保持高流动性和极低 alpha。"
+        },
+        {
+          "name": "alpha_near_zero",
+          "ok": true,
+          "detail": "极端下跌时便宜也不能替代趋势确认，保持高流动性和极低 alpha。"
+        },
+        {
+          "name": "defensive_above_beta",
+          "ok": true,
+          "detail": "极端下跌时便宜也不能替代趋势确认，保持高流动性和极低 alpha。"
+        }
+      ],
+      "passed": true
+    }
+  ],
+  "summary": {
+    "bear_bottom_repair": {
+      "label": "熊末低估但趋势未确认",
+      "passed": true,
+      "state": "弱修复期",
+      "total_risk_asset_range": "20%-40%",
+      "sleeve_ranges": {
+        "beta_core": "10%-20%",
+        "alpha_active": "0%-5%",
+        "defensive_factor": "9%-15%",
+        "liquidity": "60%-80%"
+      }
+    },
+    "healthy_impulse_trend": {
+      "label": "健康主升共振",
+      "passed": true,
+      "state": "低拥挤强趋势期",
+      "total_risk_asset_range": "90%-100%",
+      "sleeve_ranges": {
+        "beta_core": "46%-50%",
+        "alpha_active": "40%-43%",
+        "defensive_factor": "4%-7%",
+        "liquidity": "0%-10%"
+      }
+    },
+    "bubble_top": {
+      "label": "牛末泡沫冲顶",
+      "passed": true,
+      "state": "高位过热风控",
+      "total_risk_asset_range": "20%-40%",
+      "sleeve_ranges": {
+        "beta_core": "8%-15%",
+        "alpha_active": "1%-5%",
+        "defensive_factor": "11%-21%",
+        "liquidity": "60%-80%"
+      }
+    },
+    "top_rebound": {
+      "label": "顶部反抽但风控压制",
+      "passed": true,
+      "state": "高位过热风控",
+      "total_risk_asset_range": "40%-60%",
+      "sleeve_ranges": {
+        "beta_core": "18%-24%",
+        "alpha_active": "3%-8%",
+        "defensive_factor": "19%-28%",
+        "liquidity": "40%-60%"
+      }
+    },
+    "extreme_selloff": {
+      "label": "极端杀跌",
+      "passed": true,
+      "state": "防守期",
+      "total_risk_asset_range": "0%-20%",
+      "sleeve_ranges": {
+        "beta_core": "0%-7%",
+        "alpha_active": "0%-2%",
+        "defensive_factor": "3%-12%",
+        "liquidity": "80%-100%"
+      }
+    }
+  }
+}
