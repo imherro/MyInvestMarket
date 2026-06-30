@@ -133,9 +133,9 @@ select {
   gap: 14px;
 }
 
+.basis-status-band,
 .score-card,
 .chart-band,
-.api-band,
 .allocation-band,
 .position-map-band,
 .market-cycle-band,
@@ -146,6 +146,52 @@ select {
   border-radius: 8px;
   background: var(--surface);
   box-shadow: var(--shadow);
+}
+
+.basis-status-band {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.65fr) minmax(260px, 1fr);
+  align-items: center;
+  gap: 12px 24px;
+  margin-bottom: 16px;
+  padding: 18px 22px;
+  border-left: 6px solid var(--teal);
+}
+
+.basis-status-band strong {
+  display: block;
+  margin-top: 5px;
+  font-size: clamp(2rem, 4vw, 3.6rem);
+  line-height: 1.05;
+}
+
+.basis-status-band p {
+  color: var(--ink);
+  font-size: 1rem;
+  line-height: 1.6;
+}
+
+.basis-status-details {
+  grid-column: 1 / -1;
+  color: var(--muted);
+  font-size: 0.86rem;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.basis-status-band.warning {
+  border-left-color: var(--amber);
+  background: #fff8ec;
+}
+
+.basis-status-band.critical {
+  border-left-color: var(--red);
+  background: #fff1ee;
+}
+
+.basis-status-band.critical strong,
+.basis-status-band.critical p {
+  color: #8d2116;
 }
 
 .score-card {
@@ -269,33 +315,6 @@ select {
   min-height: 40px;
   margin-top: 24px;
   margin-bottom: 10px;
-}
-
-.api-band {
-  margin-top: 18px;
-  padding: 16px 18px;
-}
-
-.api-band .section-head {
-  margin-top: 0;
-}
-
-.api-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 10px;
-}
-
-.api-grid code {
-  display: block;
-  min-height: 42px;
-  padding: 12px;
-  overflow-wrap: anywhere;
-  border: 1px solid var(--line);
-  border-radius: 6px;
-  background: var(--surface-soft);
-  color: var(--ink);
-  font-size: 0.83rem;
 }
 
 .api-catalog-band {
@@ -1139,10 +1158,6 @@ td.score-risk {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
-  .api-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
   .allocation-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -1191,8 +1206,11 @@ td.score-risk {
     margin-top: 16px;
   }
 
+  .basis-status-band {
+    grid-template-columns: 1fr;
+  }
+
   .summary-grid,
-  .api-grid,
   .allocation-grid,
   .allocation-triggers,
   .risk-overview-grid,

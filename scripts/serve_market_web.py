@@ -5,7 +5,7 @@ import html
 import json
 import mimetypes
 import traceback
-from datetime import datetime
+from datetime import datetime, time, timedelta
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, unquote, urlparse
@@ -36,6 +36,7 @@ TZ = ZoneInfo("Asia/Shanghai")
 SERVICE_NAME = "MyInvestMarketWeb"
 SERVICE_API_VERSION = 1
 DEFAULT_BASE_URL = f"http://127.0.0.1:{PORT}"
+POST_CLOSE_READY_TIME = time(16, 30)
 
 
 def stable_release_result() -> dict[str, object]:
@@ -249,6 +250,27 @@ def latest_market_snapshot_result() -> dict[str, object]:
     }
 
 
+def latest_local_snapshot_trade_date() -> str | None:
+    trade_dates: list[str] = []
+    for path in DATA_DIR.glob("market_snapshot_*.json"):
+        if not path.is_file():
+            continue
+        suffix = path.stem.removeprefix("market_snapshot_")
+        if len(suffix) == 10 and suffix[4] == "-" and suffix[7] == "-":
+            trade_dates.append(suffix)
+    return max(trade_dates) if trade_dates else None
+
+
+def expected_latest_complete_trade_date(now: datetime | None = None) -> str:
+    local_now = now.astimezone(TZ) if now else datetime.now(TZ)
+    candidate = local_now.date()
+    if local_now.weekday() >= 5 or local_now.time() < POST_CLOSE_READY_TIME:
+        candidate = candidate - timedelta(days=1)
+    while candidate.weekday() >= 5:
+        candidate = candidate - timedelta(days=1)
+    return candidate.isoformat()
+
+
 def service_version_result() -> dict[str, object]:
     return {
         "available": True,
@@ -359,7 +381,7 @@ def api_groups_result() -> list[dict[str, object]]:
                     "GET",
                     "/api/index",
                     "主页核心内容，供 Web 首页一次性渲染。",
-                    "评分摘要、风险概览、四仓配置、仓位映射、周期示意、历史曲线、接口目录摘要。",
+                    "market_data_status、评分摘要、风险概览、四仓配置、仓位映射、周期示意、历史曲线、接口目录摘要。",
                     read_only=True,
                 ),
                 api_endpoint(
@@ -836,6 +858,100 @@ def latest_research_bundle() -> dict[str, object]:
     }
 
 
+def market_data_status_result(latest: dict[str, object], latest_research: dict[str, object]) -> dict[str, object]:
+    score_basis = latest.get("basis_trade_date") if isinstance(latest, dict) else None
+    run_id = latest.get("run_id") if isinstance(latest, dict) else None
+    results = latest_research.get("results", {}) if isinstance(latest_research, dict) else {}
+    snapshot = results.get("market_snapshot", {}) if isinstance(results.get("market_snapshot"), dict) else {}
+    analysis = results.get("market_analysis", {}) if isinstance(results.get("market_analysis"), dict) else {}
+    binding = analysis.get("binding", {}) if isinstance(analysis.get("binding"), dict) else {}
+    snapshot_basis = snapshot.get("basis_trade_date")
+    local_snapshot_basis = latest_local_snapshot_trade_date()
+    expected_complete_basis = expected_latest_complete_trade_date()
+    data_basis_candidates = [
+        str(value)
+        for value in (snapshot_basis, local_snapshot_basis)
+        if value
+    ]
+    latest_data_basis = max(data_basis_candidates) if data_basis_candidates else None
+    analysis_available = bool(analysis.get("available"))
+    binding_consistent = bool(binding.get("consistent"))
+    status = "normal"
+    severity = "normal"
+    requires_attention = False
+    title = f"基准日 {score_basis or '--'}"
+    message = "最新评分、市场快照和研究报告已经互相匹配。"
+    details: list[str] = []
+
+    if not score_basis:
+        status = "missing_score"
+        severity = "critical"
+        requires_attention = True
+        title = "暂无研究基准日"
+        message = "当前没有可展示的市场评分记录，需要先生成市场研究。"
+    elif latest_data_basis and str(latest_data_basis) > str(score_basis):
+        status = "data_without_research"
+        severity = "critical"
+        requires_attention = True
+        title = f"本地数据已到 {latest_data_basis}，研究仍停在 {score_basis}"
+        message = (
+            f"已发现 {latest_data_basis} 的完整市场快照，但最新评分/研究基准日仍是 {score_basis}；"
+            "需要重新执行收盘后市场研究。"
+        )
+    elif not analysis_available or not binding_consistent:
+        status = "research_binding_mismatch"
+        severity = "critical"
+        requires_attention = True
+        title = f"基准日 {score_basis} 缺少匹配研究"
+        message = "最新评分存在，但 Markdown 研究报告没有与最新 run_id 和 basis_trade_date 绑定一致。"
+    elif snapshot_basis and str(snapshot_basis) != str(score_basis):
+        status = "snapshot_binding_mismatch"
+        severity = "warning"
+        requires_attention = True
+        title = f"基准日 {score_basis} 与快照日不一致"
+        message = f"最新评分基准日是 {score_basis}，最新市场快照基准日是 {snapshot_basis}，需要检查数据链路。"
+    elif expected_complete_basis and str(expected_complete_basis) > str(score_basis):
+        status = "expected_complete_research_lag"
+        severity = "warning"
+        requires_attention = True
+        title = f"预计应覆盖 {expected_complete_basis}，研究仍停在 {score_basis}"
+        message = (
+            f"按工作日收盘后更新节奏，当前研究基准日应至少检查到 {expected_complete_basis}；"
+            f"最新研究仍是 {score_basis}，需要确认收盘后自动化是否执行。"
+        )
+
+    if latest_data_basis:
+        details.append(f"本地最新完整市场数据：{latest_data_basis}")
+    if expected_complete_basis:
+        details.append(f"按工作日节奏预计最新完整交易日：{expected_complete_basis}")
+    if score_basis:
+        details.append(f"最新评分基准日：{score_basis}")
+    if run_id:
+        details.append(f"最新 run_id：{run_id}")
+    if analysis_available and binding_consistent:
+        details.append("研究报告绑定一致")
+    elif analysis.get("error"):
+        details.append(str(analysis.get("error")))
+
+    return {
+        "available": bool(score_basis),
+        "status": status,
+        "severity": severity,
+        "requires_attention": requires_attention,
+        "basis_trade_date": score_basis,
+        "run_id": run_id,
+        "latest_data_trade_date": latest_data_basis,
+        "expected_latest_complete_trade_date": expected_complete_basis,
+        "latest_local_snapshot_trade_date": local_snapshot_basis,
+        "latest_market_snapshot_trade_date": snapshot_basis,
+        "analysis_available": analysis_available,
+        "analysis_binding_consistent": binding_consistent,
+        "title": title,
+        "message": message,
+        "details": details,
+    }
+
+
 def current_version_filter() -> dict[str, object]:
     return {
         "model_version": MODEL_VERSION,
@@ -1261,6 +1377,7 @@ def homepage_index_result() -> dict[str, object]:
         key: bool(value.get("available")) if isinstance(value, dict) else False
         for key, value in api_results.items()
     }
+    market_data_status = market_data_status_result(latest, latest_research)
     policy_map = position_policy_map_result(latest)
     allocation_map = allocation_policy_result(latest, records)
 
@@ -1396,6 +1513,7 @@ def homepage_index_result() -> dict[str, object]:
                 },
             ],
         },
+        "market_data_status": market_data_status,
         "risk_overview": risk_overview_result(latest),
         "state_stability": validate_state_stability(records),
         "api_status": {

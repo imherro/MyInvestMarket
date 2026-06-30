@@ -21,6 +21,15 @@
     </header>
 
     <main class="layout">
+      <section id="basisStatusBand" class="basis-status-band normal" aria-label="当前研究基准日">
+        <div>
+          <span class="label">当前研究基准日</span>
+          <strong id="basisStatusDate">基准日 --</strong>
+        </div>
+        <p id="basisStatusMessage">读取中</p>
+        <div id="basisStatusDetails" class="basis-status-details"></div>
+      </section>
+
       <section class="summary-grid" aria-label="评分摘要">
         <article class="score-card primary">
           <span class="label">股票账户仓位分</span>
@@ -72,21 +81,6 @@
             <small id="riskCapDetail">--</small>
             <div id="riskCapList" class="message-list"></div>
           </article>
-        </div>
-      </section>
-
-      <section class="api-band">
-        <div class="section-head">
-          <h2>最新研究结果 API</h2>
-          <span id="apiStatus">检查中</span>
-        </div>
-        <div class="api-grid">
-          <code>GET /api/service</code>
-          <code>GET /api/index</code>
-          <code>GET /api/research/latest</code>
-          <code>GET /api/research/latest/market-snapshot</code>
-          <code>GET /api/research/latest/market-score</code>
-          <code>GET /api/research/latest/market-analysis</code>
         </div>
       </section>
 

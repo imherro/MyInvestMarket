@@ -93,19 +93,7 @@ async function loadHistory() {
   state.latest = state.records[state.records.length - 1] || null;
   state.index = indexPayload;
   setStatus(state.latest ? "已更新" : "无评分记录");
-  await loadResearchApiStatus();
   renderAll();
-}
-
-async function loadResearchApiStatus() {
-  try {
-    const payload = await fetchJson("/api/research/latest");
-    const results = payload.results || {};
-    const availableCount = Object.values(results).filter((item) => item && item.available).length;
-    setText("apiStatus", `${availableCount} / ${Object.keys(results).length} 可用 · ${formatDateTime(payload.generated_at)}`);
-  } catch (error) {
-    setText("apiStatus", `不可用：${error.message}`);
-  }
 }
 
 async function appendCurrentScore() {
@@ -141,6 +129,7 @@ function normalizeRecords(records) {
 }
 
 function renderAll() {
+  renderBasisStatus();
   renderSummary();
   renderRiskOverview();
   renderAllocationPolicy();
@@ -152,6 +141,23 @@ function renderAll() {
   renderModuleDetails();
   renderHistoryTable();
   renderApiCatalog();
+}
+
+function renderBasisStatus() {
+  const status = state.index?.market_data_status || {};
+  const latest = state.latest || {};
+  const basis = status.basis_trade_date || latest.basis_trade_date || "--";
+  const severity = ["normal", "warning", "critical"].includes(status.severity) ? status.severity : "normal";
+  const band = document.getElementById("basisStatusBand");
+  if (band) {
+    band.classList.remove("normal", "warning", "critical");
+    band.classList.add(severity);
+  }
+  setText("basisStatusDate", `基准日 ${basis}`);
+  setText("basisStatusMessage", status.message || "暂无市场研究状态。");
+  const details = status.details || [];
+  const detailText = details.length ? details.join(" · ") : `最新完整数据日 ${status.latest_data_trade_date || "--"}`;
+  setText("basisStatusDetails", detailText);
 }
 
 function renderSummary() {
