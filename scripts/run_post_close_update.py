@@ -34,6 +34,7 @@ VERIFY_ENDPOINTS = [
     "/api/index",
     "/api/research/latest/market-score",
     "/api/research/latest/market-analysis",
+    "/api/research/latest/model-validation",
     "/api/research/latest/model-health",
     "/api/research/latest/strategy-robustness",
 ]
@@ -412,11 +413,24 @@ def require_api(condition: bool, message: str) -> None:
         raise RuntimeError(message)
 
 
+def contains_date_value(value: Any, expected_date: str) -> bool:
+    if isinstance(value, str):
+        return value == expected_date or value[:10] == expected_date
+    if isinstance(value, dict):
+        return any(contains_date_value(item, expected_date) for item in value.values())
+    if isinstance(value, list):
+        return any(contains_date_value(item, expected_date) for item in value)
+    return False
+
+
 def validate_api_payloads(payloads: dict[str, dict[str, Any]]) -> dict[str, Any]:
     service_payload = payloads.get("/api/service") or {}
     index = payloads.get("/api/index") or {}
     score_payload = payloads.get("/api/research/latest/market-score") or {}
     analysis_payload = payloads.get("/api/research/latest/market-analysis") or {}
+    validation_payload = payloads.get("/api/research/latest/model-validation") or {}
+    health_payload = payloads.get("/api/research/latest/model-health") or {}
+    robustness_payload = payloads.get("/api/research/latest/strategy-robustness") or {}
     latest_record = score_payload.get("record") or {}
     index_summary = index.get("summary") or {}
     policy_map = index.get("position_policy_map") or {}
@@ -535,6 +549,43 @@ def validate_api_payloads(payloads: dict[str, dict[str, Any]]) -> dict[str, Any]
     require_api(
         binding.get("basis_trade_date") == latest_record.get("basis_trade_date"),
         "latest analysis basis_trade_date does not match latest score",
+    )
+
+    basis_trade_date = latest_record.get("basis_trade_date")
+    require_api(bool(validation_payload.get("available")), "/api/research/latest/model-validation is not available")
+    validation_body = validation_payload.get("payload") or {}
+    require_api(bool(validation_body.get("available")), "latest model validation payload is not available")
+    require_api(
+        bool((validation_body.get("sample") or {}).get("lookahead_safe")),
+        "latest model validation is not marked lookahead safe",
+    )
+    require_api(
+        contains_date_value(validation_body, basis_trade_date),
+        "latest model validation basis_trade_date does not include latest score",
+    )
+    validation_metrics = (((validation_body.get("comparison") or {}).get("v3") or {}).get("metrics") or {})
+    require_api(bool(validation_metrics), "latest model validation v3 metrics are missing")
+
+    require_api(bool(health_payload.get("available")), "/api/research/latest/model-health is not available")
+    health_body = health_payload.get("payload") or {}
+    require_api(bool(health_body.get("available")), "latest model health payload is not available")
+    health_metrics = (((health_body.get("model_health") or {}).get("backtest_metrics")) or {})
+    for metric_key in ("total_return", "sharpe_ratio", "max_drawdown", "period_count"):
+        require_api(
+            health_metrics.get(metric_key) == validation_metrics.get(metric_key),
+            f"latest model health {metric_key} does not match model validation",
+        )
+
+    require_api(bool(robustness_payload.get("available")), "/api/research/latest/strategy-robustness is not available")
+    robustness_body = robustness_payload.get("payload") or {}
+    require_api(bool(robustness_body.get("available")), "latest strategy robustness payload is not available")
+    require_api(
+        robustness_body.get("deployable") is not None,
+        "latest strategy robustness deployable flag is missing",
+    )
+    require_api(
+        contains_date_value(robustness_body, basis_trade_date),
+        "latest strategy robustness basis_trade_date does not include latest score",
     )
 
     return {
@@ -726,12 +777,16 @@ def main() -> None:
     report_path = write_report(snapshot, record)
     validation_report = report_generator.write_validation_report(backtest_engine_records(include_legacy=True))
     api = verify_api()
+    audit_path = Path(score_result.get("audit_path") or market_scoring.history_audit_log_path(market_scoring.DEFAULT_HISTORY_PATH))
+    if not audit_path.is_absolute():
+        audit_path = ROOT / audit_path
     git_result = commit_and_push(
         [
             latest_path,
             dated_path,
             *backfilled_paths,
             market_scoring.DEFAULT_HISTORY_PATH,
+            audit_path,
             report_path,
             Path(validation_report["markdown_path"]),
             Path(validation_report["latest_markdown_path"]),

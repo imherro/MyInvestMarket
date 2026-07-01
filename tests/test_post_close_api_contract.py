@@ -123,6 +123,50 @@ def valid_api_payloads() -> dict:
                 "consistent": True,
             },
         },
+        "/api/research/latest/model-validation": {
+            "available": True,
+            "payload": {
+                "available": True,
+                "sample": {"lookahead_safe": True},
+                "comparison": {
+                    "v3": {
+                        "metrics": {
+                            "total_return": 0.01,
+                            "sharpe_ratio": 0.5,
+                            "max_drawdown": 0.02,
+                            "period_count": 5.0,
+                        },
+                        "nav_curve": [{"date": record["basis_trade_date"], "nav": 1.01}],
+                    }
+                },
+            },
+        },
+        "/api/research/latest/model-health": {
+            "available": True,
+            "payload": {
+                "available": True,
+                "model_health": {
+                    "backtest_metrics": {
+                        "total_return": 0.01,
+                        "sharpe_ratio": 0.5,
+                        "max_drawdown": 0.02,
+                        "period_count": 5.0,
+                    }
+                },
+            },
+        },
+        "/api/research/latest/strategy-robustness": {
+            "available": True,
+            "payload": {
+                "available": True,
+                "deployable": False,
+                "oos_validation": {
+                    "splits": {
+                        "test": {"end": record["basis_trade_date"]},
+                    }
+                },
+            },
+        },
     }
 
 
@@ -179,6 +223,20 @@ class PostCloseApiContractTest(unittest.TestCase):
         payloads["/api/index"]["position_policy_version"] = "stale_policy"
 
         with self.assertRaisesRegex(RuntimeError, "POSITION_POLICY_VERSION"):
+            run_post_close_update.validate_api_payloads(payloads)
+
+    def test_validate_api_payloads_rejects_stale_validation_basis(self) -> None:
+        payloads = copy.deepcopy(valid_api_payloads())
+        payloads["/api/research/latest/model-validation"]["payload"]["comparison"]["v3"]["nav_curve"][0]["date"] = "2026-06-17"
+
+        with self.assertRaisesRegex(RuntimeError, "model validation basis_trade_date"):
+            run_post_close_update.validate_api_payloads(payloads)
+
+    def test_validate_api_payloads_rejects_health_metric_mismatch(self) -> None:
+        payloads = copy.deepcopy(valid_api_payloads())
+        payloads["/api/research/latest/model-health"]["payload"]["model_health"]["backtest_metrics"]["sharpe_ratio"] = 0.25
+
+        with self.assertRaisesRegex(RuntimeError, "model health sharpe_ratio"):
             run_post_close_update.validate_api_payloads(payloads)
 
     def test_incomplete_market_data_skip_result_reports_missing_fields(self) -> None:
