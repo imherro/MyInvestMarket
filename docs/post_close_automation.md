@@ -1,8 +1,10 @@
 # MyInvestMarket 收盘后自动化
 
-建议执行时间：工作日收盘后、主要数据源稳定后，例如 `16:30 Asia/Shanghai`。
+建议执行时间：工作日收盘后、主要数据源稳定后，例如 `20:10 Asia/Shanghai`。
 
-当前 Codex 自动化：`a-3`，名称为 `MyInvestMarket市场研究收盘后更新`。
+当前 Codex 自动化：`myinvestmarket`，名称为 `MyInvestMarket 市场收盘后日更`。
+
+更新时间依据：脚本虽然用 `Tushare.daily` 和 `Tushare.index_daily` 判断最新完整交易日，但评分还强依赖 `Tushare.moneyflow` 和 `Tushare.sw_daily`。`moneyflow` 官方更新点为交易日 19 点；2026-06-30 的 16:30 自动化运行时，`moneyflow` 和申万行业日行情仍未完整，2026-07-01 10:04 复查已完整。自动化触发时间已从 16:30 调整到 20:10，以减少盘后衍生表延迟导致的跳过。
 
 ## 最短可用中文提示词
 
