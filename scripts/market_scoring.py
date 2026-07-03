@@ -21,10 +21,10 @@ DEFAULT_SNAPSHOT_PATH = DATA_DIR / "latest_market_snapshot.json"
 DEFAULT_HISTORY_PATH = DATA_DIR / "market_score_history.json"
 DEFAULT_AUDIT_LOG_PATH = DATA_DIR / "market_score_history_audit.jsonl"
 TZ = ZoneInfo("Asia/Shanghai")
-MODEL_VERSION = "v3.3_position"
-SCORE_SCHEMA_VERSION = "2.4"
+MODEL_VERSION = "v3.4_contrarian"
+SCORE_SCHEMA_VERSION = "2.5"
 FEATURE_SCHEMA_VERSION = "1.7"
-POSITION_POLICY_VERSION = "stock_account_position_policy_v3"
+POSITION_POLICY_VERSION = "stock_account_position_policy_v4"
 ALLOCATION_POLICY_VERSION = "allocation_policy_v2"
 HISTORY_SCHEMA_VERSION = 3
 HISTORY_DEDUPE_KEY_FIELDS = (
@@ -65,6 +65,9 @@ OPTIONAL_SCORE_RECORD_NUMERIC_RANGES = {
     "opportunity_score": (0, 100),
     "base_market_position_score": (0, 100),
     "risk_adjusted_market_position_score": (0, 100),
+    "pre_overlay_market_position_score": (0, 100),
+    "contrarian_beta_overlay_score": (0, 100),
+    "contrarian_beta_add_score": (0, 100),
     "legacy_vol_adjusted_market_position_score": (0, 100),
 }
 SCORE_RECORD_PERCENT_RANGE_FIELDS = (
@@ -1064,9 +1067,14 @@ def allocation_policy(
     crowding: dict[str, Any],
     snapshot: dict[str, Any],
     risk_caps: list[dict[str, Any]],
+    contrarian_overlay: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     crowding_penalty_value = as_float(crowding.get("penalty")) or 0
     state = allocation_state(position_score, opportunity_score, pre_cap_score, modules, crowding_penalty_value, risk_caps)
+    overlay = contrarian_overlay if isinstance(contrarian_overlay, dict) else {}
+    overlay_active = bool(overlay.get("active"))
+    if overlay_active:
+        state = "深熊赔率期"
     index_pct = module_pct_value(modules, "index_trend")
     breadth_pct = module_pct_value(modules, "breadth")
     liquidity_pct = module_pct_value(modules, "liquidity")
@@ -1091,6 +1099,11 @@ def allocation_policy(
             "beta_core": [0.35, 0.55],
             "alpha_active": [0.05, 0.15],
             "defensive_factor": [0.35, 0.55],
+        },
+        "深熊赔率期": {
+            "beta_core": [0.65, 0.85],
+            "alpha_active": [0.00, 0.08],
+            "defensive_factor": [0.15, 0.30],
         },
         "震荡轮动期": {
             "beta_core": [0.42, 0.58],
@@ -1120,7 +1133,7 @@ def allocation_policy(
     }
     shares = {key: list(value) for key, value in share_ranges[state].items()}
 
-    if cheap_market and state in {"弱修复期", "震荡轮动期"}:
+    if cheap_market and not overlay_active and state in {"弱修复期", "震荡轮动期"}:
         shares["beta_core"][0] += 0.08
         shares["beta_core"][1] += 0.08
         shares["defensive_factor"][0] -= 0.05
@@ -1141,6 +1154,10 @@ def allocation_policy(
         shares["defensive_factor"][1] += 0.10
     if state == "高位过热风控":
         shares["alpha_active"][1] = min(shares["alpha_active"][1], 0.18)
+    if overlay_active:
+        shares["alpha_active"][1] = min(shares["alpha_active"][1], 0.08)
+        shares["beta_core"][0] = max(shares["beta_core"][0], 0.65)
+        shares["beta_core"][1] = max(shares["beta_core"][1], 0.80)
 
     shares = {key: clamp_share_range(value) for key, value in shares.items()}
     target_ranges = allocation_ranges_from_shares(recommended_range, shares)
@@ -1172,6 +1189,10 @@ def allocation_policy(
     if risk_caps:
         labels = "、".join(str(cap.get("reason")) for cap in risk_caps if isinstance(cap, dict))
         triggers.append(f"风险上限已触发：{labels}。")
+    if overlay_active:
+        triggers.append(
+            f"深熊赔率逆向模块生效：仓位分抬高 {overlay.get('add_score')}，只提高 β核心仓，不开放 α主动仓。"
+        )
     if leader_enabled:
         triggers.append("主线强、成交与宽度配合，α主动仓可提高；其中龙头个股仍应受 α 仓内部上限约束。")
     else:
@@ -1185,6 +1206,8 @@ def allocation_policy(
         "risk_asset_formula": "beta_core + alpha_active + defensive_factor",
         "liquidity_formula": "100% - total_risk_asset_range",
         "risk_asset_share_ranges": shares,
+        "contrarian_beta_overlay": overlay or {"active": False},
+        "beta_core_overlay_only": overlay_active,
         "alpha_active_components": {
             "industry_theme_etf": "α主动仓基础部分，承接主线行业和主题 ETF。",
             "leader_stock": "α主动仓增强部分，只在主线、成交和宽度确认时开放。",
@@ -1579,6 +1602,143 @@ def evaluate_risk_caps(
     return caps
 
 
+def drawdown_depth_features(snapshot: dict[str, Any]) -> dict[str, Any]:
+    indices = ((snapshot.get("volatility", {}) or {}).get("indices", {}) or {})
+    items: list[dict[str, Any]] = []
+    for code, payload in indices.items():
+        if not isinstance(payload, dict):
+            continue
+        drawdown = as_float(payload.get("drawdown_60d_pct"))
+        if drawdown is None:
+            continue
+        depth = max(0.0, -drawdown)
+        items.append({"code": code, "drawdown_60d_pct": round2(drawdown), "depth_pct": round2(depth)})
+
+    depths = [as_float(item.get("depth_pct")) or 0 for item in items]
+    return {
+        "available": bool(depths),
+        "worst_depth_pct": round2(max(depths)) if depths else None,
+        "average_depth_pct": round2(mean(depths)) if depths else None,
+        "indices": items,
+    }
+
+
+def contrarian_beta_overlay(
+    opportunity_score: float,
+    crowding: dict[str, Any],
+    modules: dict[str, Any],
+    snapshot: dict[str, Any],
+    risk_engine: dict[str, Any],
+    current_score: float,
+) -> dict[str, Any]:
+    valuation_raw = as_float((((snapshot.get("valuation", {}) or {}).get("market", {}) or {}).get("valuation_score")))
+    drawdown = drawdown_depth_features(snapshot)
+    worst_depth = as_float(drawdown.get("worst_depth_pct"))
+    average_depth = as_float(drawdown.get("average_depth_pct"))
+    breadth = snapshot.get("breadth", {}) or {}
+    total = as_float(breadth.get("total"))
+    advancers = as_float(breadth.get("advancers"))
+    advancer_ratio = advancers / total if total and advancers is not None and total > 0 else None
+    strong_decliners = as_float(breadth.get("strong_decliners_lt_minus3_pct"))
+    if strong_decliners is not None and strong_decliners > 1:
+        strong_decliners = strong_decliners / 100
+    limit_down = as_float(breadth.get("limit_down"))
+    capital = snapshot.get("capital_flow", {}) or {}
+    northbound = as_float(capital.get("northbound_net_inflow_100m_cny"))
+    main_net = as_float(capital.get("main_net_inflow_100m_cny"))
+    realized_vol = normalize_annual_vol(((snapshot.get("volatility", {}) or {}).get("market", {}) or {}).get("realized_vol_30d"))
+    crowding_penalty_value = as_float(crowding.get("penalty")) or 0
+    mainline_pct = module_pct_value(modules, "mainline")
+
+    valuation_component = scale(valuation_raw, 60, 90, 30)
+    drawdown_component = scale(worst_depth, 10, 24, 30)
+    capitulation_component = (
+        scale(advancer_ratio, 0.45, 0.20, 8)
+        + scale(strong_decliners, 0.08, 0.25, 7)
+        + scale(limit_down, 5, 60, 5)
+    )
+    stabilization_component = (
+        scale(main_net, -900, -150, 8)
+        + scale(northbound, -80, 30, 6)
+        + scale(realized_vol, 0.48, 0.28, 6)
+    )
+    intensity_score = round2(
+        clamp(valuation_component + drawdown_component + capitulation_component + stabilization_component, 0, 100)
+    ) or 0
+
+    blockers: list[str] = []
+    if valuation_raw is None:
+        blockers.append("估值便宜度缺失，不能确认深熊赔率。")
+    elif valuation_raw < 60:
+        blockers.append(f"估值便宜度 {round2(valuation_raw)}%，未达到深熊逆向阈值 60%。")
+    if worst_depth is None:
+        blockers.append("指数60日回撤缺失，不能确认深回撤。")
+    elif worst_depth < 10:
+        blockers.append(f"指数最深60日回撤 {round2(worst_depth)}%，未达到 10% 深回撤阈值。")
+    if crowding_penalty_value > 10:
+        blockers.append(f"拥挤惩罚 {round2(crowding_penalty_value)}，不适合左侧扩仓。")
+    if opportunity_score > 65 or mainline_pct > 70:
+        blockers.append("机会分或主线强度已经偏热，逆向模块不追高。")
+    if advancer_ratio is None or strong_decliners is None:
+        blockers.append("宽度或强弱个股结构缺失，不能确认恐慌出清。")
+    if main_net is None or northbound is None:
+        blockers.append("主力或北向资金字段缺失，不能确认资金没有踩踏。")
+    if main_net is not None and northbound is not None and main_net <= -1000 and northbound <= -50:
+        blockers.append("主力与北向同时大幅流出，资金踩踏时不启用逆向加仓。")
+    if realized_vol is None:
+        blockers.append("30日波动率缺失，不能确认尾部风险状态。")
+    if realized_vol is not None and realized_vol >= 0.50:
+        blockers.append(f"30日年化波动率 {round2(realized_vol * 100)}%，尾部风险过高。")
+    if intensity_score < 55:
+        blockers.append(f"深熊赔率强度 {intensity_score}，未达到 55 的启用阈值。")
+
+    active = not blockers
+    score_floor = round2(35 + scale(intensity_score, 55, 85, 25)) if active else None
+    target_score = round2(max(current_score, score_floor or current_score)) or round2(current_score) or 0
+    add_score = round2(max(0.0, target_score - current_score)) or 0
+    drivers = [
+        f"估值便宜度 {round2(valuation_raw)}%，指数最深60日回撤 {round2(worst_depth)}%，平均回撤 {round2(average_depth)}%。",
+        f"上涨家数占比 {round2((advancer_ratio or 0) * 100) if advancer_ratio is not None else None}%，跌超3%占比 {round2((strong_decliners or 0) * 100) if strong_decliners is not None else None}%。",
+        f"北向净流入 {round2(northbound)} 亿元，主力净流入 {round2(main_net)} 亿元，30日年化波动 {round2((realized_vol or 0) * 100) if realized_vol is not None else None}%。",
+        "逆向加仓只抬 β核心仓宽基 ETF，不解锁 α主动仓，不用于个股或主线追涨。",
+    ]
+
+    return {
+        "version": "contrarian_beta_overlay_v1",
+        "active": active,
+        "mode": "beta_core_floor",
+        "intensity_score": intensity_score,
+        "score_floor": score_floor,
+        "current_score_before_overlay": round2(current_score),
+        "target_score": target_score,
+        "add_score": add_score,
+        "beta_core_only": True,
+        "alpha_active_unlocked": False,
+        "drivers": drivers if active else [],
+        "blockers": [] if active else blockers,
+        "inputs": {
+            "valuation_score": round2(valuation_raw),
+            "worst_drawdown_60d_pct": round2(worst_depth),
+            "average_drawdown_60d_pct": round2(average_depth),
+            "advancer_ratio_pct": round2(advancer_ratio * 100) if advancer_ratio is not None else None,
+            "strong_decliners_lt_minus3_pct": round2(strong_decliners * 100) if strong_decliners is not None else None,
+            "limit_down": round2(limit_down),
+            "northbound_net_inflow_100m_cny": round2(northbound),
+            "main_net_inflow_100m_cny": round2(main_net),
+            "realized_vol_30d_pct": round2(realized_vol * 100) if realized_vol is not None else None,
+            "crowding_penalty": round2(crowding_penalty_value),
+            "risk_level": risk_engine.get("risk_level"),
+        },
+        "components": {
+            "valuation": round2(valuation_component),
+            "drawdown": round2(drawdown_component),
+            "capitulation": round2(capitulation_component),
+            "stabilization": round2(stabilization_component),
+        },
+        "drawdown": drawdown,
+    }
+
+
 def trend_multiplier(trend_layer: dict[str, Any] | None) -> tuple[float, str]:
     state = (trend_layer or {}).get("trend_state")
     if state == "strong_trend":
@@ -1651,18 +1811,25 @@ def build_position_model(
 
 def build_decision_explain(
     base_score: float,
+    risk_adjusted_score: float,
     pre_cap_score: float,
     final_score: float,
     position_model: dict[str, Any],
     risk_engine: dict[str, Any],
     risk_caps: list[dict[str, Any]],
     applied_cap: dict[str, Any] | None,
+    contrarian_overlay: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     factors = position_model.get("factors", {}) if isinstance(position_model.get("factors"), dict) else {}
+    overlay = contrarian_overlay if isinstance(contrarian_overlay, dict) else {}
     why = [
         f"基础仓位分 {round2(base_score)} 由机会分扣除拥挤惩罚得到。",
-        f"乘数调整后仓位分 {round2(pre_cap_score)}，最终仓位分 {round2(final_score)}。",
+        f"乘数和风险折扣后仓位分 {round2(risk_adjusted_score)}，扣上限前仓位分 {round2(pre_cap_score)}，最终仓位分 {round2(final_score)}。",
     ]
+    if overlay.get("active"):
+        why.append(
+            f"深熊赔率逆向模块生效：仓位分地板 {overlay.get('score_floor')}，抬高 {overlay.get('add_score')}，只用于 β核心仓。"
+        )
     if applied_cap:
         why.append(f"硬性风险上限 {applied_cap.get('reason')} 生效，上限 {applied_cap.get('score_cap')}。")
     elif risk_caps:
@@ -1682,6 +1849,7 @@ def build_decision_explain(
         ],
         "trend_factors": [str((factors.get("trend") or {}).get("note") or "")],
         "regime_factors": [str((factors.get("regime") or {}).get("note") or "")],
+        "contrarian_factors": (overlay.get("drivers") if overlay.get("active") else overlay.get("blockers")) or [],
     }
 
 
@@ -1699,13 +1867,28 @@ def apply_position_policy(
     risk_engine = risk_engine or compute_risk_engine(snapshot, modules, crowding)
     base_score = round2(clamp(opportunity_score - crowding_penalty_value, 0, 100)) or 0
     position_model = build_position_model(base_score, risk_engine, regime_layer, trend_layer)
-    pre_cap_score = as_float(position_model.get("adjusted_position_score")) or 0
+    risk_adjusted_score = as_float(position_model.get("adjusted_position_score")) or 0
+    overlay = contrarian_beta_overlay(opportunity_score, crowding, modules, snapshot, risk_engine, risk_adjusted_score)
+    pre_cap_score = round2(max(risk_adjusted_score, as_float(overlay.get("target_score")) or risk_adjusted_score)) or 0
     caps = evaluate_risk_caps(pre_cap_score, opportunity_score, crowding_penalty_value, modules, snapshot, data_quality)
     applied_cap, discarded_caps = resolve_risk_caps(caps)
     applied_cap_value = as_float((applied_cap or {}).get("score_cap"))
     final_score = round2(clamp(min(pre_cap_score, applied_cap_value) if applied_cap_value is not None else pre_cap_score, 0, 100)) or 0
+    overlay = dict(overlay)
+    overlay["score_after_risk_caps"] = final_score
+    overlay["capped_by_risk_cap"] = bool(overlay.get("active") and final_score < (as_float(overlay.get("target_score")) or final_score))
     recommended_range = position_range(final_score)
-    decision_explain = build_decision_explain(base_score, pre_cap_score, final_score, position_model, risk_engine, caps, applied_cap)
+    decision_explain = build_decision_explain(
+        base_score,
+        risk_adjusted_score,
+        pre_cap_score,
+        final_score,
+        position_model,
+        risk_engine,
+        caps,
+        applied_cap,
+        overlay,
+    )
     return {
         "account_scope": "stock_account",
         "position_policy_version": POSITION_POLICY_VERSION,
@@ -1713,7 +1896,11 @@ def apply_position_policy(
         "base_market_position_score": base_score,
         "risk_penalty_score": risk_engine.get("risk_penalty_score"),
         "risk_discount": risk_engine.get("risk_discount"),
-        "risk_adjusted_market_position_score": pre_cap_score,
+        "risk_adjusted_market_position_score": risk_adjusted_score,
+        "pre_overlay_market_position_score": risk_adjusted_score,
+        "contrarian_beta_overlay": overlay,
+        "contrarian_beta_overlay_score": overlay.get("intensity_score"),
+        "contrarian_beta_add_score": overlay.get("add_score"),
         "risk_engine": risk_engine,
         "position_model": position_model,
         "decision_explain": decision_explain,
@@ -1970,6 +2157,7 @@ def score_snapshot(snapshot: dict[str, Any], snapshot_path: Path | None = None, 
     final_score = position_policy["market_position_score"]
     pre_cap_score = position_policy["pre_cap_market_position_score"]
     recommended_range = position_policy["recommended_equity_position_range"]
+    contrarian_overlay = position_policy.get("contrarian_beta_overlay", {})
     allocation = allocation_policy(
         final_score,
         opportunity,
@@ -1979,6 +2167,7 @@ def score_snapshot(snapshot: dict[str, Any], snapshot_path: Path | None = None, 
         crowding,
         snapshot,
         position_policy["risk_caps"],
+        contrarian_overlay,
     )
     vol_policy = volatility_policy(snapshot)
     legacy_vol_targeting = legacy_volatility_targeting(snapshot, final_score, recommended_range)
@@ -2003,6 +2192,7 @@ def score_snapshot(snapshot: dict[str, Any], snapshot_path: Path | None = None, 
         "成交额或换手极端放量且估值/波动偏高时，按爆量顶部风险限制股票账户仓位。",
         "前五行业资金或涨幅高度集中且估值/波动偏高时，按主线拥挤顶部风险限制股票账户仓位。",
         "股票账户官方仓位不再按8%目标波动率缩放，波动率仅作为风险扣分、上限和提示。",
+        "深熊逆向加仓只抬高 β核心仓宽基 ETF，不开放 α主动仓，不替代标的研究。",
     ]
     record = {
         "run_id": f"{datetime.now(TZ).strftime('%Y%m%dT%H%M%S')}-{uuid4().hex[:8]}",
@@ -2031,6 +2221,10 @@ def score_snapshot(snapshot: dict[str, Any], snapshot_path: Path | None = None, 
         "risk_penalty_score": position_policy["risk_penalty_score"],
         "risk_discount": position_policy["risk_discount"],
         "risk_adjusted_market_position_score": position_policy["risk_adjusted_market_position_score"],
+        "pre_overlay_market_position_score": position_policy["pre_overlay_market_position_score"],
+        "contrarian_beta_overlay": contrarian_overlay,
+        "contrarian_beta_overlay_score": position_policy["contrarian_beta_overlay_score"],
+        "contrarian_beta_add_score": position_policy["contrarian_beta_add_score"],
         "risk_engine": position_policy["risk_engine"],
         "position_model": position_policy["position_model"],
         "decision_explain": position_policy["decision_explain"],
@@ -2076,6 +2270,7 @@ def score_snapshot(snapshot: dict[str, Any], snapshot_path: Path | None = None, 
             "market_trend_v1 adds trend_state, trend_strength, and trend_duration from index trend, breadth persistence, and liquidity slope",
             "risk_engine_v1 adds continuous risk_penalty_score and risk_discount before hard risk_cap constraints",
             "position_model_v1 maps base position through trend, regime, and risk multipliers before hard risk_cap constraints",
+            "contrarian_beta_overlay_v1 adds a deep-bear value/reversal floor for beta_core only; it does not unlock alpha_active",
         ],
         "key_constraints": key_constraints,
         "data_quality": quality,

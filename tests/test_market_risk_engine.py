@@ -51,7 +51,7 @@ class MarketRiskEngineTest(unittest.TestCase):
         validation = market_scoring.validate_score_record(record)
 
         self.assertTrue(validation["ok"])
-        self.assertEqual(record["model_version"], "v3.3_position")
+        self.assertEqual(record["model_version"], market_scoring.MODEL_VERSION)
         self.assertEqual(record["risk_penalty_score"], record["risk_engine"]["risk_penalty_score"])
         self.assertIn("risk_engine", validation["checked_required_fields"])
 

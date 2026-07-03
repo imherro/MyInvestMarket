@@ -281,18 +281,18 @@
   },
   "macro": {
     "us_10y_treasury_yield_pct": {
-      "date": "2026-06-30",
-      "value": 4.44,
+      "date": "2026-07-01",
+      "value": 4.48,
       "source": "FRED:DGS10"
     },
     "dxy": {
       "date": "2026-07-02",
-      "value": 101.131,
+      "value": 100.815,
       "source": "yfinance:DX-Y.NYB"
     },
     "usd_cny": {
       "date": "2026-07-02",
-      "value": 6.7803,
+      "value": 6.7942,
       "source": "yfinance:CNY=X"
     },
     "china_10y_government_bond_yield_pct": {
@@ -307,7 +307,7 @@
         "source": "FRED:FEDFUNDS"
       },
       "DFF": {
-        "date": "2026-06-30",
+        "date": "2026-07-01",
         "value": 3.63,
         "source": "FRED:DFF"
       },
@@ -359,8 +359,8 @@
     "feature_freshness": {
       "macro.us_10y_treasury_yield_pct": {
         "basis_date": "2026-07-02",
-        "observation_date": "2026-06-30",
-        "lag_days": 2,
+        "observation_date": "2026-07-01",
+        "lag_days": 1,
         "source": "FRED:DGS10",
         "status": "available",
         "ignored_future_observations": 0
@@ -399,8 +399,8 @@
       },
       "macro.fred_key_indicators.DFF": {
         "basis_date": "2026-07-02",
-        "observation_date": "2026-06-30",
-        "lag_days": 2,
+        "observation_date": "2026-07-01",
+        "lag_days": 1,
         "source": "FRED:DFF",
         "status": "available",
         "ignored_future_observations": 0
@@ -422,7 +422,7 @@
         "ignored_future_observations": 0
       }
     },
-    "generated_at": "2026-07-02T20:11:23+08:00",
+    "generated_at": "2026-07-03T11:27:33+08:00",
     "basis": "latest complete Tushare A-share trading day at or before as_of",
     "notes": [
       "optional valuation.indices.899050.BJ: empty index_dailybasic",

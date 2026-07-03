@@ -34,6 +34,7 @@ python .\scripts\run_post_close_update.py
 - 写入 `data/market_analysis_*.md` 市场研究报告。
 - 验证 `/api/index`、`/api/research/latest/market-score`、`/api/research/latest/market-analysis`、`/api/research/latest/model-validation`、`/api/research/latest/model-health`、`/api/research/latest/strategy-robustness`。
 - `/api/index.market_data_status` 会对比本地最新完整市场快照、最新评分基准日和研究报告绑定关系；如果某个完整交易日已有数据但缺少对应研究，首页第一行会显示醒目预警。
+- `/api/index.summary.contrarian_beta_overlay` 输出深熊赔率逆向模块：仅在低估、深回撤、拥挤不高且资金未踩踏时启用，只抬高 β核心仓。
 - `/api/index.allocation_policy` 输出 `allocation_policy_v2` 四仓配置：β核心仓、α主动仓、防御因子仓、流动性仓。
 - 有更新时提交并推送到 `origin main`。
 

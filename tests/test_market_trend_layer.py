@@ -78,7 +78,7 @@ class MarketTrendLayerTest(unittest.TestCase):
         validation = market_scoring.validate_score_record(record)
 
         self.assertTrue(validation["ok"])
-        self.assertEqual(record["model_version"], "v3.3_position")
+        self.assertEqual(record["model_version"], market_scoring.MODEL_VERSION)
         self.assertIn("market_trend_layer", validation["checked_required_fields"])
 
 

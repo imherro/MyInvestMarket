@@ -112,6 +112,7 @@ def audit_scenario(
     risk_caps: list[dict[str, Any]],
     thesis: str,
     expectations: list[tuple[str, Callable[[dict[str, Any]], bool]]],
+    contrarian_overlay: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     recommended_range = market_scoring.position_range(position_score)
     policy = market_scoring.allocation_policy(
@@ -123,6 +124,7 @@ def audit_scenario(
         {"penalty": crowding_penalty},
         {},
         risk_caps,
+        contrarian_overlay,
     )
     checks = base_checks(policy)
     checks.extend({"name": name, "ok": bool(check(policy)), "detail": thesis} for name, check in expectations)
@@ -137,6 +139,7 @@ def audit_scenario(
             "crowding_penalty": crowding_penalty,
             "recommended_range": recommended_range,
             "risk_cap_reasons": [cap["reason"] for cap in risk_caps],
+            "contrarian_overlay": contrarian_overlay or {"active": False},
         },
         "policy": policy,
         "sleeve_ranges": {
@@ -184,6 +187,37 @@ def scenarios() -> list[dict[str, Any]]:
                 ("liquidity_low", lambda policy: sleeve_upper(policy, "liquidity") <= 10),
                 ("alpha_open", lambda policy: sleeve_mid(policy, "alpha_active") >= 35),
                 ("defensive_small", lambda policy: sleeve_upper(policy, "defensive_factor") <= 12),
+            ],
+        ),
+        audit_scenario(
+            key="deep_bear_contrarian",
+            label="深熊赔率逆向加仓",
+            position_score=48,
+            opportunity_score=38,
+            pre_cap_score=48,
+            crowding_penalty=3,
+            modules=modules_from_pct(index_trend=25, breadth=22, liquidity=35, capital_flow=30, mainline=20, valuation=88, macro=45),
+            risk_caps=[],
+            thesis="估值便宜且深回撤时，可以左侧提高股票账户风险资产，但只交给β核心仓，不打开alpha追涨。",
+            contrarian_overlay={
+                "version": "contrarian_beta_overlay_v1",
+                "active": True,
+                "mode": "beta_core_floor",
+                "intensity_score": 76,
+                "score_floor": 48,
+                "current_score_before_overlay": 30,
+                "target_score": 48,
+                "add_score": 18,
+                "beta_core_only": True,
+                "alpha_active_unlocked": False,
+                "drivers": ["test fixture"],
+                "blockers": [],
+            },
+            expectations=[
+                ("state_is_contrarian", lambda policy: policy.get("state") == "深熊赔率期"),
+                ("beta_dominates", lambda policy: sleeve_mid(policy, "beta_core") > sleeve_mid(policy, "defensive_factor") and sleeve_mid(policy, "beta_core") > sleeve_mid(policy, "alpha_active")),
+                ("alpha_capped", lambda policy: sleeve_upper(policy, "alpha_active") <= 5),
+                ("liquidity_buffer", lambda policy: sleeve_lower(policy, "liquidity") >= 40),
             ],
         ),
         audit_scenario(
@@ -283,7 +317,7 @@ def markdown_report(result: dict[str, Any]) -> str:
         "- 检查四个一级仓位是否固定为 `beta_core / alpha_active / defensive_factor / liquidity`。",
         "- 检查 `流动性仓 = 100% - 风险资产总仓位`。",
         "- 检查 `β核心仓 + α主动仓 + 防御因子仓` 的中位数是否接近风险资产总仓位中位数。",
-        "- 针对熊末、主升、牛末、顶部反抽、极端杀跌分别设置直觉约束。",
+        "- 针对熊末、主升、深熊逆向、牛末、顶部反抽、极端杀跌分别设置直觉约束。",
         "",
         "## 场景结果",
         "",

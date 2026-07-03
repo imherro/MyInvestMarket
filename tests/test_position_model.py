@@ -54,7 +54,7 @@ class PositionModelTest(unittest.TestCase):
         validation = market_scoring.validate_score_record(record)
 
         self.assertTrue(validation["ok"])
-        self.assertEqual(record["model_version"], "v3.3_position")
+        self.assertEqual(record["model_version"], market_scoring.MODEL_VERSION)
         self.assertIn("position_model", validation["checked_required_fields"])
         self.assertIn("decision_explain", validation["checked_required_fields"])
 

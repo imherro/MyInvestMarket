@@ -307,6 +307,47 @@ select {
   color: var(--muted);
 }
 
+.contrarian-band {
+  margin-top: 24px;
+  padding: 18px;
+}
+
+.contrarian-band .section-head {
+  margin-top: 0;
+}
+
+.contrarian-grid {
+  display: grid;
+  grid-template-columns: minmax(180px, 0.9fr) minmax(220px, 1fr) minmax(260px, 1.1fr);
+  gap: 12px;
+}
+
+.contrarian-panel {
+  min-height: 128px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-soft);
+}
+
+.contrarian-panel strong {
+  display: block;
+  margin-top: 8px;
+  color: var(--teal);
+  font-size: 1.35rem;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.contrarian-panel small {
+  display: block;
+  margin-top: 8px;
+  color: var(--muted);
+  font-size: 0.82rem;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
 .section-head {
   display: flex;
   align-items: center;
@@ -1187,6 +1228,10 @@ td.score-risk {
     grid-template-columns: 1fr;
   }
 
+  .contrarian-grid {
+    grid-template-columns: 1fr;
+  }
+
   .api-catalog-grid {
     grid-template-columns: 1fr;
   }
@@ -1231,6 +1276,7 @@ td.score-risk {
   .allocation-grid,
   .allocation-triggers,
   .risk-overview-grid,
+  .contrarian-grid,
   .module-grid,
   .position-benchmark-grid,
   .api-catalog-grid,

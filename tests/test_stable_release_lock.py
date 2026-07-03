@@ -35,8 +35,8 @@ EXPECTED_STABLE_RISK_CAP_REASONS = (
 
 class StableReleaseLockTest(unittest.TestCase):
     def test_model_version_is_stable_release(self) -> None:
-        self.assertEqual(market_scoring.MODEL_VERSION, "v3.3_position")
-        self.assertEqual(market_scoring.POSITION_POLICY_VERSION, "stock_account_position_policy_v3")
+        self.assertEqual(market_scoring.MODEL_VERSION, "v3.4_contrarian")
+        self.assertEqual(market_scoring.POSITION_POLICY_VERSION, "stock_account_position_policy_v4")
         self.assertEqual(market_scoring.ALLOCATION_POLICY_VERSION, "allocation_policy_v2")
 
     def test_risk_cap_reasons_are_frozen(self) -> None:
@@ -48,10 +48,10 @@ class StableReleaseLockTest(unittest.TestCase):
         service = serve_market_web.service_version_result()
         index = serve_market_web.homepage_index_result()
 
-        self.assertEqual(service["stable_release"]["model_version"], "v3.3_position")
+        self.assertEqual(service["stable_release"]["model_version"], "v3.4_contrarian")
         self.assertTrue(service["stable_release"]["core_rules_frozen"])
         self.assertEqual(service["stable_release"]["risk_cap_reasons"], list(EXPECTED_STABLE_RISK_CAP_REASONS))
-        self.assertEqual(index["stable_release"]["model_version"], "v3.3_position")
+        self.assertEqual(index["stable_release"]["model_version"], "v3.4_contrarian")
         self.assertTrue(index["stable_release"]["core_rules_frozen"])
         self.assertEqual(service["stable_release"]["allocation_policy_version"], "allocation_policy_v2")
 
@@ -83,7 +83,7 @@ class StableReleaseLockTest(unittest.TestCase):
                 snapshot_bytes=snapshot_path.read_bytes(),
             )
 
-        self.assertEqual(record["model_version"], "v3.3_position")
+        self.assertEqual(record["model_version"], "v3.4_contrarian")
         self.assertEqual(record["allocation_policy_version"], "allocation_policy_v2")
         self.assertEqual(record["market_opportunity_score"], 56.11)
         self.assertEqual(record["crowding_penalty"], 19.91)

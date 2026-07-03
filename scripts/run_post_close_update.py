@@ -347,6 +347,9 @@ def write_report(snapshot: dict[str, Any], record: dict[str, Any]) -> Path:
 | 趋势乘数 | {fmt((record.get('position_model') or {}).get('trend_multiplier') if isinstance(record.get('position_model'), dict) else None)} |
 | 区制乘数 | {fmt((record.get('position_model') or {}).get('regime_multiplier') if isinstance(record.get('position_model'), dict) else None)} |
 | 风险折扣后仓位分 | {fmt(record.get('risk_adjusted_market_position_score'))} |
+| 逆向β加仓前仓位分 | {fmt(record.get('pre_overlay_market_position_score'))} |
+| 深熊逆向β强度 | {fmt(record.get('contrarian_beta_overlay_score'))} |
+| 深熊逆向β加分 | {fmt(record.get('contrarian_beta_add_score'))} |
 | 扣上限前仓位分 | {fmt(record.get('pre_cap_market_position_score'))} |
 | 股票账户仓位分 | {fmt(record.get('market_position_score'))} |
 | 官方推荐权益区间 | {fmt(record.get('recommended_equity_position_range') or record.get('base_equity_position_range') or record.get('equity_position_range'))} |
@@ -369,6 +372,7 @@ def write_report(snapshot: dict[str, Any], record: dict[str, Any]) -> Path:
 - 上涨家数 `{fmt(breadth.get('advancers'))}`，下跌家数 `{fmt(breadth.get('decliners'))}`，个股中位数涨跌 `{fmt(breadth.get('median_pct_change'))}%`。
 - 估值便宜度 `{fmt(valuation_score)}%`，30日年化波动率 `{fmt(round(realized_vol * 100, 2) if isinstance(realized_vol, (int, float)) else None)}%`。
 - 北向净流入 `{fmt((snapshot.get('capital_flow', {}) or {}).get('northbound_net_inflow_100m_cny'))}` 亿元，主力净流入 `{fmt((snapshot.get('capital_flow', {}) or {}).get('main_net_inflow_100m_cny'))}` 亿元。
+- 深熊逆向β模块：`{'启用' if ((record.get('contrarian_beta_overlay') or {}).get('active') if isinstance(record.get('contrarian_beta_overlay'), dict) else False) else '未启用'}`，加分 `{fmt(record.get('contrarian_beta_add_score'))}`；该模块只允许 β核心仓承接，不开放 α主动仓。
 
 ## 主线方向
 

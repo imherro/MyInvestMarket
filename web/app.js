@@ -132,6 +132,7 @@ function renderAll() {
   renderBasisStatus();
   renderSummary();
   renderRiskOverview();
+  renderContrarianOverlay();
   renderAllocationPolicy();
   renderPositionMap();
   renderMarketCycleReference();
@@ -182,10 +183,12 @@ function renderSummary() {
   setText("confidence", `置信度 ${confidenceLabel(latest.confidence)}`);
   const recommendedRange = officialPositionRange(latest);
   const riskCapCount = (latest.risk_caps || []).length;
+  const overlay = latest.contrarian_beta_overlay || {};
+  const overlayNote = overlay.active ? ` · 逆向β +${formatNumber(latest.contrarian_beta_add_score)}` : "";
   setText("positionRange", `官方推荐权益 ${recommendedRange}`);
   setText(
     "volAdjustedRange",
-    `${latest.position_policy_version || "stock_account_position_policy_v2"} · ${riskCapCount ? `已触发${riskCapCount}项风险上限` : "未触发风险上限"}`,
+    `${latest.position_policy_version || "stock_account_position_policy_v2"} · ${riskCapCount ? `已触发${riskCapCount}项风险上限` : "未触发风险上限"}${overlayNote}`,
   );
   setMeter("positionMeter", latest.market_position_score, 100);
   setMeter("opportunityMeter", latest.market_opportunity_score, 100);
@@ -233,6 +236,44 @@ function renderRiskOverview() {
   setText("riskCapDetail", caps.message || (riskCaps.length ? `已触发 ${riskCaps.length} 项风险上限。` : "未触发风险上限。"));
   renderMessageList("qualityWarnings", warnings, "暂无数据质量 warning");
   renderMessageList("riskCapList", riskCaps, "未触发风险上限", riskCapMessage);
+}
+
+function renderContrarianOverlay() {
+  const latest = state.latest;
+  const summaryOverlay = state.index?.summary?.contrarian_beta_overlay;
+  const policyOverlay = state.index?.allocation_policy?.contrarian_beta_overlay;
+  const overlay = summaryOverlay || policyOverlay || latest?.contrarian_beta_overlay || {};
+  if (!latest) {
+    setText("contrarianStatus", "暂无评分");
+    setText("contrarianActive", "--");
+    setText("contrarianAction", "--");
+    setText("contrarianScore", "--");
+    setText("contrarianFloor", "--");
+    setText("contrarianBetaOnly", "--");
+    renderMessageList("contrarianDrivers", [], "暂无逆向仓位数据");
+    return;
+  }
+
+  const active = Boolean(overlay.active);
+  const addScore = numeric(overlay.add_score);
+  const intensity = numeric(overlay.intensity_score);
+  const floor = numeric(overlay.score_floor);
+  setText("contrarianStatus", active ? "已启用" : "未启用");
+  setText("contrarianActive", active ? "β核心仓加仓" : "保持常规仓位");
+  setText(
+    "contrarianAction",
+    active
+      ? `仓位分从 ${formatNumber(overlay.current_score_before_overlay)} 抬到 ${formatNumber(overlay.target_score)}`
+      : "未满足低估、深回撤、资金稳定的组合条件",
+  );
+  setText("contrarianScore", `${formatNumber(intensity)} / +${formatNumber(addScore)}`);
+  setText("contrarianFloor", active ? `仓位分地板 ${formatNumber(floor)}，风险上限后 ${formatNumber(overlay.score_after_risk_caps)}` : "强度不足或存在阻断条件");
+  setText("contrarianBetaOnly", overlay.beta_core_only === false ? "需复核" : "β only");
+  renderMessageList(
+    "contrarianDrivers",
+    active ? overlay.drivers || [] : overlay.blockers || [],
+    active ? "暂无触发依据" : "暂无阻断条件",
+  );
 }
 
 function buildRiskOverviewFromRecord(record) {

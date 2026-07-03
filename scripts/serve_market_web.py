@@ -1062,6 +1062,8 @@ def position_policy_map_result(latest: dict[str, object]) -> dict[str, object]:
         "current": {
             "market_position_score": latest.get("market_position_score"),
             "pre_cap_market_position_score": latest.get("pre_cap_market_position_score"),
+            "pre_overlay_market_position_score": latest.get("pre_overlay_market_position_score"),
+            "contrarian_beta_overlay": latest.get("contrarian_beta_overlay", {}),
             "recommended_equity_position_range": recommended_equity_position_range(latest),
             "risk_caps": latest.get("risk_caps", []),
             "market_regime": latest.get("market_regime"),
@@ -1196,6 +1198,8 @@ def allocation_policy_result(latest: dict[str, object], records: list[dict[str, 
         "alpha_active_components": policy.get("alpha_active_components") if isinstance(policy.get("alpha_active_components"), dict) else {},
         "principles": policy.get("principles", []) if isinstance(policy.get("principles"), list) else [],
         "score_inputs": policy.get("score_inputs", {}) if isinstance(policy.get("score_inputs"), dict) else {},
+        "contrarian_beta_overlay": policy.get("contrarian_beta_overlay", {}) if isinstance(policy.get("contrarian_beta_overlay"), dict) else {},
+        "beta_core_overlay_only": bool(policy.get("beta_core_overlay_only")),
         "sleeves": sleeves,
         "triggers": policy.get("triggers", []) if isinstance(policy.get("triggers"), list) else [],
         "notes": policy.get("notes", []) if isinstance(policy.get("notes"), list) else [],
@@ -1429,6 +1433,10 @@ def homepage_index_result() -> dict[str, object]:
             "risk_penalty_score": latest.get("risk_penalty_score"),
             "risk_discount": latest.get("risk_discount"),
             "risk_adjusted_market_position_score": latest.get("risk_adjusted_market_position_score"),
+            "pre_overlay_market_position_score": latest.get("pre_overlay_market_position_score"),
+            "contrarian_beta_overlay": latest.get("contrarian_beta_overlay", {}),
+            "contrarian_beta_overlay_score": latest.get("contrarian_beta_overlay_score"),
+            "contrarian_beta_add_score": latest.get("contrarian_beta_add_score"),
             "risk_engine": latest.get("risk_engine", {}),
             "position_model": latest.get("position_model", {}),
             "decision_explain": latest.get("decision_explain", {}),
@@ -1499,6 +1507,13 @@ def homepage_index_result() -> dict[str, object]:
                     "detail": f"{len(latest.get('risk_caps', []) or [])} 项风险上限",
                 },
                 {
+                    "id": "contrarian_beta_overlay",
+                    "label": "深熊逆向β",
+                    "value": latest.get("contrarian_beta_add_score"),
+                    "max": 100,
+                    "detail": "只抬 β核心仓" if ((latest.get("contrarian_beta_overlay") or {}).get("active") if isinstance(latest.get("contrarian_beta_overlay"), dict) else False) else "未启用",
+                },
+                {
                     "id": "market_regime",
                     "label": "市场状态",
                     "value": latest.get("market_regime"),
@@ -1561,6 +1576,10 @@ def homepage_index_result() -> dict[str, object]:
                     }
                     for row in records
                 ],
+                "contrarian_beta_add_score": [
+                    {"basis_trade_date": row.get("basis_trade_date"), "scored_at": row.get("scored_at"), "value": row.get("contrarian_beta_add_score")}
+                    for row in records
+                ],
                 "market_opportunity_score": [
                     {"basis_trade_date": row.get("basis_trade_date"), "scored_at": row.get("scored_at"), "value": row.get("market_opportunity_score")}
                     for row in records
@@ -1599,6 +1618,10 @@ def homepage_index_result() -> dict[str, object]:
                     "risk_penalty_score": row.get("risk_penalty_score"),
                     "risk_discount": row.get("risk_discount"),
                     "risk_adjusted_market_position_score": row.get("risk_adjusted_market_position_score"),
+                    "pre_overlay_market_position_score": row.get("pre_overlay_market_position_score"),
+                    "contrarian_beta_overlay_score": row.get("contrarian_beta_overlay_score"),
+                    "contrarian_beta_add_score": row.get("contrarian_beta_add_score"),
+                    "contrarian_beta_overlay": row.get("contrarian_beta_overlay", {}),
                     "position_model_version": (row.get("position_model") or {}).get("version") if isinstance(row.get("position_model"), dict) else None,
                     "pre_cap_market_position_score": row.get("pre_cap_market_position_score")
                     or row.get("base_market_position_score")
