@@ -1,0 +1,1482 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-07-03T11:38:24+08:00",
+  "model_version": "v3.4_contrarian",
+  "position_policy_version": "stock_account_position_policy_v4",
+  "overlay_version": "contrarian_beta_overlay_v1",
+  "parameters": {
+    "valuation_enable_min": 60,
+    "worst_drawdown_60d_enable_min_pct": 10,
+    "crowding_penalty_max": 10,
+    "opportunity_score_overheat_max": 65,
+    "mainline_score_pct_overheat_max": 70,
+    "stampede_main_net_max_100m_cny": -1000,
+    "stampede_northbound_max_100m_cny": -50,
+    "realized_vol_30d_tail_max": 0.5,
+    "intensity_enable_min": 55,
+    "score_floor_min": 35,
+    "score_floor_max": 60
+  },
+  "passed": true,
+  "checks": [
+    {
+      "name": "boundary_cases_passed",
+      "ok": true,
+      "detail": "10/10 cases passed"
+    },
+    {
+      "name": "sensitivity_monotonic",
+      "ok": true,
+      "detail": "intensity rises with valuation cheapness and drawdown depth under fixed other inputs"
+    },
+    {
+      "name": "history_probe_passed",
+      "ok": true,
+      "detail": "active_count=0, record_count=13"
+    }
+  ],
+  "cases": [
+    {
+      "key": "ideal_deep_bear_repair",
+      "label": "理想深熊赔率",
+      "expectation": "应启用，并抬高β核心仓，不打开α主动仓。",
+      "inputs": {
+        "opportunity_score": 42,
+        "current_score": 29,
+        "crowding_penalty": 3,
+        "mainline_pct": 20
+      },
+      "overlay": {
+        "version": "contrarian_beta_overlay_v1",
+        "active": true,
+        "mode": "beta_core_floor",
+        "intensity_score": 88.58,
+        "score_floor": 60.0,
+        "current_score_before_overlay": 29,
+        "target_score": 60.0,
+        "add_score": 31.0,
+        "beta_core_only": true,
+        "alpha_active_unlocked": false,
+        "drivers": [
+          "估值便宜度 88.0%，指数最深60日回撤 22.0%，平均回撤 18.75%。",
+          "上涨家数占比 16.0%，跌超3%占比 24.0%。",
+          "北向净流入 10.0 亿元，主力净流入 -250.0 亿元，30日年化波动 32.0%。",
+          "逆向加仓只抬 β核心仓宽基 ETF，不解锁 α主动仓，不用于个股或主线追涨。"
+        ],
+        "blockers": [],
+        "inputs": {
+          "valuation_score": 88.0,
+          "worst_drawdown_60d_pct": 22.0,
+          "average_drawdown_60d_pct": 18.75,
+          "advancer_ratio_pct": 16.0,
+          "strong_decliners_lt_minus3_pct": 24.0,
+          "limit_down": 45.0,
+          "northbound_net_inflow_100m_cny": 10.0,
+          "main_net_inflow_100m_cny": -250.0,
+          "realized_vol_30d_pct": 32.0,
+          "crowding_penalty": 3.0,
+          "risk_level": "medium"
+        },
+        "components": {
+          "valuation": 28.0,
+          "drawdown": 25.71,
+          "capitulation": 18.22,
+          "stabilization": 16.64
+        },
+        "drawdown": {
+          "available": true,
+          "worst_depth_pct": 22.0,
+          "average_depth_pct": 18.75,
+          "indices": [
+            {
+              "code": "000001.SH",
+              "drawdown_60d_pct": -18.0,
+              "depth_pct": 18.0
+            },
+            {
+              "code": "399001.SZ",
+              "drawdown_60d_pct": -20.0,
+              "depth_pct": 20.0
+            },
+            {
+              "code": "399006.SZ",
+              "drawdown_60d_pct": -22.0,
+              "depth_pct": 22.0
+            },
+            {
+              "code": "899050.BJ",
+              "drawdown_60d_pct": -15.0,
+              "depth_pct": 15.0
+            }
+          ]
+        }
+      },
+      "allocation_policy": {
+        "version": "allocation_policy_v2",
+        "account_scope": "stock_account",
+        "state": "深熊赔率期",
+        "total_risk_asset_range": "55%-75%",
+        "risk_asset_formula": "beta_core + alpha_active + defensive_factor",
+        "liquidity_formula": "100% - total_risk_asset_range",
+        "risk_asset_share_ranges": {
+          "beta_core": [
+            0.65,
+            0.85
+          ],
+          "alpha_active": [
+            0,
+            0.08
+          ],
+          "defensive_factor": [
+            0.23,
+            0.3
+          ]
+        },
+        "contrarian_beta_overlay": {
+          "version": "contrarian_beta_overlay_v1",
+          "active": true,
+          "mode": "beta_core_floor",
+          "intensity_score": 88.58,
+          "score_floor": 60.0,
+          "current_score_before_overlay": 29,
+          "target_score": 60.0,
+          "add_score": 31.0,
+          "beta_core_only": true,
+          "alpha_active_unlocked": false,
+          "drivers": [
+            "估值便宜度 88.0%，指数最深60日回撤 22.0%，平均回撤 18.75%。",
+            "上涨家数占比 16.0%，跌超3%占比 24.0%。",
+            "北向净流入 10.0 亿元，主力净流入 -250.0 亿元，30日年化波动 32.0%。",
+            "逆向加仓只抬 β核心仓宽基 ETF，不解锁 α主动仓，不用于个股或主线追涨。"
+          ],
+          "blockers": [],
+          "inputs": {
+            "valuation_score": 88.0,
+            "worst_drawdown_60d_pct": 22.0,
+            "average_drawdown_60d_pct": 18.75,
+            "advancer_ratio_pct": 16.0,
+            "strong_decliners_lt_minus3_pct": 24.0,
+            "limit_down": 45.0,
+            "northbound_net_inflow_100m_cny": 10.0,
+            "main_net_inflow_100m_cny": -250.0,
+            "realized_vol_30d_pct": 32.0,
+            "crowding_penalty": 3.0,
+            "risk_level": "medium"
+          },
+          "components": {
+            "valuation": 28.0,
+            "drawdown": 25.71,
+            "capitulation": 18.22,
+            "stabilization": 16.64
+          },
+          "drawdown": {
+            "available": true,
+            "worst_depth_pct": 22.0,
+            "average_depth_pct": 18.75,
+            "indices": [
+              {
+                "code": "000001.SH",
+                "drawdown_60d_pct": -18.0,
+                "depth_pct": 18.0
+              },
+              {
+                "code": "399001.SZ",
+                "drawdown_60d_pct": -20.0,
+                "depth_pct": 20.0
+              },
+              {
+                "code": "399006.SZ",
+                "drawdown_60d_pct": -22.0,
+                "depth_pct": 22.0
+              },
+              {
+                "code": "899050.BJ",
+                "drawdown_60d_pct": -15.0,
+                "depth_pct": 15.0
+              }
+            ]
+          }
+        },
+        "beta_core_overlay_only": true,
+        "alpha_active_components": {
+          "industry_theme_etf": "α主动仓基础部分，承接主线行业和主题 ETF。",
+          "leader_stock": "α主动仓增强部分，只在主线、成交和宽度确认时开放。",
+          "leader_stock_internal_cap": "龙头个股合计建议不超过 α主动仓的 30%-40%，退潮时优先收缩。"
+        },
+        "score_inputs": {
+          "market_position_score": 60.0,
+          "market_opportunity_score": 42,
+          "pre_cap_market_position_score": 60.0,
+          "crowding_penalty": 3.0,
+          "index_trend_score_pct": 25.0,
+          "breadth_score_pct": 22.0,
+          "liquidity_score_pct": 35.0,
+          "capital_flow_score_pct": 32.0,
+          "mainline_score_pct": 20.0,
+          "valuation_score_pct": 88.0,
+          "macro_score_pct": 45.0
+        },
+        "principles": [
+          "风险资产总仓位由最终仓位分决定，β核心仓、α主动仓、防御因子仓共享这部分风险资产。",
+          "β核心仓只承接宽基 ETF，不承担主线押注任务。",
+          "α主动仓合并主线行业 ETF 和龙头个股，主线退潮或高波动时最先收缩。",
+          "防御因子仓仍是权益资产，承担红利、低波、自由现金流和质量因子暴露。",
+          "流动性仓承接未配置风险资产，是现金管理和再平衡弹药。"
+        ],
+        "sleeves": [
+          {
+            "key": "beta_core",
+            "label": "β核心仓（宽基ETF）",
+            "name": "β核心仓（宽基ETF）",
+            "asset": "宽基ETF",
+            "role": "市场β底盘",
+            "driver": "风险资产总仓位、宽基趋势、估值分位、市场宽度",
+            "examples": [
+              "沪深300ETF",
+              "中证A500ETF",
+              "中证500ETF",
+              "纳指ETF"
+            ],
+            "target_range": "40%-52%",
+            "midpoint": 46.0
+          },
+          {
+            "key": "alpha_active",
+            "label": "α主动仓（行业ETF + 龙头个股）",
+            "name": "α主动仓（行业ETF + 龙头个股）",
+            "asset": "主线行业ETF/龙头个股",
+            "role": "主动超额收益",
+            "driver": "主线强度、资金持续性、成交额、拥挤退潮风险",
+            "examples": [
+              "半导体ETF",
+              "人工智能ETF",
+              "主线龙头",
+              "细分龙头"
+            ],
+            "target_range": "0%-5%",
+            "midpoint": 2.5
+          },
+          {
+            "key": "defensive_factor",
+            "label": "防御因子仓（红利/低波/自由现金流）",
+            "name": "防御因子仓（红利/低波/自由现金流）",
+            "asset": "红利低波/自由现金流/质量因子",
+            "role": "权益防御与质量暴露",
+            "driver": "风险偏好、利率环境、低波质量因子、相对抗跌",
+            "examples": [
+              "红利低波ETF",
+              "自由现金流ETF",
+              "质量因子ETF"
+            ],
+            "target_range": "14%-18%",
+            "midpoint": 16.0
+          },
+          {
+            "key": "liquidity",
+            "label": "流动性仓（货币/短债）",
+            "name": "流动性仓（货币/短债）",
+            "asset": "货币/短债/现金管理",
+            "role": "等待权与回撤缓冲",
+            "driver": "风险上限、波动率、资金退潮、数据置信度",
+            "examples": [
+              "货币基金",
+              "短债基金",
+              "短融ETF",
+              "国债逆回购"
+            ],
+            "target_range": "25%-45%",
+            "midpoint": 35.0
+          }
+        ],
+        "triggers": [
+          "指数趋势 25.0%，宽度 22.0%，主线 20.0%，资金 32.0%。",
+          "估值便宜度 88.0%，宏观环境 45.0%，拥挤惩罚 3.0。",
+          "风险资产总区间 55%-75%；流动性仓 = 100% - 风险资产总仓位。",
+          "深熊赔率逆向模块生效：仓位分抬高 31.0，只提高 β核心仓，不开放 α主动仓。",
+          "α主动仓未充分打开：需要主线强度、成交持续和宽度同时确认。"
+        ],
+        "notes": [
+          "所有比例为股票账户内部配置区间，不代表总资产配置。",
+          "单个 ETF、行业、个股仍需由标的研究系统单独确认；本模块只做市场层资金分配。",
+          "旧 allocation_policy_v1 的主线 ETF 与龙头仓在展示层会折算为 α主动仓。"
+        ]
+      },
+      "checks": [
+        {
+          "name": "active_state_matches_expectation",
+          "ok": true,
+          "detail": "expected_active=True, actual=True"
+        },
+        {
+          "name": "min_add_score",
+          "ok": true,
+          "detail": "add_score=31.0, min=20"
+        },
+        {
+          "name": "alpha_stays_locked",
+          "ok": true,
+          "detail": "alpha_active_high=5.0"
+        },
+        {
+          "name": "beta_dominates_defensive",
+          "ok": true,
+          "detail": "beta_mid=46.0, defensive_mid=16.0"
+        },
+        {
+          "name": "score_floor_within_policy_bounds",
+          "ok": true,
+          "detail": "score_floor=60.0"
+        }
+      ],
+      "passed": true
+    },
+    {
+      "key": "valuation_below_threshold",
+      "label": "估值未足够便宜",
+      "expectation": "估值便宜度低于60时应阻断。",
+      "inputs": {
+        "opportunity_score": 42,
+        "current_score": 29,
+        "crowding_penalty": 3,
+        "mainline_pct": 20,
+        "valuation_score": 59.9
+      },
+      "overlay": {
+        "version": "contrarian_beta_overlay_v1",
+        "active": false,
+        "mode": "beta_core_floor",
+        "intensity_score": 60.58,
+        "score_floor": null,
+        "current_score_before_overlay": 29,
+        "target_score": 29,
+        "add_score": 0,
+        "beta_core_only": true,
+        "alpha_active_unlocked": false,
+        "drivers": [],
+        "blockers": [
+          "估值便宜度 59.9%，未达到深熊逆向阈值 60%。"
+        ],
+        "inputs": {
+          "valuation_score": 59.9,
+          "worst_drawdown_60d_pct": 22.0,
+          "average_drawdown_60d_pct": 18.75,
+          "advancer_ratio_pct": 16.0,
+          "strong_decliners_lt_minus3_pct": 24.0,
+          "limit_down": 45.0,
+          "northbound_net_inflow_100m_cny": 10.0,
+          "main_net_inflow_100m_cny": -250.0,
+          "realized_vol_30d_pct": 32.0,
+          "crowding_penalty": 3.0,
+          "risk_level": "medium"
+        },
+        "components": {
+          "valuation": 0.0,
+          "drawdown": 25.71,
+          "capitulation": 18.22,
+          "stabilization": 16.64
+        },
+        "drawdown": {
+          "available": true,
+          "worst_depth_pct": 22.0,
+          "average_depth_pct": 18.75,
+          "indices": [
+            {
+              "code": "000001.SH",
+              "drawdown_60d_pct": -18.0,
+              "depth_pct": 18.0
+            },
+            {
+              "code": "399001.SZ",
+              "drawdown_60d_pct": -20.0,
+              "depth_pct": 20.0
+            },
+            {
+              "code": "399006.SZ",
+              "drawdown_60d_pct": -22.0,
+              "depth_pct": 22.0
+            },
+            {
+              "code": "899050.BJ",
+              "drawdown_60d_pct": -15.0,
+              "depth_pct": 15.0
+            }
+          ]
+        }
+      },
+      "allocation_policy": null,
+      "checks": [
+        {
+          "name": "active_state_matches_expectation",
+          "ok": true,
+          "detail": "expected_active=False, actual=False"
+        },
+        {
+          "name": "blocker_contains_估值便宜度",
+          "ok": true,
+          "detail": "估值便宜度 59.9%，未达到深熊逆向阈值 60%。"
+        }
+      ],
+      "passed": true
+    },
+    {
+      "key": "drawdown_below_threshold",
+      "label": "回撤深度不足",
+      "expectation": "最深60日回撤低于10%时应阻断。",
+      "inputs": {
+        "opportunity_score": 42,
+        "current_score": 29,
+        "crowding_penalty": 3,
+        "mainline_pct": 20,
+        "worst_drawdown_pct": 9.9
+      },
+      "overlay": {
+        "version": "contrarian_beta_overlay_v1",
+        "active": false,
+        "mode": "beta_core_floor",
+        "intensity_score": 62.87,
+        "score_floor": null,
+        "current_score_before_overlay": 29,
+        "target_score": 29,
+        "add_score": 0,
+        "beta_core_only": true,
+        "alpha_active_unlocked": false,
+        "drivers": [],
+        "blockers": [
+          "指数最深60日回撤 9.9%，未达到 10% 深回撤阈值。"
+        ],
+        "inputs": {
+          "valuation_score": 88.0,
+          "worst_drawdown_60d_pct": 9.9,
+          "average_drawdown_60d_pct": 6.65,
+          "advancer_ratio_pct": 16.0,
+          "strong_decliners_lt_minus3_pct": 24.0,
+          "limit_down": 45.0,
+          "northbound_net_inflow_100m_cny": 10.0,
+          "main_net_inflow_100m_cny": -250.0,
+          "realized_vol_30d_pct": 32.0,
+          "crowding_penalty": 3.0,
+          "risk_level": "medium"
+        },
+        "components": {
+          "valuation": 28.0,
+          "drawdown": 0.0,
+          "capitulation": 18.22,
+          "stabilization": 16.64
+        },
+        "drawdown": {
+          "available": true,
+          "worst_depth_pct": 9.9,
+          "average_depth_pct": 6.65,
+          "indices": [
+            {
+              "code": "000001.SH",
+              "drawdown_60d_pct": -5.9,
+              "depth_pct": 5.9
+            },
+            {
+              "code": "399001.SZ",
+              "drawdown_60d_pct": -7.9,
+              "depth_pct": 7.9
+            },
+            {
+              "code": "399006.SZ",
+              "drawdown_60d_pct": -9.9,
+              "depth_pct": 9.9
+            },
+            {
+              "code": "899050.BJ",
+              "drawdown_60d_pct": -2.9,
+              "depth_pct": 2.9
+            }
+          ]
+        }
+      },
+      "allocation_policy": null,
+      "checks": [
+        {
+          "name": "active_state_matches_expectation",
+          "ok": true,
+          "detail": "expected_active=False, actual=False"
+        },
+        {
+          "name": "blocker_contains_指数最深60日回撤",
+          "ok": true,
+          "detail": "指数最深60日回撤 9.9%，未达到 10% 深回撤阈值。"
+        }
+      ],
+      "passed": true
+    },
+    {
+      "key": "crowding_above_threshold",
+      "label": "拥挤仍高",
+      "expectation": "拥挤惩罚高于10时不做左侧扩仓。",
+      "inputs": {
+        "opportunity_score": 42,
+        "current_score": 29,
+        "crowding_penalty": 10.1,
+        "mainline_pct": 20
+      },
+      "overlay": {
+        "version": "contrarian_beta_overlay_v1",
+        "active": false,
+        "mode": "beta_core_floor",
+        "intensity_score": 88.58,
+        "score_floor": null,
+        "current_score_before_overlay": 29,
+        "target_score": 29,
+        "add_score": 0,
+        "beta_core_only": true,
+        "alpha_active_unlocked": false,
+        "drivers": [],
+        "blockers": [
+          "拥挤惩罚 10.1，不适合左侧扩仓。"
+        ],
+        "inputs": {
+          "valuation_score": 88.0,
+          "worst_drawdown_60d_pct": 22.0,
+          "average_drawdown_60d_pct": 18.75,
+          "advancer_ratio_pct": 16.0,
+          "strong_decliners_lt_minus3_pct": 24.0,
+          "limit_down": 45.0,
+          "northbound_net_inflow_100m_cny": 10.0,
+          "main_net_inflow_100m_cny": -250.0,
+          "realized_vol_30d_pct": 32.0,
+          "crowding_penalty": 10.1,
+          "risk_level": "medium"
+        },
+        "components": {
+          "valuation": 28.0,
+          "drawdown": 25.71,
+          "capitulation": 18.22,
+          "stabilization": 16.64
+        },
+        "drawdown": {
+          "available": true,
+          "worst_depth_pct": 22.0,
+          "average_depth_pct": 18.75,
+          "indices": [
+            {
+              "code": "000001.SH",
+              "drawdown_60d_pct": -18.0,
+              "depth_pct": 18.0
+            },
+            {
+              "code": "399001.SZ",
+              "drawdown_60d_pct": -20.0,
+              "depth_pct": 20.0
+            },
+            {
+              "code": "399006.SZ",
+              "drawdown_60d_pct": -22.0,
+              "depth_pct": 22.0
+            },
+            {
+              "code": "899050.BJ",
+              "drawdown_60d_pct": -15.0,
+              "depth_pct": 15.0
+            }
+          ]
+        }
+      },
+      "allocation_policy": null,
+      "checks": [
+        {
+          "name": "active_state_matches_expectation",
+          "ok": true,
+          "detail": "expected_active=False, actual=False"
+        },
+        {
+          "name": "blocker_contains_拥挤惩罚",
+          "ok": true,
+          "detail": "拥挤惩罚 10.1，不适合左侧扩仓。"
+        }
+      ],
+      "passed": true
+    },
+    {
+      "key": "opportunity_overheat_guard",
+      "label": "机会分偏热",
+      "expectation": "机会分已高于65时不追高。",
+      "inputs": {
+        "opportunity_score": 66,
+        "current_score": 29,
+        "crowding_penalty": 3,
+        "mainline_pct": 20
+      },
+      "overlay": {
+        "version": "contrarian_beta_overlay_v1",
+        "active": false,
+        "mode": "beta_core_floor",
+        "intensity_score": 88.58,
+        "score_floor": null,
+        "current_score_before_overlay": 29,
+        "target_score": 29,
+        "add_score": 0,
+        "beta_core_only": true,
+        "alpha_active_unlocked": false,
+        "drivers": [],
+        "blockers": [
+          "机会分或主线强度已经偏热，逆向模块不追高。"
+        ],
+        "inputs": {
+          "valuation_score": 88.0,
+          "worst_drawdown_60d_pct": 22.0,
+          "average_drawdown_60d_pct": 18.75,
+          "advancer_ratio_pct": 16.0,
+          "strong_decliners_lt_minus3_pct": 24.0,
+          "limit_down": 45.0,
+          "northbound_net_inflow_100m_cny": 10.0,
+          "main_net_inflow_100m_cny": -250.0,
+          "realized_vol_30d_pct": 32.0,
+          "crowding_penalty": 3.0,
+          "risk_level": "medium"
+        },
+        "components": {
+          "valuation": 28.0,
+          "drawdown": 25.71,
+          "capitulation": 18.22,
+          "stabilization": 16.64
+        },
+        "drawdown": {
+          "available": true,
+          "worst_depth_pct": 22.0,
+          "average_depth_pct": 18.75,
+          "indices": [
+            {
+              "code": "000001.SH",
+              "drawdown_60d_pct": -18.0,
+              "depth_pct": 18.0
+            },
+            {
+              "code": "399001.SZ",
+              "drawdown_60d_pct": -20.0,
+              "depth_pct": 20.0
+            },
+            {
+              "code": "399006.SZ",
+              "drawdown_60d_pct": -22.0,
+              "depth_pct": 22.0
+            },
+            {
+              "code": "899050.BJ",
+              "drawdown_60d_pct": -15.0,
+              "depth_pct": 15.0
+            }
+          ]
+        }
+      },
+      "allocation_policy": null,
+      "checks": [
+        {
+          "name": "active_state_matches_expectation",
+          "ok": true,
+          "detail": "expected_active=False, actual=False"
+        },
+        {
+          "name": "blocker_contains_不追高",
+          "ok": true,
+          "detail": "机会分或主线强度已经偏热，逆向模块不追高。"
+        }
+      ],
+      "passed": true
+    },
+    {
+      "key": "mainline_overheat_guard",
+      "label": "主线强度偏热",
+      "expectation": "主线强度已高于70时不追高。",
+      "inputs": {
+        "opportunity_score": 42,
+        "current_score": 29,
+        "crowding_penalty": 3,
+        "mainline_pct": 71
+      },
+      "overlay": {
+        "version": "contrarian_beta_overlay_v1",
+        "active": false,
+        "mode": "beta_core_floor",
+        "intensity_score": 88.58,
+        "score_floor": null,
+        "current_score_before_overlay": 29,
+        "target_score": 29,
+        "add_score": 0,
+        "beta_core_only": true,
+        "alpha_active_unlocked": false,
+        "drivers": [],
+        "blockers": [
+          "机会分或主线强度已经偏热，逆向模块不追高。"
+        ],
+        "inputs": {
+          "valuation_score": 88.0,
+          "worst_drawdown_60d_pct": 22.0,
+          "average_drawdown_60d_pct": 18.75,
+          "advancer_ratio_pct": 16.0,
+          "strong_decliners_lt_minus3_pct": 24.0,
+          "limit_down": 45.0,
+          "northbound_net_inflow_100m_cny": 10.0,
+          "main_net_inflow_100m_cny": -250.0,
+          "realized_vol_30d_pct": 32.0,
+          "crowding_penalty": 3.0,
+          "risk_level": "medium"
+        },
+        "components": {
+          "valuation": 28.0,
+          "drawdown": 25.71,
+          "capitulation": 18.22,
+          "stabilization": 16.64
+        },
+        "drawdown": {
+          "available": true,
+          "worst_depth_pct": 22.0,
+          "average_depth_pct": 18.75,
+          "indices": [
+            {
+              "code": "000001.SH",
+              "drawdown_60d_pct": -18.0,
+              "depth_pct": 18.0
+            },
+            {
+              "code": "399001.SZ",
+              "drawdown_60d_pct": -20.0,
+              "depth_pct": 20.0
+            },
+            {
+              "code": "399006.SZ",
+              "drawdown_60d_pct": -22.0,
+              "depth_pct": 22.0
+            },
+            {
+              "code": "899050.BJ",
+              "drawdown_60d_pct": -15.0,
+              "depth_pct": 15.0
+            }
+          ]
+        }
+      },
+      "allocation_policy": null,
+      "checks": [
+        {
+          "name": "active_state_matches_expectation",
+          "ok": true,
+          "detail": "expected_active=False, actual=False"
+        },
+        {
+          "name": "blocker_contains_不追高",
+          "ok": true,
+          "detail": "机会分或主线强度已经偏热，逆向模块不追高。"
+        }
+      ],
+      "passed": true
+    },
+    {
+      "key": "capital_stampede_guard",
+      "label": "资金踩踏",
+      "expectation": "主力和北向同时大幅流出时不启用。",
+      "inputs": {
+        "opportunity_score": 42,
+        "current_score": 29,
+        "crowding_penalty": 3,
+        "mainline_pct": 20,
+        "main_net": -1200,
+        "northbound": -80
+      },
+      "overlay": {
+        "version": "contrarian_beta_overlay_v1",
+        "active": false,
+        "mode": "beta_core_floor",
+        "intensity_score": 76.74,
+        "score_floor": null,
+        "current_score_before_overlay": 29,
+        "target_score": 29,
+        "add_score": 0,
+        "beta_core_only": true,
+        "alpha_active_unlocked": false,
+        "drivers": [],
+        "blockers": [
+          "主力与北向同时大幅流出，资金踩踏时不启用逆向加仓。"
+        ],
+        "inputs": {
+          "valuation_score": 88.0,
+          "worst_drawdown_60d_pct": 22.0,
+          "average_drawdown_60d_pct": 18.75,
+          "advancer_ratio_pct": 16.0,
+          "strong_decliners_lt_minus3_pct": 24.0,
+          "limit_down": 45.0,
+          "northbound_net_inflow_100m_cny": -80.0,
+          "main_net_inflow_100m_cny": -1200.0,
+          "realized_vol_30d_pct": 32.0,
+          "crowding_penalty": 3.0,
+          "risk_level": "medium"
+        },
+        "components": {
+          "valuation": 28.0,
+          "drawdown": 25.71,
+          "capitulation": 18.22,
+          "stabilization": 4.8
+        },
+        "drawdown": {
+          "available": true,
+          "worst_depth_pct": 22.0,
+          "average_depth_pct": 18.75,
+          "indices": [
+            {
+              "code": "000001.SH",
+              "drawdown_60d_pct": -18.0,
+              "depth_pct": 18.0
+            },
+            {
+              "code": "399001.SZ",
+              "drawdown_60d_pct": -20.0,
+              "depth_pct": 20.0
+            },
+            {
+              "code": "399006.SZ",
+              "drawdown_60d_pct": -22.0,
+              "depth_pct": 22.0
+            },
+            {
+              "code": "899050.BJ",
+              "drawdown_60d_pct": -15.0,
+              "depth_pct": 15.0
+            }
+          ]
+        }
+      },
+      "allocation_policy": null,
+      "checks": [
+        {
+          "name": "active_state_matches_expectation",
+          "ok": true,
+          "detail": "expected_active=False, actual=False"
+        },
+        {
+          "name": "blocker_contains_资金踩踏",
+          "ok": true,
+          "detail": "主力与北向同时大幅流出，资金踩踏时不启用逆向加仓。"
+        }
+      ],
+      "passed": true
+    },
+    {
+      "key": "tail_vol_guard",
+      "label": "尾部波动过高",
+      "expectation": "30日年化波动率达到50%时不启用。",
+      "inputs": {
+        "opportunity_score": 42,
+        "current_score": 29,
+        "crowding_penalty": 3,
+        "mainline_pct": 20,
+        "realized_vol": 0.5
+      },
+      "overlay": {
+        "version": "contrarian_beta_overlay_v1",
+        "active": false,
+        "mode": "beta_core_floor",
+        "intensity_score": 83.78,
+        "score_floor": null,
+        "current_score_before_overlay": 29,
+        "target_score": 29,
+        "add_score": 0,
+        "beta_core_only": true,
+        "alpha_active_unlocked": false,
+        "drivers": [],
+        "blockers": [
+          "30日年化波动率 50.0%，尾部风险过高。"
+        ],
+        "inputs": {
+          "valuation_score": 88.0,
+          "worst_drawdown_60d_pct": 22.0,
+          "average_drawdown_60d_pct": 18.75,
+          "advancer_ratio_pct": 16.0,
+          "strong_decliners_lt_minus3_pct": 24.0,
+          "limit_down": 45.0,
+          "northbound_net_inflow_100m_cny": 10.0,
+          "main_net_inflow_100m_cny": -250.0,
+          "realized_vol_30d_pct": 50.0,
+          "crowding_penalty": 3.0,
+          "risk_level": "medium"
+        },
+        "components": {
+          "valuation": 28.0,
+          "drawdown": 25.71,
+          "capitulation": 18.22,
+          "stabilization": 11.84
+        },
+        "drawdown": {
+          "available": true,
+          "worst_depth_pct": 22.0,
+          "average_depth_pct": 18.75,
+          "indices": [
+            {
+              "code": "000001.SH",
+              "drawdown_60d_pct": -18.0,
+              "depth_pct": 18.0
+            },
+            {
+              "code": "399001.SZ",
+              "drawdown_60d_pct": -20.0,
+              "depth_pct": 20.0
+            },
+            {
+              "code": "399006.SZ",
+              "drawdown_60d_pct": -22.0,
+              "depth_pct": 22.0
+            },
+            {
+              "code": "899050.BJ",
+              "drawdown_60d_pct": -15.0,
+              "depth_pct": 15.0
+            }
+          ]
+        }
+      },
+      "allocation_policy": null,
+      "checks": [
+        {
+          "name": "active_state_matches_expectation",
+          "ok": true,
+          "detail": "expected_active=False, actual=False"
+        },
+        {
+          "name": "blocker_contains_尾部风险过高",
+          "ok": true,
+          "detail": "30日年化波动率 50.0%，尾部风险过高。"
+        }
+      ],
+      "passed": true
+    },
+    {
+      "key": "missing_core_fields_guard",
+      "label": "核心字段缺失",
+      "expectation": "强弱个股、资金或波动率字段缺失时不启用。",
+      "inputs": {
+        "opportunity_score": 42,
+        "current_score": 29,
+        "crowding_penalty": 3,
+        "mainline_pct": 20,
+        "omit": [
+          "breadth.strong_decliners_lt_minus3_pct",
+          "capital_flow.northbound_net_inflow_100m_cny",
+          "volatility.market.realized_vol_30d"
+        ]
+      },
+      "overlay": {
+        "version": "contrarian_beta_overlay_v1",
+        "active": false,
+        "mode": "beta_core_floor",
+        "intensity_score": 81.78,
+        "score_floor": null,
+        "current_score_before_overlay": 29,
+        "target_score": 29,
+        "add_score": 0,
+        "beta_core_only": true,
+        "alpha_active_unlocked": false,
+        "drivers": [],
+        "blockers": [
+          "宽度或强弱个股结构缺失，不能确认恐慌出清。",
+          "主力或北向资金字段缺失，不能确认资金没有踩踏。",
+          "30日波动率缺失，不能确认尾部风险状态。"
+        ],
+        "inputs": {
+          "valuation_score": 88.0,
+          "worst_drawdown_60d_pct": 22.0,
+          "average_drawdown_60d_pct": 18.75,
+          "advancer_ratio_pct": 16.0,
+          "strong_decliners_lt_minus3_pct": null,
+          "limit_down": 45.0,
+          "northbound_net_inflow_100m_cny": null,
+          "main_net_inflow_100m_cny": -250.0,
+          "realized_vol_30d_pct": null,
+          "crowding_penalty": 3.0,
+          "risk_level": "medium"
+        },
+        "components": {
+          "valuation": 28.0,
+          "drawdown": 25.71,
+          "capitulation": 15.14,
+          "stabilization": 12.93
+        },
+        "drawdown": {
+          "available": true,
+          "worst_depth_pct": 22.0,
+          "average_depth_pct": 18.75,
+          "indices": [
+            {
+              "code": "000001.SH",
+              "drawdown_60d_pct": -18.0,
+              "depth_pct": 18.0
+            },
+            {
+              "code": "399001.SZ",
+              "drawdown_60d_pct": -20.0,
+              "depth_pct": 20.0
+            },
+            {
+              "code": "399006.SZ",
+              "drawdown_60d_pct": -22.0,
+              "depth_pct": 22.0
+            },
+            {
+              "code": "899050.BJ",
+              "drawdown_60d_pct": -15.0,
+              "depth_pct": 15.0
+            }
+          ]
+        }
+      },
+      "allocation_policy": null,
+      "checks": [
+        {
+          "name": "active_state_matches_expectation",
+          "ok": true,
+          "detail": "expected_active=False, actual=False"
+        },
+        {
+          "name": "blocker_contains_缺失",
+          "ok": true,
+          "detail": "宽度或强弱个股结构缺失，不能确认恐慌出清。 / 主力或北向资金字段缺失，不能确认资金没有踩踏。 / 30日波动率缺失，不能确认尾部风险状态。"
+        }
+      ],
+      "passed": true
+    },
+    {
+      "key": "low_intensity_guard",
+      "label": "低估回撤刚过线但赔率强度不足",
+      "expectation": "硬阈值刚满足但恐慌和资金稳定证据不足时不启用。",
+      "inputs": {
+        "opportunity_score": 42,
+        "current_score": 29,
+        "crowding_penalty": 3,
+        "mainline_pct": 20,
+        "valuation_score": 61,
+        "worst_drawdown_pct": 10.1,
+        "advancer_ratio": 0.44,
+        "strong_decliners_ratio": 0.09,
+        "limit_down": 5,
+        "main_net": -800,
+        "northbound": -70,
+        "realized_vol": 0.47
+      },
+      "overlay": {
+        "version": "contrarian_beta_overlay_v1",
+        "active": false,
+        "mode": "beta_core_floor",
+        "intensity_score": 3.86,
+        "score_floor": null,
+        "current_score_before_overlay": 29,
+        "target_score": 29,
+        "add_score": 0,
+        "beta_core_only": true,
+        "alpha_active_unlocked": false,
+        "drivers": [],
+        "blockers": [
+          "深熊赔率强度 3.86，未达到 55 的启用阈值。"
+        ],
+        "inputs": {
+          "valuation_score": 61.0,
+          "worst_drawdown_60d_pct": 10.1,
+          "average_drawdown_60d_pct": 6.85,
+          "advancer_ratio_pct": 44.0,
+          "strong_decliners_lt_minus3_pct": 9.0,
+          "limit_down": 5.0,
+          "northbound_net_inflow_100m_cny": -70.0,
+          "main_net_inflow_100m_cny": -800.0,
+          "realized_vol_30d_pct": 47.0,
+          "crowding_penalty": 3.0,
+          "risk_level": "medium"
+        },
+        "components": {
+          "valuation": 1.0,
+          "drawdown": 0.21,
+          "capitulation": 0.73,
+          "stabilization": 1.91
+        },
+        "drawdown": {
+          "available": true,
+          "worst_depth_pct": 10.1,
+          "average_depth_pct": 6.85,
+          "indices": [
+            {
+              "code": "000001.SH",
+              "drawdown_60d_pct": -6.1,
+              "depth_pct": 6.1
+            },
+            {
+              "code": "399001.SZ",
+              "drawdown_60d_pct": -8.1,
+              "depth_pct": 8.1
+            },
+            {
+              "code": "399006.SZ",
+              "drawdown_60d_pct": -10.1,
+              "depth_pct": 10.1
+            },
+            {
+              "code": "899050.BJ",
+              "drawdown_60d_pct": -3.1,
+              "depth_pct": 3.1
+            }
+          ]
+        }
+      },
+      "allocation_policy": null,
+      "checks": [
+        {
+          "name": "active_state_matches_expectation",
+          "ok": true,
+          "detail": "expected_active=False, actual=False"
+        },
+        {
+          "name": "blocker_contains_深熊赔率强度",
+          "ok": true,
+          "detail": "深熊赔率强度 3.86，未达到 55 的启用阈值。"
+        }
+      ],
+      "passed": true
+    }
+  ],
+  "sensitivity_grid": [
+    {
+      "valuation_score": 60,
+      "worst_drawdown_pct": 10,
+      "active": false,
+      "intensity_score": 34.87,
+      "score_floor": null,
+      "add_score": 0,
+      "blocker_count": 1
+    },
+    {
+      "valuation_score": 60,
+      "worst_drawdown_pct": 14,
+      "active": false,
+      "intensity_score": 43.44,
+      "score_floor": null,
+      "add_score": 0,
+      "blocker_count": 1
+    },
+    {
+      "valuation_score": 60,
+      "worst_drawdown_pct": 18,
+      "active": false,
+      "intensity_score": 52.01,
+      "score_floor": null,
+      "add_score": 0,
+      "blocker_count": 1
+    },
+    {
+      "valuation_score": 60,
+      "worst_drawdown_pct": 24,
+      "active": true,
+      "intensity_score": 64.87,
+      "score_floor": 43.23,
+      "add_score": 14.23,
+      "blocker_count": 0
+    },
+    {
+      "valuation_score": 70,
+      "worst_drawdown_pct": 10,
+      "active": false,
+      "intensity_score": 44.87,
+      "score_floor": null,
+      "add_score": 0,
+      "blocker_count": 1
+    },
+    {
+      "valuation_score": 70,
+      "worst_drawdown_pct": 14,
+      "active": false,
+      "intensity_score": 53.44,
+      "score_floor": null,
+      "add_score": 0,
+      "blocker_count": 1
+    },
+    {
+      "valuation_score": 70,
+      "worst_drawdown_pct": 18,
+      "active": true,
+      "intensity_score": 62.01,
+      "score_floor": 40.84,
+      "add_score": 11.84,
+      "blocker_count": 0
+    },
+    {
+      "valuation_score": 70,
+      "worst_drawdown_pct": 24,
+      "active": true,
+      "intensity_score": 74.87,
+      "score_floor": 51.56,
+      "add_score": 22.56,
+      "blocker_count": 0
+    },
+    {
+      "valuation_score": 80,
+      "worst_drawdown_pct": 10,
+      "active": false,
+      "intensity_score": 54.87,
+      "score_floor": null,
+      "add_score": 0,
+      "blocker_count": 1
+    },
+    {
+      "valuation_score": 80,
+      "worst_drawdown_pct": 14,
+      "active": true,
+      "intensity_score": 63.44,
+      "score_floor": 42.03,
+      "add_score": 13.03,
+      "blocker_count": 0
+    },
+    {
+      "valuation_score": 80,
+      "worst_drawdown_pct": 18,
+      "active": true,
+      "intensity_score": 72.01,
+      "score_floor": 49.18,
+      "add_score": 20.18,
+      "blocker_count": 0
+    },
+    {
+      "valuation_score": 80,
+      "worst_drawdown_pct": 24,
+      "active": true,
+      "intensity_score": 84.87,
+      "score_floor": 59.89,
+      "add_score": 30.89,
+      "blocker_count": 0
+    },
+    {
+      "valuation_score": 90,
+      "worst_drawdown_pct": 10,
+      "active": true,
+      "intensity_score": 64.87,
+      "score_floor": 43.23,
+      "add_score": 14.23,
+      "blocker_count": 0
+    },
+    {
+      "valuation_score": 90,
+      "worst_drawdown_pct": 14,
+      "active": true,
+      "intensity_score": 73.44,
+      "score_floor": 50.37,
+      "add_score": 21.37,
+      "blocker_count": 0
+    },
+    {
+      "valuation_score": 90,
+      "worst_drawdown_pct": 18,
+      "active": true,
+      "intensity_score": 82.01,
+      "score_floor": 57.51,
+      "add_score": 28.51,
+      "blocker_count": 0
+    },
+    {
+      "valuation_score": 90,
+      "worst_drawdown_pct": 24,
+      "active": true,
+      "intensity_score": 94.87,
+      "score_floor": 60.0,
+      "add_score": 31.0,
+      "blocker_count": 0
+    }
+  ],
+  "monotonicity": {
+    "passed": true,
+    "checks": [
+      {
+        "name": "valuation_monotonic_at_drawdown_10",
+        "ok": true,
+        "detail": [
+          34.87,
+          44.87,
+          54.87,
+          64.87
+        ]
+      },
+      {
+        "name": "valuation_monotonic_at_drawdown_14",
+        "ok": true,
+        "detail": [
+          43.44,
+          53.44,
+          63.44,
+          73.44
+        ]
+      },
+      {
+        "name": "valuation_monotonic_at_drawdown_18",
+        "ok": true,
+        "detail": [
+          52.01,
+          62.01,
+          72.01,
+          82.01
+        ]
+      },
+      {
+        "name": "valuation_monotonic_at_drawdown_24",
+        "ok": true,
+        "detail": [
+          64.87,
+          74.87,
+          84.87,
+          94.87
+        ]
+      },
+      {
+        "name": "drawdown_monotonic_at_valuation_60",
+        "ok": true,
+        "detail": [
+          34.87,
+          43.44,
+          52.01,
+          64.87
+        ]
+      },
+      {
+        "name": "drawdown_monotonic_at_valuation_70",
+        "ok": true,
+        "detail": [
+          44.87,
+          53.44,
+          62.01,
+          74.87
+        ]
+      },
+      {
+        "name": "drawdown_monotonic_at_valuation_80",
+        "ok": true,
+        "detail": [
+          54.87,
+          63.44,
+          72.01,
+          84.87
+        ]
+      },
+      {
+        "name": "drawdown_monotonic_at_valuation_90",
+        "ok": true,
+        "detail": [
+          64.87,
+          73.44,
+          82.01,
+          94.87
+        ]
+      }
+    ]
+  },
+  "history_probe": {
+    "record_count": 13,
+    "active_count": 0,
+    "max_intensity_score": 37.61,
+    "latest_basis_trade_date": "2026-07-02",
+    "latest_run_id": "20260703T112743-df0a04b6",
+    "top_intensity_rows": [
+      {
+        "basis_trade_date": "2026-06-29",
+        "run_id": "20260703T112628-89c65d6a",
+        "market_position_score": 35.0,
+        "valuation_score": 10.94,
+        "worst_drawdown_60d_pct": 14.81,
+        "crowding_penalty": 9.04,
+        "intensity_score": 37.61,
+        "active": false,
+        "blockers": [
+          "估值便宜度 10.94%，未达到深熊逆向阈值 60%。",
+          "机会分或主线强度已经偏热，逆向模块不追高。",
+          "深熊赔率强度 37.61，未达到 55 的启用阈值。"
+        ]
+      },
+      {
+        "basis_trade_date": "2026-06-24",
+        "run_id": "20260703T112628-97140921",
+        "market_position_score": 23.65,
+        "valuation_score": 9.64,
+        "worst_drawdown_60d_pct": 9.91,
+        "crowding_penalty": 16.08,
+        "intensity_score": 33.71,
+        "active": false,
+        "blockers": [
+          "估值便宜度 9.64%，未达到深熊逆向阈值 60%。",
+          "指数最深60日回撤 9.91%，未达到 10% 深回撤阈值。",
+          "拥挤惩罚 16.08，不适合左侧扩仓。",
+          "机会分或主线强度已经偏热，逆向模块不追高。",
+          "深熊赔率强度 33.71，未达到 55 的启用阈值。"
+        ]
+      },
+      {
+        "basis_trade_date": "2026-06-25",
+        "run_id": "20260703T112628-d0281a92",
+        "market_position_score": 19.95,
+        "valuation_score": 9.16,
+        "worst_drawdown_60d_pct": 11.18,
+        "crowding_penalty": 20.91,
+        "intensity_score": 33.48,
+        "active": false,
+        "blockers": [
+          "估值便宜度 9.16%，未达到深熊逆向阈值 60%。",
+          "拥挤惩罚 20.91，不适合左侧扩仓。",
+          "机会分或主线强度已经偏热，逆向模块不追高。",
+          "深熊赔率强度 33.48，未达到 55 的启用阈值。"
+        ]
+      },
+      {
+        "basis_trade_date": "2026-06-26",
+        "run_id": "20260703T112628-5d86f98a",
+        "market_position_score": 13.09,
+        "valuation_score": 12.32,
+        "worst_drawdown_60d_pct": 11.93,
+        "crowding_penalty": 12.72,
+        "intensity_score": 33.32,
+        "active": false,
+        "blockers": [
+          "估值便宜度 12.32%，未达到深熊逆向阈值 60%。",
+          "拥挤惩罚 12.72，不适合左侧扩仓。",
+          "深熊赔率强度 33.32，未达到 55 的启用阈值。"
+        ]
+      },
+      {
+        "basis_trade_date": "2026-07-02",
+        "run_id": "20260703T112628-4572bdac",
+        "market_position_score": 14.29,
+        "valuation_score": 13.45,
+        "worst_drawdown_60d_pct": 11.97,
+        "crowding_penalty": 13.71,
+        "intensity_score": 27.07,
+        "active": false,
+        "blockers": [
+          "估值便宜度 13.45%，未达到深熊逆向阈值 60%。",
+          "拥挤惩罚 13.71，不适合左侧扩仓。",
+          "深熊赔率强度 27.07，未达到 55 的启用阈值。"
+        ]
+      }
+    ],
+    "checks": [
+      {
+        "name": "current_history_no_false_positive",
+        "ok": true,
+        "detail": "active_count=0 among 13 current-version records"
+      },
+      {
+        "name": "current_history_has_overlay_fields",
+        "ok": true,
+        "detail": "overlay_fields=13, records=13"
+      }
+    ],
+    "passed": true
+  },
+  "recommendation": {
+    "summary": "当前参数偏审慎，符合只在低估、深回撤、恐慌出清且资金未踩踏时才抬β仓的目标。",
+    "keep": [
+      "估值便宜度60阈值应保留，避免普通调整误触发。",
+      "拥挤惩罚10上限应保留，避免高位急跌反抽被当作底部。",
+      "资金踩踏和50%波动率硬阻断应保留，避免下跌中继扩大风险。"
+    ],
+    "watch": [
+      "如果后续历史底部样本出现估值55-60但其他信号极强，可再讨论是否把估值阈值改成55并提高强度阈值。",
+      "当前历史样本只有13条，尚不足以做统计显著性校准；本轮是规则边界审计，不是收益回测结论。",
+      "深熊逆向模块最高只把仓位分地板抬到60，仍然不是满仓逻辑；满仓应留给低拥挤强趋势，而不是左侧底部猜测。"
+    ],
+    "decision": "本轮不建议立刻调参；建议先积累更多底部/急跌样本，再做参数回测。"
+  }
+}
