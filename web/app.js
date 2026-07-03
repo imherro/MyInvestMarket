@@ -22,7 +22,7 @@ const chartColors = {
   position: "#047d73",
   preCap: "#6b7280",
   opportunity: "#2c68a0",
-  shanghai: "#b7791f",
+  shanghai: "#aeb8b3",
   penalty: "#bf3d2b",
   betaCore: "#2c68a0",
   alphaActive: "#bf3d2b",
@@ -332,15 +332,7 @@ function renderAllocationPolicy() {
         scored_at: record.scored_at,
         sleeves: sleevesToHistoryMap(record.allocation_policy?.sleeves || []),
       }));
-  const labels = history.map(recordLabel);
-  const titles = history.map(recordPointTitle);
-  const series = sleeves.map((sleeve) => ({
-    name: sleeve.label || sleeve.key,
-    color: allocationColors[sleeve.key] || chartColors.position,
-    axis: "left",
-    data: history.map((record, index) => point(labels[index], record.sleeves?.[sleeve.key]?.midpoint, titles[index])),
-  }));
-  renderLineChart(chart, series, { leftMin: 0, leftMax: 100 });
+  renderStackedAllocationChart(chart, history, sleeves);
 
   const triggers = Array.isArray(policy.triggers) ? policy.triggers : [];
   const principles = Array.isArray(policy.principles) ? policy.principles : [];
@@ -361,6 +353,93 @@ function sleevesToHistoryMap(sleeves) {
     }
     return memo;
   }, {});
+}
+
+function renderStackedAllocationChart(container, history, sleeves) {
+  if (!container) return;
+  container.innerHTML = "";
+  const sleeveList = Array.isArray(sleeves) ? sleeves.filter((sleeve) => sleeve?.key) : [];
+  const rows = (Array.isArray(history) ? history : [])
+    .map((record) => ({
+      label: recordLabel(record),
+      title: recordPointTitle(record),
+      sleeves: record.sleeves || {},
+    }))
+    .filter((record) => sleeveList.some((sleeve) => numeric(record.sleeves?.[sleeve.key]?.midpoint) !== null));
+
+  if (!rows.length || !sleeveList.length) {
+    renderEmpty(container, "暂无配置柱状图");
+    return;
+  }
+
+  const legend = document.createElement("div");
+  legend.className = "chart-legend allocation-stack-legend";
+  legend.innerHTML = sleeveList
+    .map((sleeve) => {
+      const color = allocationColors[sleeve.key] || chartColors.position;
+      return `
+        <span class="legend-item">
+          <span class="legend-swatch stacked" style="background:${color}"></span>
+          ${escapeHtml(sleeve.label || sleeve.key)}
+        </span>
+      `;
+    })
+    .join("");
+  container.appendChild(legend);
+
+  const width = 920;
+  const height = 360;
+  const margin = { top: 18, right: 28, bottom: 46, left: 48 };
+  const plotWidth = width - margin.left - margin.right;
+  const plotHeight = height - margin.top - margin.bottom;
+  const svg = createSvg("svg", {
+    class: "chart-svg allocation-stacked-chart",
+    viewBox: `0 0 ${width} ${height}`,
+    role: "img",
+  });
+  svg.appendChild(createSvg("title", {}, "四仓配置历史：每根柱子代表一个研究日，柱内四段长度为四仓配置中位数。"));
+
+  for (let i = 0; i <= 4; i += 1) {
+    const value = i * 25;
+    const y = yPos(value, { min: 0, max: 100 }, margin, plotHeight);
+    svg.appendChild(createSvg("line", { class: "grid-line", x1: margin.left, y1: y, x2: width - margin.right, y2: y }));
+    svg.appendChild(createSvg("text", { class: "tick-label", x: 8, y: y + 4 }, `${value}%`));
+  }
+
+  svg.appendChild(createSvg("line", { class: "axis-line", x1: margin.left, y1: height - margin.bottom, x2: width - margin.right, y2: height - margin.bottom }));
+  svg.appendChild(createSvg("line", { class: "axis-line", x1: margin.left, y1: margin.top, x2: margin.left, y2: height - margin.bottom }));
+
+  const step = plotWidth / rows.length;
+  const barWidth = clamp(step * 0.62, 12, 44);
+  const labelStep = Math.max(1, Math.ceil(rows.length / 8));
+  rows.forEach((record, index) => {
+    const x = margin.left + step * index + (step - barWidth) / 2;
+    let yCursor = height - margin.bottom;
+    sleeveList.forEach((sleeve) => {
+      const rawValue = numeric(record.sleeves?.[sleeve.key]?.midpoint);
+      const value = clamp(rawValue ?? 0, 0, 100);
+      if (value <= 0) return;
+      const segmentHeight = (value / 100) * plotHeight;
+      const y = yCursor - segmentHeight;
+      const rect = createSvg("rect", {
+        class: "allocation-stack-segment",
+        x,
+        y,
+        width: barWidth,
+        height: Math.max(segmentHeight, 1),
+        fill: allocationColors[sleeve.key] || chartColors.position,
+      });
+      rect.appendChild(createSvg("title", {}, `${sleeve.label || sleeve.key} ${record.title}: ${formatNumber(value)}%`));
+      svg.appendChild(rect);
+      yCursor = y;
+    });
+
+    if (index % labelStep === 0 || index === rows.length - 1) {
+      svg.appendChild(createSvg("text", { class: "tick-label", x: x + barWidth / 2, y: height - 16, "text-anchor": "middle" }, compactLabel(record.label)));
+    }
+  });
+
+  container.appendChild(svg);
 }
 
 function severityLabel(value) {
@@ -897,6 +976,7 @@ function renderOverviewChart() {
         name: "股票账户仓位分",
         color: chartColors.position,
         axis: "left",
+        weight: "bold",
         data: records.map((record, index) => point(labels[index], record.market_position_score, titles[index])),
       },
       {
@@ -921,6 +1001,8 @@ function renderOverviewChart() {
         name: "上证指数",
         color: chartColors.shanghai,
         axis: "right",
+        style: "background-dashed",
+        points: false,
         data: records.map((record, index) => point(labels[index], record.shanghai_composite, titles[index])),
       },
     ],
@@ -928,6 +1010,7 @@ function renderOverviewChart() {
       leftMin: 0,
       leftMax: 100,
       rightLabel: "上证",
+      backgroundFirst: true,
     },
   );
 }
@@ -1221,7 +1304,14 @@ function renderLineChart(container, series, options = {}) {
     );
   });
 
-  activeSeries.forEach((item) => {
+  const drawSeries = options.backgroundFirst
+    ? [
+        ...activeSeries.filter((item) => item.style === "background-dashed"),
+        ...activeSeries.filter((item) => item.style !== "background-dashed"),
+      ]
+    : activeSeries;
+
+  drawSeries.forEach((item) => {
     const range = item.axis === "right" ? rightRange : leftRange;
     const points = item.data.map((pointItem, index) => {
       const value = numeric(pointItem.value);
@@ -1236,23 +1326,28 @@ function renderLineChart(container, series, options = {}) {
 
     if (points.length > 1) {
       const d = points.map((itemPoint, index) => `${index === 0 ? "M" : "L"} ${itemPoint.x} ${itemPoint.y}`).join(" ");
+      const isBackground = item.style === "background-dashed";
+      const strokeWidth = item.weight === "bold" ? (options.compact ? 3.2 : 4.8) : (options.compact ? 2.2 : 2.8);
       svg.appendChild(
         createSvg("path", {
           d,
           fill: "none",
           stroke: item.color,
-          "stroke-width": options.compact ? 2.2 : 2.8,
+          "stroke-width": isBackground ? 2 : strokeWidth,
+          "stroke-dasharray": isBackground ? "7 8" : null,
+          "stroke-opacity": isBackground ? 0.55 : 1,
           "stroke-linecap": "round",
           "stroke-linejoin": "round",
         }),
       );
     }
 
+    if (item.points === false) return;
     points.forEach((itemPoint) => {
       const circle = createSvg("circle", {
         cx: itemPoint.x,
         cy: itemPoint.y,
-        r: options.compact ? 3.2 : 4,
+        r: item.weight === "bold" ? (options.compact ? 4 : 5.4) : (options.compact ? 3.2 : 4),
         fill: item.color,
       });
       circle.appendChild(createSvg("title", {}, `${item.name} ${itemPoint.titleLabel}: ${formatNumber(itemPoint.value)}`));
@@ -1300,7 +1395,10 @@ function renderSparkline(container, values, color, minValue = null, maxValue = n
 
 function createSvg(tag, attrs = {}, text = null) {
   const node = document.createElementNS(svgNs, tag);
-  Object.entries(attrs).forEach(([key, value]) => node.setAttribute(key, value));
+  Object.entries(attrs).forEach(([key, value]) => {
+    if (value === null || value === undefined) return;
+    node.setAttribute(key, value);
+  });
   if (text !== null) node.textContent = text;
   return node;
 }

@@ -467,6 +467,23 @@ select {
 
 .allocation-chart {
   margin-top: 14px;
+  min-height: 360px;
+}
+
+.allocation-stack-legend .legend-swatch {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+}
+
+.allocation-stacked-chart {
+  min-height: 300px;
+}
+
+.allocation-stack-segment {
+  stroke: rgba(255, 255, 255, 0.9);
+  stroke-width: 1;
+  shape-rendering: geometricPrecision;
 }
 
 .allocation-triggers {
