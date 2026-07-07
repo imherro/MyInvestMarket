@@ -134,6 +134,7 @@ function normalizeRecords(records) {
 
 function renderAll() {
   renderBasisStatus();
+  renderMarketObservation();
   renderSummary();
   renderRiskOverview();
   renderContrarianOverlay();
@@ -163,6 +164,30 @@ function renderBasisStatus() {
   const details = status.details || [];
   const detailText = details.length ? details.join(" · ") : `最新完整数据日 ${status.latest_data_trade_date || "--"}`;
   setText("basisStatusDetails", detailText);
+}
+
+function renderMarketObservation() {
+  const observation = state.index?.summary?.market_observation || state.latest?.market_observation || {};
+  if (!observation || !Object.keys(observation).length) {
+    setText("marketObservationStatus", "暂无观察");
+    setText("marketObservationLabel", "--");
+    setText("marketObservationSummary", "本次研究尚未生成盘感观察。");
+    renderMessageList("marketObservationEvidence", [], "暂无关键证据");
+    renderMessageList("marketObservationWatchPoints", [], "暂无后续观察");
+    return;
+  }
+
+  const scoreText = [
+    observation.position_score !== undefined ? `仓位分 ${formatNumber(observation.position_score)}` : "",
+    observation.recommended_equity_position_range || "",
+  ]
+    .filter(Boolean)
+    .join(" · ");
+  setText("marketObservationStatus", `${observation.basis_trade_date || "--"}${scoreText ? ` · ${scoreText}` : ""}`);
+  setText("marketObservationLabel", observation.label || "--");
+  setText("marketObservationSummary", observation.summary || "--");
+  renderMessageList("marketObservationEvidence", observation.observations || [], "暂无关键证据");
+  renderMessageList("marketObservationWatchPoints", observation.watch_points || [], "暂无后续观察");
 }
 
 function renderSummary() {

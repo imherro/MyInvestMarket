@@ -1473,6 +1473,7 @@ def homepage_index_result() -> dict[str, object]:
             "allocation_policy_version": latest.get("allocation_policy_version", ALLOCATION_POLICY_VERSION),
             "allocation_state": latest.get("allocation_state") or allocation_map.get("state"),
             "allocation_policy": latest.get("allocation_policy", {}),
+            "market_observation": latest.get("market_observation", {}),
             "volatility_policy": latest.get("volatility_policy", {}),
             "legacy_vol_adjusted_equity_position_range": latest.get("legacy_vol_adjusted_equity_position_range"),
             "legacy_vol_adjusted_market_position_score": latest.get("legacy_vol_adjusted_market_position_score"),
@@ -1651,6 +1652,7 @@ def homepage_index_result() -> dict[str, object]:
                     "trend_state_label": row.get("trend_state_label"),
                     "trend_strength": row.get("trend_strength"),
                     "trend_duration": row.get("trend_duration"),
+                    "market_observation": row.get("market_observation", {}),
                 }
                 for row in reversed(records)
             ],

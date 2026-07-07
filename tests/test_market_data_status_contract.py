@@ -98,10 +98,13 @@ class MarketDataStatusContractTest(unittest.TestCase):
         app_js = (ROOT / "web" / "app.js").read_text(encoding="utf-8")
 
         self.assertIn('id="basisStatusBand"', index_html)
+        self.assertIn('class="market-observation-band"', index_html)
         self.assertLess(index_html.index('id="basisStatusBand"'), index_html.index('class="summary-grid"'))
+        self.assertLess(index_html.index('class="market-observation-band"'), index_html.index('class="summary-grid"'))
         self.assertNotIn("最新研究结果 API", index_html)
         self.assertNotIn("apiStatus", index_html)
         self.assertIn("renderBasisStatus()", app_js)
+        self.assertIn("renderMarketObservation()", app_js)
         self.assertNotIn("loadResearchApiStatus", app_js)
 
 

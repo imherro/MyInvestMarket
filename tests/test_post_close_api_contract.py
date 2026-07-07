@@ -180,7 +180,9 @@ class PostCloseApiContractTest(unittest.TestCase):
         binding = serve_market_web.analysis_report_binding(content, score_record())
 
         self.assertIn("- 评分运行ID: 20260622T170000-test", content)
+        self.assertIn("## 盘感观察", content)
         self.assertIn("## 周期特征参照", content)
+        self.assertLess(content.index("## 盘感观察"), content.index("## 结论"))
         self.assertIn("- 当前特征:", content)
         self.assertIn("不判定当前处于某个具体浪位", content)
         self.assertEqual(binding["run_id"], "20260622T170000-test")

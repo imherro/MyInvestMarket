@@ -83,6 +83,15 @@ class ApiCatalogContractTest(unittest.TestCase):
         self.assertTrue(summary["groups"])
         self.assertTrue(summary["safety"]["catalog_read_only"])
 
+    def test_homepage_index_contains_market_observation(self) -> None:
+        index = serve_market_web.homepage_index_result()
+        observation = index["summary"].get("market_observation")
+
+        self.assertIsInstance(observation, dict)
+        self.assertEqual(observation.get("version"), "market_observation_v1")
+        self.assertTrue(observation.get("summary"))
+        self.assertIsInstance(observation.get("observations"), list)
+
 
 if __name__ == "__main__":
     unittest.main()

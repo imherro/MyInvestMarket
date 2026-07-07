@@ -322,6 +322,32 @@ def top_industry_lines(snapshot: dict[str, Any], key: str) -> str:
     return "\n".join(lines)
 
 
+def market_observation_section(snapshot: dict[str, Any], record: dict[str, Any]) -> str:
+    observation = record.get("market_observation")
+    if not isinstance(observation, dict):
+        observation = market_scoring.build_market_observation(snapshot, record)
+    evidence_lines = "\n".join(f"- {item}" for item in observation.get("observations", []) if item)
+    watch_lines = "\n".join(f"- {item}" for item in observation.get("watch_points", []) if item)
+    if not evidence_lines:
+        evidence_lines = "- 暂无可用盘感证据。"
+    if not watch_lines:
+        watch_lines = "- 暂无可用观察项。"
+    return f"""## 盘感观察
+
+- 结构判断: {observation.get('label') or '--'}
+- 操作含义: {observation.get('stance') or '--'}
+- 摘要: {observation.get('summary') or '--'}
+
+关键证据：
+
+{evidence_lines}
+
+后续观察：
+
+{watch_lines}
+"""
+
+
 def cycle_profile_section(record: dict[str, Any]) -> str:
     profile = serve_market_web.market_cycle_profile_result(record)
     observations = profile.get("observations", [])
@@ -356,6 +382,8 @@ def write_report(snapshot: dict[str, Any], record: dict[str, Any]) -> Path:
 - 评分模型: `{record.get('model_version')}`
 
 ---
+
+{market_observation_section(snapshot, record)}
 
 ## 结论
 

@@ -103,6 +103,38 @@ STABLE_RISK_CAP_REASONS = (
     "missing_core_risk_data_hot_market",
     "strong_index_weak_breadth",
 )
+MARKET_OBSERVATION_VERSION = "market_observation_v1"
+GROWTH_MAINLINE_INDUSTRY_KEYWORDS = (
+    "半导体",
+    "芯片",
+    "电子",
+    "通信",
+    "计算机",
+    "软件",
+    "人工智能",
+    "AI",
+    "CPO",
+    "光模块",
+    "机器人",
+    "电力设备",
+)
+TRADITIONAL_WEIGHT_INDUSTRY_KEYWORDS = (
+    "银行",
+    "保险",
+    "证券",
+    "煤炭",
+    "石油",
+    "石化",
+    "交通运输",
+    "公用事业",
+    "建筑",
+    "地产",
+    "房地产",
+    "钢铁",
+    "有色",
+    "农林牧渔",
+    "家用电器",
+)
 
 
 class ScoreRecordValidationError(ValueError):
@@ -236,6 +268,284 @@ def evidence(label: str, value: Any, unit: str, score: float, max_score: float, 
         "score": round2(score),
         "max_score": max_score,
         "note": note,
+    }
+
+
+def text_contains_any(value: Any, keywords: tuple[str, ...]) -> bool:
+    text = str(value or "")
+    lowered = text.lower()
+    return any(keyword.lower() in lowered for keyword in keywords)
+
+
+def compact_industry_rows(rows: Any, *, value_key: str, unit: str, limit: int = 5) -> list[dict[str, Any]]:
+    if not isinstance(rows, list):
+        return []
+    compacted: list[dict[str, Any]] = []
+    for row in rows[:limit]:
+        if not isinstance(row, dict):
+            continue
+        compacted.append(
+            {
+                "industry": row.get("industry"),
+                "ts_code": row.get("ts_code"),
+                "value": round2(as_float(row.get(value_key))),
+                "unit": unit,
+                "pct_change": round2(as_float(row.get("pct_change"))),
+                "lead_stock": row.get("lead_stock"),
+            }
+        )
+    return compacted
+
+
+def matching_industry_rows(rows: list[dict[str, Any]], keywords: tuple[str, ...]) -> list[dict[str, Any]]:
+    matched: list[dict[str, Any]] = []
+    for row in rows:
+        name = row.get("industry")
+        if text_contains_any(name, keywords):
+            matched.append(row)
+    return matched
+
+
+def industry_names(rows: list[dict[str, Any]], limit: int = 4) -> list[str]:
+    names: list[str] = []
+    for row in rows:
+        name = row.get("industry")
+        if isinstance(name, str) and name and name not in names:
+            names.append(name)
+        if len(names) >= limit:
+            break
+    return names
+
+
+def module_score_percent(modules: dict[str, Any], key: str) -> float | None:
+    module = modules.get(key) if isinstance(modules, dict) else None
+    if not isinstance(module, dict):
+        return None
+    score_pct = as_float(module.get("score_pct"))
+    if score_pct is None:
+        return None
+    return round2(score_pct * 100 if 0 <= score_pct <= 1 else score_pct)
+
+
+def breadth_ratio_pct(breadth: dict[str, Any]) -> float | None:
+    advancers = as_float(breadth.get("advancers"))
+    decliners = as_float(breadth.get("decliners"))
+    flat = as_float(breadth.get("flat")) or 0
+    total = as_float(breadth.get("total"))
+    if total is None and advancers is not None and decliners is not None:
+        total = advancers + decliners + flat
+    if advancers is None or total is None or total <= 0:
+        return None
+    return round2((advancers / total) * 100)
+
+
+def percent_from_fraction(value: Any) -> float | None:
+    number = as_float(value)
+    if number is None:
+        return None
+    return round2(number * 100)
+
+
+def format_observation_number(value: Any, suffix: str = "") -> str:
+    number = as_float(value)
+    if number is None:
+        return "--"
+    text = f"{number:.2f}".rstrip("0").rstrip(".")
+    return f"{text}{suffix}"
+
+
+def build_market_observation(snapshot: dict[str, Any], record: dict[str, Any]) -> dict[str, Any]:
+    modules = record.get("modules", {}) if isinstance(record.get("modules"), dict) else {}
+    breadth = snapshot.get("breadth", {}) if isinstance(snapshot.get("breadth"), dict) else {}
+    sector_rotation = snapshot.get("sector_rotation", {}) if isinstance(snapshot.get("sector_rotation"), dict) else {}
+    capital = snapshot.get("capital_flow", {}) if isinstance(snapshot.get("capital_flow"), dict) else {}
+
+    top_return = compact_industry_rows(
+        sector_rotation.get("top5_industries_by_return"),
+        value_key="pct_change",
+        unit="%",
+    )
+    top_inflow = compact_industry_rows(
+        sector_rotation.get("top5_industries_by_capital_inflow"),
+        value_key="net_amount_100m_cny",
+        unit="亿元",
+    )
+    growth_rows = matching_industry_rows([*top_inflow, *top_return], GROWTH_MAINLINE_INDUSTRY_KEYWORDS)
+    traditional_rows = matching_industry_rows([*top_return, *top_inflow], TRADITIONAL_WEIGHT_INDUSTRY_KEYWORDS)
+
+    breadth_pct = module_score_percent(modules, "breadth")
+    mainline_pct = module_score_percent(modules, "mainline")
+    capital_pct = module_score_percent(modules, "capital_flow")
+    valuation_pct = module_score_percent(modules, "valuation")
+    spread_pct = round2(mainline_pct - breadth_pct) if mainline_pct is not None and breadth_pct is not None else None
+    advancer_ratio = breadth_ratio_pct(breadth)
+    median_pct = round2(as_float(breadth.get("median_pct_change")))
+    strong_decliners_pct = percent_from_fraction(breadth.get("strong_decliners_lt_minus3_pct"))
+    strong_advancers_pct = percent_from_fraction(breadth.get("strong_advancers_gt3_pct"))
+    industry_up_ratio_pct = percent_from_fraction(breadth.get("industry_up_ratio"))
+
+    broad_weak = any(
+        condition
+        for condition in [
+            advancer_ratio is not None and advancer_ratio < 45,
+            median_pct is not None and median_pct < 0,
+            strong_decliners_pct is not None and strong_decliners_pct >= 18,
+            industry_up_ratio_pct is not None and industry_up_ratio_pct < 45,
+        ]
+    )
+    severe_divergence = bool(
+        mainline_pct is not None
+        and breadth_pct is not None
+        and spread_pct is not None
+        and mainline_pct >= 65
+        and breadth_pct <= 45
+        and spread_pct >= 25
+    )
+    growth_signal_active = bool(growth_rows)
+    traditional_reversal_active = bool(traditional_rows)
+    risk_caps = record.get("risk_caps", []) if isinstance(record.get("risk_caps"), list) else []
+    final_score = round2(as_float(record.get("market_position_score")))
+    opportunity_score = round2(as_float(record.get("market_opportunity_score")))
+
+    if severe_divergence and traditional_reversal_active:
+        label = "强主线弱宽度，传统权重反抽"
+    elif severe_divergence:
+        label = "强主线弱宽度，结构分化"
+    elif broad_weak:
+        label = "宽度偏弱，等待确认"
+    elif final_score is not None and final_score >= 65 and (breadth_pct or 0) >= 55:
+        label = "趋势与宽度共振"
+    else:
+        label = "结构中性观察"
+
+    if final_score is not None and final_score < 20 and severe_divergence:
+        stance = "防守观察，不确认全面反转"
+    elif final_score is not None and final_score < 20:
+        stance = "防守观察"
+    elif risk_caps:
+        stance = "风险上限压制，仓位先服从风控"
+    elif severe_divergence:
+        stance = "只承认结构性机会，不确认全面反转"
+    elif broad_weak:
+        stance = "反转需要宽度和资金继续确认"
+    else:
+        stance = "按评分和四仓配置执行"
+
+    observations: list[str] = []
+    watch_points: list[str] = []
+    if mainline_pct is not None and breadth_pct is not None:
+        observations.append(
+            "主线得分 "
+            f"{format_observation_number(mainline_pct, '%')}，宽度得分 {format_observation_number(breadth_pct, '%')}"
+            f"，差值 {format_observation_number(spread_pct, 'pct')}。"
+        )
+    if growth_signal_active:
+        observations.append(f"成长主线线索：{', '.join(industry_names(growth_rows))} 位于涨幅或资金流入前列。")
+    if traditional_reversal_active:
+        observations.append(f"传统权重反抽线索：{', '.join(industry_names(traditional_rows))} 位于涨幅或资金流入前列。")
+    if broad_weak:
+        observations.append(
+            "宽度仍弱："
+            f"上涨占比 {format_observation_number(advancer_ratio, '%')}，"
+            f"个股中位数 {format_observation_number(median_pct, '%')}，"
+            f"强跌占比 {format_observation_number(strong_decliners_pct, '%')}。"
+        )
+    northbound = round2(as_float(capital.get("northbound_net_inflow_100m_cny")))
+    main_net = round2(as_float(capital.get("main_net_inflow_100m_cny")))
+    if northbound is not None or main_net is not None:
+        observations.append(
+            f"资金分歧：北向 {format_observation_number(northbound, '亿元')}，"
+            f"主力 {format_observation_number(main_net, '亿元')}。"
+        )
+    if risk_caps:
+        observations.append(f"已触发 {len(risk_caps)} 项风险上限，仓位分优先服从风控。")
+
+    if severe_divergence or broad_weak:
+        watch_points.append("宽度修复是否发生：上涨占比、行业上涨占比和个股中位数需要同步改善。")
+    if growth_signal_active:
+        watch_points.append("半导体/芯片等成长主线是继续扩散，还是仅维持资金抱团。")
+    if traditional_reversal_active:
+        watch_points.append("传统权重反抽是否延续，并能否带动指数与个股宽度共振。")
+    watch_points.append("主力资金是否收敛流出，风险上限数量是否下降。")
+
+    summary_parts = []
+    if severe_divergence:
+        summary_parts.append(
+            "主线强但宽度弱："
+            f"主线 {format_observation_number(mainline_pct, '%')}，宽度 {format_observation_number(breadth_pct, '%')}"
+        )
+    elif mainline_pct is not None and breadth_pct is not None:
+        summary_parts.append(
+            f"主线 {format_observation_number(mainline_pct, '%')}，宽度 {format_observation_number(breadth_pct, '%')}"
+        )
+    if growth_signal_active:
+        summary_parts.append(f"成长线索在 {', '.join(industry_names(growth_rows, 2))}")
+    if traditional_reversal_active:
+        summary_parts.append(f"传统权重反抽在 {', '.join(industry_names(traditional_rows, 3))}")
+    if broad_weak:
+        summary_parts.append(
+            f"市场中位数 {format_observation_number(median_pct, '%')}、上涨占比 {format_observation_number(advancer_ratio, '%')}"
+        )
+    summary_parts.append(
+        f"仓位分 {format_observation_number(final_score)}，推荐 {record.get('recommended_equity_position_range') or '--'}，{stance}"
+    )
+
+    return {
+        "version": MARKET_OBSERVATION_VERSION,
+        "basis_trade_date": record.get("basis_trade_date") or snapshot.get("date"),
+        "label": label,
+        "stance": stance,
+        "summary": "；".join(summary_parts) + "。",
+        "opportunity_score": opportunity_score,
+        "position_score": final_score,
+        "recommended_equity_position_range": record.get("recommended_equity_position_range"),
+        "divergence": {
+            "mainline_score_pct": mainline_pct,
+            "breadth_score_pct": breadth_pct,
+            "capital_flow_score_pct": capital_pct,
+            "valuation_score_pct": valuation_pct,
+            "spread_pct": spread_pct,
+            "severe": severe_divergence,
+        },
+        "broad_market": {
+            "weak": broad_weak,
+            "advancer_ratio_pct": advancer_ratio,
+            "median_pct_change": median_pct,
+            "strong_advancers_pct": strong_advancers_pct,
+            "strong_decliners_pct": strong_decliners_pct,
+            "industry_up_ratio_pct": industry_up_ratio_pct,
+            "advancers": breadth.get("advancers"),
+            "decliners": breadth.get("decliners"),
+            "limit_up": breadth.get("limit_up"),
+            "limit_down": breadth.get("limit_down"),
+        },
+        "mainline": {
+            "status": "strong" if (mainline_pct or 0) >= 65 else "neutral" if (mainline_pct or 0) >= 45 else "weak",
+            "top_return_industries": top_return,
+            "top_inflow_industries": top_inflow,
+            "growth_signal": {
+                "active": growth_signal_active,
+                "industries": industry_names(growth_rows),
+                "matched_rows": growth_rows,
+            },
+        },
+        "traditional_weight_reversal": {
+            "active": traditional_reversal_active,
+            "industries": industry_names(traditional_rows),
+            "matched_rows": traditional_rows,
+        },
+        "capital_flow": {
+            "northbound_net_inflow_100m_cny": northbound,
+            "main_net_inflow_100m_cny": main_net,
+        },
+        "risk_read": {
+            "risk_cap_count": len(risk_caps),
+            "risk_caps": risk_caps,
+            "crowding_penalty": record.get("crowding_penalty"),
+            "risk_penalty_score": record.get("risk_penalty_score"),
+        },
+        "observations": observations,
+        "watch_points": watch_points,
     }
 
 
@@ -2274,8 +2584,9 @@ def score_snapshot(snapshot: dict[str, Any], snapshot_path: Path | None = None, 
         ],
         "key_constraints": key_constraints,
         "data_quality": quality,
-        "snapshot_validation": snapshot_validation,
-    }
+            "snapshot_validation": snapshot_validation,
+        }
+    record["market_observation"] = build_market_observation(snapshot, record)
     return record
 
 

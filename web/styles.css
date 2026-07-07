@@ -134,6 +134,7 @@ select {
 }
 
 .basis-status-band,
+.market-observation-band,
 .score-card,
 .chart-band,
 .allocation-band,
@@ -192,6 +193,51 @@ select {
 .basis-status-band.critical strong,
 .basis-status-band.critical p {
   color: #8d2116;
+}
+
+.market-observation-band {
+  margin-bottom: 16px;
+  padding: 18px;
+}
+
+.market-observation-band .section-head {
+  margin-top: 0;
+}
+
+.market-observation-grid {
+  display: grid;
+  grid-template-columns: minmax(280px, 1.2fr) minmax(260px, 1fr) minmax(260px, 1fr);
+  gap: 12px;
+}
+
+.market-observation-panel {
+  min-height: 170px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-soft);
+}
+
+.market-observation-panel.primary {
+  border-left: 4px solid var(--teal);
+  background: #f7fbf9;
+}
+
+.market-observation-panel strong {
+  display: block;
+  margin-top: 8px;
+  color: var(--teal);
+  font-size: 1.45rem;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.market-observation-panel p {
+  margin-top: 10px;
+  color: var(--ink);
+  font-size: 0.9rem;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
 }
 
 .score-card {
@@ -1228,6 +1274,10 @@ td.score-risk {
     grid-template-columns: 1fr;
   }
 
+  .market-observation-grid {
+    grid-template-columns: 1fr;
+  }
+
   .contrarian-grid {
     grid-template-columns: 1fr;
   }
@@ -1273,6 +1323,7 @@ td.score-risk {
   }
 
   .summary-grid,
+  .market-observation-grid,
   .allocation-grid,
   .allocation-triggers,
   .risk-overview-grid,

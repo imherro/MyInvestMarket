@@ -1,7 +1,7 @@
 {
   "schema_version": 3,
   "model_version": "v3.4_contrarian",
-  "updated_at": "2026-07-07T09:27:27+08:00",
+  "updated_at": "2026-07-07T09:57:35+08:00",
   "records": [
     {
       "run_id": "20260618T105237-646d4fde",
@@ -26396,6 +26396,266 @@
           "macro",
           "data_quality"
         ]
+      },
+      "market_observation": {
+        "version": "market_observation_v1",
+        "basis_trade_date": "2026-06-15",
+        "label": "结构中性观察",
+        "stance": "风险上限压制，仓位先服从风控",
+        "summary": "主线 90%，宽度 94.18%；成长线索在 半导体, 通信设备；传统权重反抽在 建筑材料, 有色金属；仓位分 35，推荐 20%-40%，风险上限压制，仓位先服从风控。",
+        "opportunity_score": 69.84,
+        "position_score": 35.0,
+        "recommended_equity_position_range": "20%-40%",
+        "divergence": {
+          "mainline_score_pct": 90.0,
+          "breadth_score_pct": 94.18,
+          "capital_flow_score_pct": 77.03,
+          "valuation_score_pct": 19.11,
+          "spread_pct": -4.18,
+          "severe": false
+        },
+        "broad_market": {
+          "weak": false,
+          "advancer_ratio_pct": 70.92,
+          "median_pct_change": 1.25,
+          "strong_advancers_pct": 28.7,
+          "strong_decliners_pct": 3.78,
+          "industry_up_ratio_pct": 80.65,
+          "advancers": 3906,
+          "decliners": 1475,
+          "limit_up": 145,
+          "limit_down": 3
+        },
+        "mainline": {
+          "status": "strong",
+          "top_return_industries": [
+            {
+              "industry": "电子",
+              "ts_code": "801080.SI",
+              "value": 6.58,
+              "unit": "%",
+              "pct_change": 6.58,
+              "lead_stock": null
+            },
+            {
+              "industry": "通信",
+              "ts_code": "801770.SI",
+              "value": 6.5,
+              "unit": "%",
+              "pct_change": 6.5,
+              "lead_stock": null
+            },
+            {
+              "industry": "建筑材料",
+              "ts_code": "801710.SI",
+              "value": 5.0,
+              "unit": "%",
+              "pct_change": 5.0,
+              "lead_stock": null
+            },
+            {
+              "industry": "有色金属",
+              "ts_code": "801050.SI",
+              "value": 4.92,
+              "unit": "%",
+              "pct_change": 4.92,
+              "lead_stock": null
+            },
+            {
+              "industry": "机械设备",
+              "ts_code": "801890.SI",
+              "value": 4.51,
+              "unit": "%",
+              "pct_change": 4.51,
+              "lead_stock": null
+            }
+          ],
+          "top_inflow_industries": [
+            {
+              "industry": "半导体",
+              "ts_code": "881121.TI",
+              "value": 336.0,
+              "unit": "亿元",
+              "pct_change": 5.98,
+              "lead_stock": "炬光科技"
+            },
+            {
+              "industry": "通信设备",
+              "ts_code": "881129.TI",
+              "value": 193.0,
+              "unit": "亿元",
+              "pct_change": 5.01,
+              "lead_stock": "太辰光"
+            },
+            {
+              "industry": "元件",
+              "ts_code": "881270.TI",
+              "value": 139.0,
+              "unit": "亿元",
+              "pct_change": 8.69,
+              "lead_stock": "达利凯普"
+            },
+            {
+              "industry": "消费电子",
+              "ts_code": "881124.TI",
+              "value": 88.0,
+              "unit": "亿元",
+              "pct_change": 4.61,
+              "lead_stock": "光大同创"
+            },
+            {
+              "industry": "自动化设备",
+              "ts_code": "881171.TI",
+              "value": 68.0,
+              "unit": "亿元",
+              "pct_change": 4.49,
+              "lead_stock": "德龙激光"
+            }
+          ],
+          "growth_signal": {
+            "active": true,
+            "industries": [
+              "半导体",
+              "通信设备",
+              "消费电子",
+              "电子"
+            ],
+            "matched_rows": [
+              {
+                "industry": "半导体",
+                "ts_code": "881121.TI",
+                "value": 336.0,
+                "unit": "亿元",
+                "pct_change": 5.98,
+                "lead_stock": "炬光科技"
+              },
+              {
+                "industry": "通信设备",
+                "ts_code": "881129.TI",
+                "value": 193.0,
+                "unit": "亿元",
+                "pct_change": 5.01,
+                "lead_stock": "太辰光"
+              },
+              {
+                "industry": "消费电子",
+                "ts_code": "881124.TI",
+                "value": 88.0,
+                "unit": "亿元",
+                "pct_change": 4.61,
+                "lead_stock": "光大同创"
+              },
+              {
+                "industry": "电子",
+                "ts_code": "801080.SI",
+                "value": 6.58,
+                "unit": "%",
+                "pct_change": 6.58,
+                "lead_stock": null
+              },
+              {
+                "industry": "通信",
+                "ts_code": "801770.SI",
+                "value": 6.5,
+                "unit": "%",
+                "pct_change": 6.5,
+                "lead_stock": null
+              }
+            ]
+          }
+        },
+        "traditional_weight_reversal": {
+          "active": true,
+          "industries": [
+            "建筑材料",
+            "有色金属"
+          ],
+          "matched_rows": [
+            {
+              "industry": "建筑材料",
+              "ts_code": "801710.SI",
+              "value": 5.0,
+              "unit": "%",
+              "pct_change": 5.0,
+              "lead_stock": null
+            },
+            {
+              "industry": "有色金属",
+              "ts_code": "801050.SI",
+              "value": 4.92,
+              "unit": "%",
+              "pct_change": 4.92,
+              "lead_stock": null
+            }
+          ]
+        },
+        "capital_flow": {
+          "northbound_net_inflow_100m_cny": 40.97,
+          "main_net_inflow_100m_cny": 978.3
+        },
+        "risk_read": {
+          "risk_cap_count": 3,
+          "risk_caps": [
+            {
+              "reason": "volume_blowoff_top",
+              "score_cap": 45,
+              "severity": "high",
+              "evidence": {
+                "pre_cap_market_position_score": 60.43,
+                "opportunity_score": 69.84,
+                "crowding_penalty": 9.73,
+                "valuation_score_pct": 0.19,
+                "realized_volatility_30d": 0.26,
+                "avg_volume_ratio": 0.99,
+                "total_turnover_100m_cny": 30507.42,
+                "index_trend_score_pct": 0.64,
+                "extreme_volume": true,
+                "elevated_valuation_or_volatility": true
+              },
+              "message": "成交额或换手极端放量，且估值或波动已偏高，爆量顶部风险触发仓位分上限。"
+            },
+            {
+              "reason": "expensive_valuation",
+              "score_cap": 55,
+              "severity": "medium",
+              "evidence": {
+                "pre_cap_market_position_score": 60.43,
+                "opportunity_score": 69.84,
+                "crowding_penalty": 9.73,
+                "valuation_score_pct": 0.19,
+                "realized_volatility_30d": 0.26
+              },
+              "message": "估值模块得分偏低，股票账户仓位分上限限制为55。"
+            },
+            {
+              "reason": "bubble_top_combo",
+              "score_cap": 35,
+              "severity": "high",
+              "evidence": {
+                "pre_cap_market_position_score": 60.43,
+                "opportunity_score": 69.84,
+                "crowding_penalty": 9.73,
+                "valuation_score_pct": 0.19,
+                "realized_volatility_30d": 0.26
+              },
+              "message": "估值极贵且波动率偏高，泡沫顶部风险触发强仓位上限。"
+            }
+          ],
+          "crowding_penalty": 9.73,
+          "risk_penalty_score": 49.07
+        },
+        "observations": [
+          "主线得分 90%，宽度得分 94.18%，差值 -4.18pct。",
+          "成长主线线索：半导体, 通信设备, 消费电子, 电子 位于涨幅或资金流入前列。",
+          "传统权重反抽线索：建筑材料, 有色金属 位于涨幅或资金流入前列。",
+          "资金分歧：北向 40.97亿元，主力 978.3亿元。",
+          "已触发 3 项风险上限，仓位分优先服从风控。"
+        ],
+        "watch_points": [
+          "半导体/芯片等成长主线是继续扩散，还是仅维持资金抱团。",
+          "传统权重反抽是否延续，并能否带动指数与个股宽度共振。",
+          "主力资金是否收敛流出，风险上限数量是否下降。"
+        ]
       }
     },
     {
@@ -27983,6 +28243,250 @@
           "volatility.market",
           "macro",
           "data_quality"
+        ]
+      },
+      "market_observation": {
+        "version": "market_observation_v1",
+        "basis_trade_date": "2026-06-16",
+        "label": "宽度偏弱，等待确认",
+        "stance": "风险上限压制，仓位先服从风控",
+        "summary": "主线 73.82%，宽度 63.28%；成长线索在 通信设备, 光学光电子；传统权重反抽在 建筑材料, 证券；市场中位数 0%、上涨占比 49.52%；仓位分 32.07，推荐 20%-40%，风险上限压制，仓位先服从风控。",
+        "opportunity_score": 56.69,
+        "position_score": 32.07,
+        "recommended_equity_position_range": "20%-40%",
+        "divergence": {
+          "mainline_score_pct": 73.82,
+          "breadth_score_pct": 63.28,
+          "capital_flow_score_pct": 39.9,
+          "valuation_score_pct": 19.22,
+          "spread_pct": 10.54,
+          "severe": false
+        },
+        "broad_market": {
+          "weak": true,
+          "advancer_ratio_pct": 49.52,
+          "median_pct_change": 0.0,
+          "strong_advancers_pct": 17.14,
+          "strong_decliners_pct": 5.91,
+          "industry_up_ratio_pct": 35.48,
+          "advancers": 2730,
+          "decliners": 2677,
+          "limit_up": 117,
+          "limit_down": 7
+        },
+        "mainline": {
+          "status": "strong",
+          "top_return_industries": [
+            {
+              "industry": "建筑材料",
+              "ts_code": "801710.SI",
+              "value": 4.24,
+              "unit": "%",
+              "pct_change": 4.24,
+              "lead_stock": null
+            },
+            {
+              "industry": "电力设备",
+              "ts_code": "801730.SI",
+              "value": 2.73,
+              "unit": "%",
+              "pct_change": 2.73,
+              "lead_stock": null
+            },
+            {
+              "industry": "通信",
+              "ts_code": "801770.SI",
+              "value": 2.49,
+              "unit": "%",
+              "pct_change": 2.49,
+              "lead_stock": null
+            },
+            {
+              "industry": "电子",
+              "ts_code": "801080.SI",
+              "value": 2.18,
+              "unit": "%",
+              "pct_change": 2.18,
+              "lead_stock": null
+            },
+            {
+              "industry": "机械设备",
+              "ts_code": "801890.SI",
+              "value": 1.69,
+              "unit": "%",
+              "pct_change": 1.69,
+              "lead_stock": null
+            }
+          ],
+          "top_inflow_industries": [
+            {
+              "industry": "电池",
+              "ts_code": "881281.TI",
+              "value": 64.0,
+              "unit": "亿元",
+              "pct_change": 4.02,
+              "lead_stock": "ST南都"
+            },
+            {
+              "industry": "通信设备",
+              "ts_code": "881129.TI",
+              "value": 48.0,
+              "unit": "亿元",
+              "pct_change": 3.28,
+              "lead_stock": "长进光子"
+            },
+            {
+              "industry": "自动化设备",
+              "ts_code": "881171.TI",
+              "value": 21.0,
+              "unit": "亿元",
+              "pct_change": 3.05,
+              "lead_stock": "鸿仕达"
+            },
+            {
+              "industry": "光学光电子",
+              "ts_code": "881122.TI",
+              "value": 17.0,
+              "unit": "亿元",
+              "pct_change": 2.98,
+              "lead_stock": "戈碧迦"
+            },
+            {
+              "industry": "证券",
+              "ts_code": "881157.TI",
+              "value": 10.0,
+              "unit": "亿元",
+              "pct_change": 0.91,
+              "lead_stock": "锦龙股份"
+            }
+          ],
+          "growth_signal": {
+            "active": true,
+            "industries": [
+              "通信设备",
+              "光学光电子",
+              "电力设备",
+              "通信"
+            ],
+            "matched_rows": [
+              {
+                "industry": "通信设备",
+                "ts_code": "881129.TI",
+                "value": 48.0,
+                "unit": "亿元",
+                "pct_change": 3.28,
+                "lead_stock": "长进光子"
+              },
+              {
+                "industry": "光学光电子",
+                "ts_code": "881122.TI",
+                "value": 17.0,
+                "unit": "亿元",
+                "pct_change": 2.98,
+                "lead_stock": "戈碧迦"
+              },
+              {
+                "industry": "电力设备",
+                "ts_code": "801730.SI",
+                "value": 2.73,
+                "unit": "%",
+                "pct_change": 2.73,
+                "lead_stock": null
+              },
+              {
+                "industry": "通信",
+                "ts_code": "801770.SI",
+                "value": 2.49,
+                "unit": "%",
+                "pct_change": 2.49,
+                "lead_stock": null
+              },
+              {
+                "industry": "电子",
+                "ts_code": "801080.SI",
+                "value": 2.18,
+                "unit": "%",
+                "pct_change": 2.18,
+                "lead_stock": null
+              }
+            ]
+          }
+        },
+        "traditional_weight_reversal": {
+          "active": true,
+          "industries": [
+            "建筑材料",
+            "证券"
+          ],
+          "matched_rows": [
+            {
+              "industry": "建筑材料",
+              "ts_code": "801710.SI",
+              "value": 4.24,
+              "unit": "%",
+              "pct_change": 4.24,
+              "lead_stock": null
+            },
+            {
+              "industry": "证券",
+              "ts_code": "881157.TI",
+              "value": 10.0,
+              "unit": "亿元",
+              "pct_change": 0.91,
+              "lead_stock": "锦龙股份"
+            }
+          ]
+        },
+        "capital_flow": {
+          "northbound_net_inflow_100m_cny": 38.3,
+          "main_net_inflow_100m_cny": -649.42
+        },
+        "risk_read": {
+          "risk_cap_count": 2,
+          "risk_caps": [
+            {
+              "reason": "expensive_valuation",
+              "score_cap": 55,
+              "severity": "medium",
+              "evidence": {
+                "pre_cap_market_position_score": 32.07,
+                "opportunity_score": 56.69,
+                "crowding_penalty": 12.1,
+                "valuation_score_pct": 0.19,
+                "realized_volatility_30d": 0.26
+              },
+              "message": "估值模块得分偏低，股票账户仓位分上限限制为55。"
+            },
+            {
+              "reason": "bubble_top_combo",
+              "score_cap": 35,
+              "severity": "high",
+              "evidence": {
+                "pre_cap_market_position_score": 32.07,
+                "opportunity_score": 56.69,
+                "crowding_penalty": 12.1,
+                "valuation_score_pct": 0.19,
+                "realized_volatility_30d": 0.26
+              },
+              "message": "估值极贵且波动率偏高，泡沫顶部风险触发强仓位上限。"
+            }
+          ],
+          "crowding_penalty": 12.1,
+          "risk_penalty_score": 54.84
+        },
+        "observations": [
+          "主线得分 73.82%，宽度得分 63.28%，差值 10.54pct。",
+          "成长主线线索：通信设备, 光学光电子, 电力设备, 通信 位于涨幅或资金流入前列。",
+          "传统权重反抽线索：建筑材料, 证券 位于涨幅或资金流入前列。",
+          "宽度仍弱：上涨占比 49.52%，个股中位数 0%，强跌占比 5.91%。",
+          "资金分歧：北向 38.3亿元，主力 -649.42亿元。",
+          "已触发 2 项风险上限，仓位分优先服从风控。"
+        ],
+        "watch_points": [
+          "宽度修复是否发生：上涨占比、行业上涨占比和个股中位数需要同步改善。",
+          "半导体/芯片等成长主线是继续扩散，还是仅维持资金抱团。",
+          "传统权重反抽是否延续，并能否带动指数与个股宽度共振。",
+          "主力资金是否收敛流出，风险上限数量是否下降。"
         ]
       }
     },
@@ -29609,6 +30113,282 @@
           "macro",
           "data_quality"
         ]
+      },
+      "market_observation": {
+        "version": "market_observation_v1",
+        "basis_trade_date": "2026-06-18",
+        "label": "强主线弱宽度，结构分化",
+        "stance": "风险上限压制，仓位先服从风控",
+        "summary": "主线强但宽度弱：主线 78.58%，宽度 32.66%；成长线索在 半导体, 消费电子；市场中位数 -0.77%、上涨占比 36.74%；仓位分 25.26，推荐 20%-40%，风险上限压制，仓位先服从风控。",
+        "opportunity_score": 55.87,
+        "position_score": 25.26,
+        "recommended_equity_position_range": "20%-40%",
+        "divergence": {
+          "mainline_score_pct": 78.58,
+          "breadth_score_pct": 32.66,
+          "capital_flow_score_pct": 43.68,
+          "valuation_score_pct": 18.68,
+          "spread_pct": 45.92,
+          "severe": true
+        },
+        "broad_market": {
+          "weak": true,
+          "advancer_ratio_pct": 36.74,
+          "median_pct_change": -0.77,
+          "strong_advancers_pct": 13.02,
+          "strong_decliners_pct": 15.67,
+          "industry_up_ratio_pct": 29.03,
+          "advancers": 2023,
+          "decliners": 3395,
+          "limit_up": 91,
+          "limit_down": 12
+        },
+        "mainline": {
+          "status": "strong",
+          "top_return_industries": [
+            {
+              "industry": "通信",
+              "ts_code": "801770.SI",
+              "value": 3.79,
+              "unit": "%",
+              "pct_change": 3.79,
+              "lead_stock": null
+            },
+            {
+              "industry": "电子",
+              "ts_code": "801080.SI",
+              "value": 3.04,
+              "unit": "%",
+              "pct_change": 3.04,
+              "lead_stock": null
+            },
+            {
+              "industry": "机械设备",
+              "ts_code": "801890.SI",
+              "value": 1.63,
+              "unit": "%",
+              "pct_change": 1.63,
+              "lead_stock": null
+            },
+            {
+              "industry": "医药生物",
+              "ts_code": "801150.SI",
+              "value": 1.08,
+              "unit": "%",
+              "pct_change": 1.08,
+              "lead_stock": null
+            },
+            {
+              "industry": "计算机",
+              "ts_code": "801750.SI",
+              "value": 0.67,
+              "unit": "%",
+              "pct_change": 0.67,
+              "lead_stock": null
+            }
+          ],
+          "top_inflow_industries": [
+            {
+              "industry": "半导体",
+              "ts_code": "881121.TI",
+              "value": 119.0,
+              "unit": "亿元",
+              "pct_change": 2.29,
+              "lead_stock": "晶升股份"
+            },
+            {
+              "industry": "消费电子",
+              "ts_code": "881124.TI",
+              "value": 52.0,
+              "unit": "亿元",
+              "pct_change": 1.18,
+              "lead_stock": "易德龙"
+            },
+            {
+              "industry": "通信设备",
+              "ts_code": "881129.TI",
+              "value": 50.0,
+              "unit": "亿元",
+              "pct_change": 1.28,
+              "lead_stock": "中瓷电子"
+            },
+            {
+              "industry": "自动化设备",
+              "ts_code": "881171.TI",
+              "value": 17.0,
+              "unit": "亿元",
+              "pct_change": 1.43,
+              "lead_stock": "凌云光"
+            },
+            {
+              "industry": "医疗服务",
+              "ts_code": "881175.TI",
+              "value": 15.0,
+              "unit": "亿元",
+              "pct_change": 1.96,
+              "lead_stock": "皓元医药"
+            }
+          ],
+          "growth_signal": {
+            "active": true,
+            "industries": [
+              "半导体",
+              "消费电子",
+              "通信设备",
+              "通信"
+            ],
+            "matched_rows": [
+              {
+                "industry": "半导体",
+                "ts_code": "881121.TI",
+                "value": 119.0,
+                "unit": "亿元",
+                "pct_change": 2.29,
+                "lead_stock": "晶升股份"
+              },
+              {
+                "industry": "消费电子",
+                "ts_code": "881124.TI",
+                "value": 52.0,
+                "unit": "亿元",
+                "pct_change": 1.18,
+                "lead_stock": "易德龙"
+              },
+              {
+                "industry": "通信设备",
+                "ts_code": "881129.TI",
+                "value": 50.0,
+                "unit": "亿元",
+                "pct_change": 1.28,
+                "lead_stock": "中瓷电子"
+              },
+              {
+                "industry": "通信",
+                "ts_code": "801770.SI",
+                "value": 3.79,
+                "unit": "%",
+                "pct_change": 3.79,
+                "lead_stock": null
+              },
+              {
+                "industry": "电子",
+                "ts_code": "801080.SI",
+                "value": 3.04,
+                "unit": "%",
+                "pct_change": 3.04,
+                "lead_stock": null
+              },
+              {
+                "industry": "计算机",
+                "ts_code": "801750.SI",
+                "value": 0.67,
+                "unit": "%",
+                "pct_change": 0.67,
+                "lead_stock": null
+              }
+            ]
+          }
+        },
+        "traditional_weight_reversal": {
+          "active": false,
+          "industries": [],
+          "matched_rows": []
+        },
+        "capital_flow": {
+          "northbound_net_inflow_100m_cny": 42.93,
+          "main_net_inflow_100m_cny": -677.78
+        },
+        "risk_read": {
+          "risk_cap_count": 5,
+          "risk_caps": [
+            {
+              "reason": "high_crowding",
+              "score_cap": 60,
+              "severity": "medium",
+              "evidence": {
+                "pre_cap_market_position_score": 25.26,
+                "opportunity_score": 55.87,
+                "crowding_penalty": 19.91,
+                "valuation_score_pct": 0.19,
+                "realized_volatility_30d": 0.26
+              },
+              "message": "拥挤惩罚偏高，股票账户仓位分上限限制为60。"
+            },
+            {
+              "reason": "volume_blowoff_top",
+              "score_cap": 45,
+              "severity": "high",
+              "evidence": {
+                "pre_cap_market_position_score": 25.26,
+                "opportunity_score": 55.87,
+                "crowding_penalty": 19.91,
+                "valuation_score_pct": 0.19,
+                "realized_volatility_30d": 0.26,
+                "avg_volume_ratio": 1.02,
+                "total_turnover_100m_cny": 33317.19,
+                "index_trend_score_pct": 0.78,
+                "extreme_volume": true,
+                "elevated_valuation_or_volatility": true
+              },
+              "message": "成交额或换手极端放量，且估值或波动已偏高，爆量顶部风险触发仓位分上限。"
+            },
+            {
+              "reason": "expensive_valuation",
+              "score_cap": 55,
+              "severity": "medium",
+              "evidence": {
+                "pre_cap_market_position_score": 25.26,
+                "opportunity_score": 55.87,
+                "crowding_penalty": 19.91,
+                "valuation_score_pct": 0.19,
+                "realized_volatility_30d": 0.26
+              },
+              "message": "估值模块得分偏低，股票账户仓位分上限限制为55。"
+            },
+            {
+              "reason": "bubble_top_combo",
+              "score_cap": 35,
+              "severity": "high",
+              "evidence": {
+                "pre_cap_market_position_score": 25.26,
+                "opportunity_score": 55.87,
+                "crowding_penalty": 19.91,
+                "valuation_score_pct": 0.19,
+                "realized_volatility_30d": 0.26
+              },
+              "message": "估值极贵且波动率偏高，泡沫顶部风险触发强仓位上限。"
+            },
+            {
+              "reason": "strong_index_weak_breadth",
+              "score_cap": 60,
+              "severity": "medium",
+              "evidence": {
+                "pre_cap_market_position_score": 25.26,
+                "opportunity_score": 55.87,
+                "crowding_penalty": 19.91,
+                "valuation_score_pct": 0.19,
+                "realized_volatility_30d": 0.26,
+                "index_trend_score_pct": 0.78,
+                "breadth_score_pct": 0.33
+              },
+              "message": "指数趋势强但市场宽度弱，局部抱团风险触发仓位分上限。"
+            }
+          ],
+          "crowding_penalty": 19.91,
+          "risk_penalty_score": 61.09
+        },
+        "observations": [
+          "主线得分 78.58%，宽度得分 32.66%，差值 45.92pct。",
+          "成长主线线索：半导体, 消费电子, 通信设备, 通信 位于涨幅或资金流入前列。",
+          "宽度仍弱：上涨占比 36.74%，个股中位数 -0.77%，强跌占比 15.67%。",
+          "资金分歧：北向 42.93亿元，主力 -677.78亿元。",
+          "已触发 5 项风险上限，仓位分优先服从风控。"
+        ],
+        "watch_points": [
+          "宽度修复是否发生：上涨占比、行业上涨占比和个股中位数需要同步改善。",
+          "半导体/芯片等成长主线是继续扩散，还是仅维持资金抱团。",
+          "主力资金是否收敛流出，风险上限数量是否下降。"
+        ]
       }
     },
     {
@@ -31222,6 +32002,249 @@
           "macro",
           "data_quality"
         ]
+      },
+      "market_observation": {
+        "version": "market_observation_v1",
+        "basis_trade_date": "2026-06-22",
+        "label": "结构中性观察",
+        "stance": "风险上限压制，仓位先服从风控",
+        "summary": "主线 80%，宽度 80.19%；成长线索在 软件开发, 电力设备；传统权重反抽在 有色金属, 建筑材料, 证券；仓位分 35，推荐 20%-40%，风险上限压制，仓位先服从风控。",
+        "opportunity_score": 65.7,
+        "position_score": 35.0,
+        "recommended_equity_position_range": "20%-40%",
+        "divergence": {
+          "mainline_score_pct": 80.0,
+          "breadth_score_pct": 80.19,
+          "capital_flow_score_pct": 57.85,
+          "valuation_score_pct": 16.76,
+          "spread_pct": -0.19,
+          "severe": false
+        },
+        "broad_market": {
+          "weak": false,
+          "advancer_ratio_pct": 52.92,
+          "median_pct_change": 0.24,
+          "strong_advancers_pct": 18.73,
+          "strong_decliners_pct": 12.94,
+          "industry_up_ratio_pct": 87.1,
+          "advancers": 2916,
+          "decliners": 2468,
+          "limit_up": 134,
+          "limit_down": 4
+        },
+        "mainline": {
+          "status": "strong",
+          "top_return_industries": [
+            {
+              "industry": "非银金融",
+              "ts_code": "801790.SI",
+              "value": 6.84,
+              "unit": "%",
+              "pct_change": 6.84,
+              "lead_stock": null
+            },
+            {
+              "industry": "有色金属",
+              "ts_code": "801050.SI",
+              "value": 4.67,
+              "unit": "%",
+              "pct_change": 4.67,
+              "lead_stock": null
+            },
+            {
+              "industry": "基础化工",
+              "ts_code": "801030.SI",
+              "value": 4.17,
+              "unit": "%",
+              "pct_change": 4.17,
+              "lead_stock": null
+            },
+            {
+              "industry": "电力设备",
+              "ts_code": "801730.SI",
+              "value": 3.39,
+              "unit": "%",
+              "pct_change": 3.39,
+              "lead_stock": null
+            },
+            {
+              "industry": "建筑材料",
+              "ts_code": "801710.SI",
+              "value": 3.15,
+              "unit": "%",
+              "pct_change": 3.15,
+              "lead_stock": null
+            }
+          ],
+          "top_inflow_industries": [
+            {
+              "industry": "证券",
+              "ts_code": "881157.TI",
+              "value": 156.0,
+              "unit": "亿元",
+              "pct_change": 6.4,
+              "lead_stock": "东方财富"
+            },
+            {
+              "industry": "电池",
+              "ts_code": "881281.TI",
+              "value": 84.0,
+              "unit": "亿元",
+              "pct_change": 2.19,
+              "lead_stock": "科恒股份"
+            },
+            {
+              "industry": "工业金属",
+              "ts_code": "881168.TI",
+              "value": 69.0,
+              "unit": "亿元",
+              "pct_change": 4.18,
+              "lead_stock": "锌业股份"
+            },
+            {
+              "industry": "软件开发",
+              "ts_code": "881272.TI",
+              "value": 34.0,
+              "unit": "亿元",
+              "pct_change": 1.83,
+              "lead_stock": "艾融软件"
+            },
+            {
+              "industry": "光伏设备",
+              "ts_code": "881279.TI",
+              "value": 28.0,
+              "unit": "亿元",
+              "pct_change": 0.99,
+              "lead_stock": "阳光电源"
+            }
+          ],
+          "growth_signal": {
+            "active": true,
+            "industries": [
+              "软件开发",
+              "电力设备"
+            ],
+            "matched_rows": [
+              {
+                "industry": "软件开发",
+                "ts_code": "881272.TI",
+                "value": 34.0,
+                "unit": "亿元",
+                "pct_change": 1.83,
+                "lead_stock": "艾融软件"
+              },
+              {
+                "industry": "电力设备",
+                "ts_code": "801730.SI",
+                "value": 3.39,
+                "unit": "%",
+                "pct_change": 3.39,
+                "lead_stock": null
+              }
+            ]
+          }
+        },
+        "traditional_weight_reversal": {
+          "active": true,
+          "industries": [
+            "有色金属",
+            "建筑材料",
+            "证券"
+          ],
+          "matched_rows": [
+            {
+              "industry": "有色金属",
+              "ts_code": "801050.SI",
+              "value": 4.67,
+              "unit": "%",
+              "pct_change": 4.67,
+              "lead_stock": null
+            },
+            {
+              "industry": "建筑材料",
+              "ts_code": "801710.SI",
+              "value": 3.15,
+              "unit": "%",
+              "pct_change": 3.15,
+              "lead_stock": null
+            },
+            {
+              "industry": "证券",
+              "ts_code": "881157.TI",
+              "value": 156.0,
+              "unit": "亿元",
+              "pct_change": 6.4,
+              "lead_stock": "东方财富"
+            }
+          ]
+        },
+        "capital_flow": {
+          "northbound_net_inflow_100m_cny": 48.22,
+          "main_net_inflow_100m_cny": -154.32
+        },
+        "risk_read": {
+          "risk_cap_count": 3,
+          "risk_caps": [
+            {
+              "reason": "volume_blowoff_top",
+              "score_cap": 45,
+              "severity": "high",
+              "evidence": {
+                "pre_cap_market_position_score": 56.9,
+                "opportunity_score": 65.7,
+                "crowding_penalty": 12.0,
+                "valuation_score_pct": 0.17,
+                "realized_volatility_30d": 0.26,
+                "avg_volume_ratio": 1.18,
+                "total_turnover_100m_cny": 37621.03,
+                "index_trend_score_pct": 0.79,
+                "extreme_volume": true,
+                "elevated_valuation_or_volatility": true
+              },
+              "message": "成交额或换手极端放量，且估值或波动已偏高，爆量顶部风险触发仓位分上限。"
+            },
+            {
+              "reason": "expensive_valuation",
+              "score_cap": 55,
+              "severity": "medium",
+              "evidence": {
+                "pre_cap_market_position_score": 56.9,
+                "opportunity_score": 65.7,
+                "crowding_penalty": 12.0,
+                "valuation_score_pct": 0.17,
+                "realized_volatility_30d": 0.26
+              },
+              "message": "估值模块得分偏低，股票账户仓位分上限限制为55。"
+            },
+            {
+              "reason": "bubble_top_combo",
+              "score_cap": 35,
+              "severity": "high",
+              "evidence": {
+                "pre_cap_market_position_score": 56.9,
+                "opportunity_score": 65.7,
+                "crowding_penalty": 12.0,
+                "valuation_score_pct": 0.17,
+                "realized_volatility_30d": 0.26
+              },
+              "message": "估值极贵且波动率偏高，泡沫顶部风险触发强仓位上限。"
+            }
+          ],
+          "crowding_penalty": 12.0,
+          "risk_penalty_score": 55.77
+        },
+        "observations": [
+          "主线得分 80%，宽度得分 80.19%，差值 -0.19pct。",
+          "成长主线线索：软件开发, 电力设备 位于涨幅或资金流入前列。",
+          "传统权重反抽线索：有色金属, 建筑材料, 证券 位于涨幅或资金流入前列。",
+          "资金分歧：北向 48.22亿元，主力 -154.32亿元。",
+          "已触发 3 项风险上限，仓位分优先服从风控。"
+        ],
+        "watch_points": [
+          "半导体/芯片等成长主线是继续扩散，还是仅维持资金抱团。",
+          "传统权重反抽是否延续，并能否带动指数与个股宽度共振。",
+          "主力资金是否收敛流出，风险上限数量是否下降。"
+        ]
       }
     },
     {
@@ -32831,6 +33854,223 @@
           "volatility.market",
           "macro",
           "data_quality"
+        ]
+      },
+      "market_observation": {
+        "version": "market_observation_v1",
+        "basis_trade_date": "2026-06-23",
+        "label": "宽度偏弱，等待确认",
+        "stance": "风险上限压制，仓位先服从风控",
+        "summary": "主线 31.37%，宽度 35.46%；传统权重反抽在 银行, 交通运输；市场中位数 0.05%、上涨占比 50.14%；仓位分 21.22，推荐 20%-40%，风险上限压制，仓位先服从风控。",
+        "opportunity_score": 47.32,
+        "position_score": 21.22,
+        "recommended_equity_position_range": "20%-40%",
+        "divergence": {
+          "mainline_score_pct": 31.37,
+          "breadth_score_pct": 35.46,
+          "capital_flow_score_pct": 32.6,
+          "valuation_score_pct": 18.41,
+          "spread_pct": -4.09,
+          "severe": false
+        },
+        "broad_market": {
+          "weak": true,
+          "advancer_ratio_pct": 50.14,
+          "median_pct_change": 0.05,
+          "strong_advancers_pct": 12.84,
+          "strong_decliners_pct": 18.43,
+          "industry_up_ratio_pct": 16.13,
+          "advancers": 2764,
+          "decliners": 2644,
+          "limit_up": 96,
+          "limit_down": 39
+        },
+        "mainline": {
+          "status": "weak",
+          "top_return_industries": [
+            {
+              "industry": "医药生物",
+              "ts_code": "801150.SI",
+              "value": 1.33,
+              "unit": "%",
+              "pct_change": 1.33,
+              "lead_stock": null
+            },
+            {
+              "industry": "银行",
+              "ts_code": "801780.SI",
+              "value": 1.15,
+              "unit": "%",
+              "pct_change": 1.15,
+              "lead_stock": null
+            },
+            {
+              "industry": "纺织服饰",
+              "ts_code": "801130.SI",
+              "value": 1.04,
+              "unit": "%",
+              "pct_change": 1.04,
+              "lead_stock": null
+            },
+            {
+              "industry": "交通运输",
+              "ts_code": "801170.SI",
+              "value": 0.25,
+              "unit": "%",
+              "pct_change": 0.25,
+              "lead_stock": null
+            },
+            {
+              "industry": "美容护理",
+              "ts_code": "801980.SI",
+              "value": 0.24,
+              "unit": "%",
+              "pct_change": 0.24,
+              "lead_stock": null
+            }
+          ],
+          "top_inflow_industries": [
+            {
+              "industry": "银行",
+              "ts_code": "881155.TI",
+              "value": 29.0,
+              "unit": "亿元",
+              "pct_change": 1.56,
+              "lead_stock": "西安银行"
+            },
+            {
+              "industry": "化学制药",
+              "ts_code": "881140.TI",
+              "value": 3.0,
+              "unit": "亿元",
+              "pct_change": 3.68,
+              "lead_stock": "新赣江"
+            },
+            {
+              "industry": "医疗服务",
+              "ts_code": "881175.TI",
+              "value": 2.0,
+              "unit": "亿元",
+              "pct_change": 2.39,
+              "lead_stock": "睿智医药"
+            },
+            {
+              "industry": "中药",
+              "ts_code": "881141.TI",
+              "value": 1.0,
+              "unit": "亿元",
+              "pct_change": 2.18,
+              "lead_stock": "特一药业"
+            },
+            {
+              "industry": "橡胶制品",
+              "ts_code": "881266.TI",
+              "value": 1.0,
+              "unit": "亿元",
+              "pct_change": 1.22,
+              "lead_stock": "黑猫股份"
+            }
+          ],
+          "growth_signal": {
+            "active": false,
+            "industries": [],
+            "matched_rows": []
+          }
+        },
+        "traditional_weight_reversal": {
+          "active": true,
+          "industries": [
+            "银行",
+            "交通运输"
+          ],
+          "matched_rows": [
+            {
+              "industry": "银行",
+              "ts_code": "801780.SI",
+              "value": 1.15,
+              "unit": "%",
+              "pct_change": 1.15,
+              "lead_stock": null
+            },
+            {
+              "industry": "交通运输",
+              "ts_code": "801170.SI",
+              "value": 0.25,
+              "unit": "%",
+              "pct_change": 0.25,
+              "lead_stock": null
+            },
+            {
+              "industry": "银行",
+              "ts_code": "881155.TI",
+              "value": 29.0,
+              "unit": "亿元",
+              "pct_change": 1.56,
+              "lead_stock": "西安银行"
+            }
+          ]
+        },
+        "capital_flow": {
+          "northbound_net_inflow_100m_cny": 44.4,
+          "main_net_inflow_100m_cny": -1840.61
+        },
+        "risk_read": {
+          "risk_cap_count": 3,
+          "risk_caps": [
+            {
+              "reason": "high_crowding",
+              "score_cap": 60,
+              "severity": "medium",
+              "evidence": {
+                "pre_cap_market_position_score": 21.22,
+                "opportunity_score": 47.32,
+                "crowding_penalty": 16.0,
+                "valuation_score_pct": 0.18,
+                "realized_volatility_30d": 0.27
+              },
+              "message": "拥挤惩罚偏高，股票账户仓位分上限限制为60。"
+            },
+            {
+              "reason": "expensive_valuation",
+              "score_cap": 55,
+              "severity": "medium",
+              "evidence": {
+                "pre_cap_market_position_score": 21.22,
+                "opportunity_score": 47.32,
+                "crowding_penalty": 16.0,
+                "valuation_score_pct": 0.18,
+                "realized_volatility_30d": 0.27
+              },
+              "message": "估值模块得分偏低，股票账户仓位分上限限制为55。"
+            },
+            {
+              "reason": "bubble_top_combo",
+              "score_cap": 35,
+              "severity": "high",
+              "evidence": {
+                "pre_cap_market_position_score": 21.22,
+                "opportunity_score": 47.32,
+                "crowding_penalty": 16.0,
+                "valuation_score_pct": 0.18,
+                "realized_volatility_30d": 0.27
+              },
+              "message": "估值极贵且波动率偏高，泡沫顶部风险触发强仓位上限。"
+            }
+          ],
+          "crowding_penalty": 16.0,
+          "risk_penalty_score": 67.17
+        },
+        "observations": [
+          "主线得分 31.37%，宽度得分 35.46%，差值 -4.09pct。",
+          "传统权重反抽线索：银行, 交通运输 位于涨幅或资金流入前列。",
+          "宽度仍弱：上涨占比 50.14%，个股中位数 0.05%，强跌占比 18.43%。",
+          "资金分歧：北向 44.4亿元，主力 -1840.61亿元。",
+          "已触发 3 项风险上限，仓位分优先服从风控。"
+        ],
+        "watch_points": [
+          "宽度修复是否发生：上涨占比、行业上涨占比和个股中位数需要同步改善。",
+          "传统权重反抽是否延续，并能否带动指数与个股宽度共振。",
+          "主力资金是否收敛流出，风险上限数量是否下降。"
         ]
       }
     },
@@ -34449,6 +35689,262 @@
           "volatility.market",
           "macro",
           "data_quality"
+        ]
+      },
+      "market_observation": {
+        "version": "market_observation_v1",
+        "basis_trade_date": "2026-06-24",
+        "label": "强主线弱宽度，传统权重反抽",
+        "stance": "风险上限压制，仓位先服从风控",
+        "summary": "主线强但宽度弱：主线 88.86%，宽度 21.11%；成长线索在 半导体, 消费电子；传统权重反抽在 建筑材料；市场中位数 -2.02%、上涨占比 26.02%；仓位分 23.65，推荐 20%-40%，风险上限压制，仓位先服从风控。",
+        "opportunity_score": 55.52,
+        "position_score": 23.65,
+        "recommended_equity_position_range": "20%-40%",
+        "divergence": {
+          "mainline_score_pct": 88.86,
+          "breadth_score_pct": 21.11,
+          "capital_flow_score_pct": 48.36,
+          "valuation_score_pct": 18.02,
+          "spread_pct": 67.75,
+          "severe": true
+        },
+        "broad_market": {
+          "weak": true,
+          "advancer_ratio_pct": 26.02,
+          "median_pct_change": -2.02,
+          "strong_advancers_pct": 11.77,
+          "strong_decliners_pct": 32.22,
+          "industry_up_ratio_pct": 35.48,
+          "advancers": 1434,
+          "decliners": 4034,
+          "limit_up": 98,
+          "limit_down": 12
+        },
+        "mainline": {
+          "status": "strong",
+          "top_return_industries": [
+            {
+              "industry": "电子",
+              "ts_code": "801080.SI",
+              "value": 4.15,
+              "unit": "%",
+              "pct_change": 4.15,
+              "lead_stock": null
+            },
+            {
+              "industry": "建筑材料",
+              "ts_code": "801710.SI",
+              "value": 4.1,
+              "unit": "%",
+              "pct_change": 4.1,
+              "lead_stock": null
+            },
+            {
+              "industry": "综合",
+              "ts_code": "801230.SI",
+              "value": 3.19,
+              "unit": "%",
+              "pct_change": 3.19,
+              "lead_stock": null
+            },
+            {
+              "industry": "基础化工",
+              "ts_code": "801030.SI",
+              "value": 1.91,
+              "unit": "%",
+              "pct_change": 1.91,
+              "lead_stock": null
+            },
+            {
+              "industry": "通信",
+              "ts_code": "801770.SI",
+              "value": 0.91,
+              "unit": "%",
+              "pct_change": 0.91,
+              "lead_stock": null
+            }
+          ],
+          "top_inflow_industries": [
+            {
+              "industry": "半导体",
+              "ts_code": "881121.TI",
+              "value": 313.0,
+              "unit": "亿元",
+              "pct_change": 3.8,
+              "lead_stock": "臻宝科技"
+            },
+            {
+              "industry": "消费电子",
+              "ts_code": "881124.TI",
+              "value": 115.0,
+              "unit": "亿元",
+              "pct_change": 0.63,
+              "lead_stock": "领益智造"
+            },
+            {
+              "industry": "能源金属",
+              "ts_code": "881267.TI",
+              "value": 33.0,
+              "unit": "亿元",
+              "pct_change": 4.27,
+              "lead_stock": "永杉锂业"
+            },
+            {
+              "industry": "计算机设备",
+              "ts_code": "881130.TI",
+              "value": 29.0,
+              "unit": "亿元",
+              "pct_change": -1.29,
+              "lead_stock": "协创数据"
+            },
+            {
+              "industry": "电子化学品",
+              "ts_code": "881172.TI",
+              "value": 26.0,
+              "unit": "亿元",
+              "pct_change": 3.1,
+              "lead_stock": "飞凯材料"
+            }
+          ],
+          "growth_signal": {
+            "active": true,
+            "industries": [
+              "半导体",
+              "消费电子",
+              "计算机设备",
+              "电子化学品"
+            ],
+            "matched_rows": [
+              {
+                "industry": "半导体",
+                "ts_code": "881121.TI",
+                "value": 313.0,
+                "unit": "亿元",
+                "pct_change": 3.8,
+                "lead_stock": "臻宝科技"
+              },
+              {
+                "industry": "消费电子",
+                "ts_code": "881124.TI",
+                "value": 115.0,
+                "unit": "亿元",
+                "pct_change": 0.63,
+                "lead_stock": "领益智造"
+              },
+              {
+                "industry": "计算机设备",
+                "ts_code": "881130.TI",
+                "value": 29.0,
+                "unit": "亿元",
+                "pct_change": -1.29,
+                "lead_stock": "协创数据"
+              },
+              {
+                "industry": "电子化学品",
+                "ts_code": "881172.TI",
+                "value": 26.0,
+                "unit": "亿元",
+                "pct_change": 3.1,
+                "lead_stock": "飞凯材料"
+              },
+              {
+                "industry": "电子",
+                "ts_code": "801080.SI",
+                "value": 4.15,
+                "unit": "%",
+                "pct_change": 4.15,
+                "lead_stock": null
+              },
+              {
+                "industry": "通信",
+                "ts_code": "801770.SI",
+                "value": 0.91,
+                "unit": "%",
+                "pct_change": 0.91,
+                "lead_stock": null
+              }
+            ]
+          }
+        },
+        "traditional_weight_reversal": {
+          "active": true,
+          "industries": [
+            "建筑材料"
+          ],
+          "matched_rows": [
+            {
+              "industry": "建筑材料",
+              "ts_code": "801710.SI",
+              "value": 4.1,
+              "unit": "%",
+              "pct_change": 4.1,
+              "lead_stock": null
+            }
+          ]
+        },
+        "capital_flow": {
+          "northbound_net_inflow_100m_cny": 42.44,
+          "main_net_inflow_100m_cny": -143.24
+        },
+        "risk_read": {
+          "risk_cap_count": 3,
+          "risk_caps": [
+            {
+              "reason": "high_crowding",
+              "score_cap": 60,
+              "severity": "medium",
+              "evidence": {
+                "pre_cap_market_position_score": 23.65,
+                "opportunity_score": 55.52,
+                "crowding_penalty": 16.08,
+                "valuation_score_pct": 0.18,
+                "realized_volatility_30d": 0.27
+              },
+              "message": "拥挤惩罚偏高，股票账户仓位分上限限制为60。"
+            },
+            {
+              "reason": "expensive_valuation",
+              "score_cap": 55,
+              "severity": "medium",
+              "evidence": {
+                "pre_cap_market_position_score": 23.65,
+                "opportunity_score": 55.52,
+                "crowding_penalty": 16.08,
+                "valuation_score_pct": 0.18,
+                "realized_volatility_30d": 0.27
+              },
+              "message": "估值模块得分偏低，股票账户仓位分上限限制为55。"
+            },
+            {
+              "reason": "bubble_top_combo",
+              "score_cap": 35,
+              "severity": "high",
+              "evidence": {
+                "pre_cap_market_position_score": 23.65,
+                "opportunity_score": 55.52,
+                "crowding_penalty": 16.08,
+                "valuation_score_pct": 0.18,
+                "realized_volatility_30d": 0.27
+              },
+              "message": "估值极贵且波动率偏高，泡沫顶部风险触发强仓位上限。"
+            }
+          ],
+          "crowding_penalty": 16.08,
+          "risk_penalty_score": 59.53
+        },
+        "observations": [
+          "主线得分 88.86%，宽度得分 21.11%，差值 67.75pct。",
+          "成长主线线索：半导体, 消费电子, 计算机设备, 电子化学品 位于涨幅或资金流入前列。",
+          "传统权重反抽线索：建筑材料 位于涨幅或资金流入前列。",
+          "宽度仍弱：上涨占比 26.02%，个股中位数 -2.02%，强跌占比 32.22%。",
+          "资金分歧：北向 42.44亿元，主力 -143.24亿元。",
+          "已触发 3 项风险上限，仓位分优先服从风控。"
+        ],
+        "watch_points": [
+          "宽度修复是否发生：上涨占比、行业上涨占比和个股中位数需要同步改善。",
+          "半导体/芯片等成长主线是继续扩散，还是仅维持资金抱团。",
+          "传统权重反抽是否延续，并能否带动指数与个股宽度共振。",
+          "主力资金是否收敛流出，风险上限数量是否下降。"
         ]
       }
     },
@@ -36133,6 +37629,296 @@
           "macro",
           "data_quality"
         ]
+      },
+      "market_observation": {
+        "version": "market_observation_v1",
+        "basis_trade_date": "2026-06-25",
+        "label": "强主线弱宽度，传统权重反抽",
+        "stance": "防守观察，不确认全面反转",
+        "summary": "主线强但宽度弱：主线 92.86%，宽度 7%；成长线索在 半导体, 通信设备；传统权重反抽在 建筑材料, 证券；市场中位数 -1.99%、上涨占比 22.34%；仓位分 19.95，推荐 0%-20%，防守观察，不确认全面反转。",
+        "opportunity_score": 54.57,
+        "position_score": 19.95,
+        "recommended_equity_position_range": "0%-20%",
+        "divergence": {
+          "mainline_score_pct": 92.86,
+          "breadth_score_pct": 7.0,
+          "capital_flow_score_pct": 38.34,
+          "valuation_score_pct": 17.64,
+          "spread_pct": 85.86,
+          "severe": true
+        },
+        "broad_market": {
+          "weak": true,
+          "advancer_ratio_pct": 22.34,
+          "median_pct_change": -1.99,
+          "strong_advancers_pct": 9.76,
+          "strong_decliners_pct": 30.21,
+          "industry_up_ratio_pct": 19.35,
+          "advancers": 1231,
+          "decliners": 4228,
+          "limit_up": 86,
+          "limit_down": 17
+        },
+        "mainline": {
+          "status": "strong",
+          "top_return_industries": [
+            {
+              "industry": "电子",
+              "ts_code": "801080.SI",
+              "value": 3.93,
+              "unit": "%",
+              "pct_change": 3.93,
+              "lead_stock": null
+            },
+            {
+              "industry": "建筑材料",
+              "ts_code": "801710.SI",
+              "value": 3.91,
+              "unit": "%",
+              "pct_change": 3.91,
+              "lead_stock": null
+            },
+            {
+              "industry": "通信",
+              "ts_code": "801770.SI",
+              "value": 2.72,
+              "unit": "%",
+              "pct_change": 2.72,
+              "lead_stock": null
+            },
+            {
+              "industry": "非银金融",
+              "ts_code": "801790.SI",
+              "value": 2.57,
+              "unit": "%",
+              "pct_change": 2.57,
+              "lead_stock": null
+            },
+            {
+              "industry": "机械设备",
+              "ts_code": "801890.SI",
+              "value": 0.75,
+              "unit": "%",
+              "pct_change": 0.75,
+              "lead_stock": null
+            }
+          ],
+          "top_inflow_industries": [
+            {
+              "industry": "元件",
+              "ts_code": "881270.TI",
+              "value": 112.0,
+              "unit": "亿元",
+              "pct_change": 3.14,
+              "lead_stock": "三环集团"
+            },
+            {
+              "industry": "半导体",
+              "ts_code": "881121.TI",
+              "value": 80.0,
+              "unit": "亿元",
+              "pct_change": 2.21,
+              "lead_stock": "北京君正"
+            },
+            {
+              "industry": "通信设备",
+              "ts_code": "881129.TI",
+              "value": 73.0,
+              "unit": "亿元",
+              "pct_change": -0.42,
+              "lead_stock": "利尔达"
+            },
+            {
+              "industry": "证券",
+              "ts_code": "881157.TI",
+              "value": 57.0,
+              "unit": "亿元",
+              "pct_change": 3.06,
+              "lead_stock": "长江证券"
+            },
+            {
+              "industry": "计算机设备",
+              "ts_code": "881130.TI",
+              "value": 24.0,
+              "unit": "亿元",
+              "pct_change": -1.55,
+              "lead_stock": "盛视科技"
+            }
+          ],
+          "growth_signal": {
+            "active": true,
+            "industries": [
+              "半导体",
+              "通信设备",
+              "计算机设备",
+              "电子"
+            ],
+            "matched_rows": [
+              {
+                "industry": "半导体",
+                "ts_code": "881121.TI",
+                "value": 80.0,
+                "unit": "亿元",
+                "pct_change": 2.21,
+                "lead_stock": "北京君正"
+              },
+              {
+                "industry": "通信设备",
+                "ts_code": "881129.TI",
+                "value": 73.0,
+                "unit": "亿元",
+                "pct_change": -0.42,
+                "lead_stock": "利尔达"
+              },
+              {
+                "industry": "计算机设备",
+                "ts_code": "881130.TI",
+                "value": 24.0,
+                "unit": "亿元",
+                "pct_change": -1.55,
+                "lead_stock": "盛视科技"
+              },
+              {
+                "industry": "电子",
+                "ts_code": "801080.SI",
+                "value": 3.93,
+                "unit": "%",
+                "pct_change": 3.93,
+                "lead_stock": null
+              },
+              {
+                "industry": "通信",
+                "ts_code": "801770.SI",
+                "value": 2.72,
+                "unit": "%",
+                "pct_change": 2.72,
+                "lead_stock": null
+              }
+            ]
+          }
+        },
+        "traditional_weight_reversal": {
+          "active": true,
+          "industries": [
+            "建筑材料",
+            "证券"
+          ],
+          "matched_rows": [
+            {
+              "industry": "建筑材料",
+              "ts_code": "801710.SI",
+              "value": 3.91,
+              "unit": "%",
+              "pct_change": 3.91,
+              "lead_stock": null
+            },
+            {
+              "industry": "证券",
+              "ts_code": "881157.TI",
+              "value": 57.0,
+              "unit": "亿元",
+              "pct_change": 3.06,
+              "lead_stock": "长江证券"
+            }
+          ]
+        },
+        "capital_flow": {
+          "northbound_net_inflow_100m_cny": 42.39,
+          "main_net_inflow_100m_cny": -561.56
+        },
+        "risk_read": {
+          "risk_cap_count": 5,
+          "risk_caps": [
+            {
+              "reason": "high_crowding_extreme",
+              "score_cap": 50,
+              "severity": "high",
+              "evidence": {
+                "pre_cap_market_position_score": 19.95,
+                "opportunity_score": 54.57,
+                "crowding_penalty": 20.91,
+                "valuation_score_pct": 0.18,
+                "realized_volatility_30d": 0.27
+              },
+              "message": "拥挤惩罚达到极高区间，股票账户仓位分上限限制为50。"
+            },
+            {
+              "reason": "volume_blowoff_top",
+              "score_cap": 45,
+              "severity": "high",
+              "evidence": {
+                "pre_cap_market_position_score": 19.95,
+                "opportunity_score": 54.57,
+                "crowding_penalty": 20.91,
+                "valuation_score_pct": 0.18,
+                "realized_volatility_30d": 0.27,
+                "avg_volume_ratio": 1.02,
+                "total_turnover_100m_cny": 36189.44,
+                "index_trend_score_pct": 0.82,
+                "extreme_volume": true,
+                "elevated_valuation_or_volatility": true
+              },
+              "message": "成交额或换手极端放量，且估值或波动已偏高，爆量顶部风险触发仓位分上限。"
+            },
+            {
+              "reason": "expensive_valuation",
+              "score_cap": 55,
+              "severity": "medium",
+              "evidence": {
+                "pre_cap_market_position_score": 19.95,
+                "opportunity_score": 54.57,
+                "crowding_penalty": 20.91,
+                "valuation_score_pct": 0.18,
+                "realized_volatility_30d": 0.27
+              },
+              "message": "估值模块得分偏低，股票账户仓位分上限限制为55。"
+            },
+            {
+              "reason": "bubble_top_combo",
+              "score_cap": 35,
+              "severity": "high",
+              "evidence": {
+                "pre_cap_market_position_score": 19.95,
+                "opportunity_score": 54.57,
+                "crowding_penalty": 20.91,
+                "valuation_score_pct": 0.18,
+                "realized_volatility_30d": 0.27
+              },
+              "message": "估值极贵且波动率偏高，泡沫顶部风险触发强仓位上限。"
+            },
+            {
+              "reason": "strong_index_weak_breadth",
+              "score_cap": 60,
+              "severity": "medium",
+              "evidence": {
+                "pre_cap_market_position_score": 19.95,
+                "opportunity_score": 54.57,
+                "crowding_penalty": 20.91,
+                "valuation_score_pct": 0.18,
+                "realized_volatility_30d": 0.27,
+                "index_trend_score_pct": 0.82,
+                "breadth_score_pct": 0.07
+              },
+              "message": "指数趋势强但市场宽度弱，局部抱团风险触发仓位分上限。"
+            }
+          ],
+          "crowding_penalty": 20.91,
+          "risk_penalty_score": 63.71
+        },
+        "observations": [
+          "主线得分 92.86%，宽度得分 7%，差值 85.86pct。",
+          "成长主线线索：半导体, 通信设备, 计算机设备, 电子 位于涨幅或资金流入前列。",
+          "传统权重反抽线索：建筑材料, 证券 位于涨幅或资金流入前列。",
+          "宽度仍弱：上涨占比 22.34%，个股中位数 -1.99%，强跌占比 30.21%。",
+          "资金分歧：北向 42.39亿元，主力 -561.56亿元。",
+          "已触发 5 项风险上限，仓位分优先服从风控。"
+        ],
+        "watch_points": [
+          "宽度修复是否发生：上涨占比、行业上涨占比和个股中位数需要同步改善。",
+          "半导体/芯片等成长主线是继续扩散，还是仅维持资金抱团。",
+          "传统权重反抽是否延续，并能否带动指数与个股宽度共振。",
+          "主力资金是否收敛流出，风险上限数量是否下降。"
+        ]
       }
     },
     {
@@ -37710,6 +39496,259 @@
           "macro",
           "data_quality"
         ]
+      },
+      "market_observation": {
+        "version": "market_observation_v1",
+        "basis_trade_date": "2026-06-26",
+        "label": "宽度偏弱，等待确认",
+        "stance": "防守观察",
+        "summary": "主线 31.6%，宽度 6.56%；成长线索在 光学光电子, 电子化学品；传统权重反抽在 建筑材料, 农林牧渔, 家用电器；市场中位数 -2.88%、上涨占比 14.33%；仓位分 13.09，推荐 0%-20%，防守观察。",
+        "opportunity_score": 37.68,
+        "position_score": 13.09,
+        "recommended_equity_position_range": "0%-20%",
+        "divergence": {
+          "mainline_score_pct": 31.6,
+          "breadth_score_pct": 6.56,
+          "capital_flow_score_pct": 32.34,
+          "valuation_score_pct": 20.2,
+          "spread_pct": 25.04,
+          "severe": false
+        },
+        "broad_market": {
+          "weak": true,
+          "advancer_ratio_pct": 14.33,
+          "median_pct_change": -2.88,
+          "strong_advancers_pct": 6.58,
+          "strong_decliners_pct": 47.78,
+          "industry_up_ratio_pct": 6.45,
+          "advancers": 790,
+          "decliners": 4676,
+          "limit_up": 60,
+          "limit_down": 30
+        },
+        "mainline": {
+          "status": "weak",
+          "top_return_industries": [
+            {
+              "industry": "建筑材料",
+              "ts_code": "801710.SI",
+              "value": 1.97,
+              "unit": "%",
+              "pct_change": 1.97,
+              "lead_stock": null
+            },
+            {
+              "industry": "农林牧渔",
+              "ts_code": "801010.SI",
+              "value": 0.39,
+              "unit": "%",
+              "pct_change": 0.39,
+              "lead_stock": null
+            },
+            {
+              "industry": "家用电器",
+              "ts_code": "801110.SI",
+              "value": -0.43,
+              "unit": "%",
+              "pct_change": -0.43,
+              "lead_stock": null
+            },
+            {
+              "industry": "公用事业",
+              "ts_code": "801160.SI",
+              "value": -0.57,
+              "unit": "%",
+              "pct_change": -0.57,
+              "lead_stock": null
+            },
+            {
+              "industry": "房地产",
+              "ts_code": "801180.SI",
+              "value": -0.92,
+              "unit": "%",
+              "pct_change": -0.92,
+              "lead_stock": null
+            }
+          ],
+          "top_inflow_industries": [
+            {
+              "industry": "光学光电子",
+              "ts_code": "881122.TI",
+              "value": 45.0,
+              "unit": "亿元",
+              "pct_change": 0.1,
+              "lead_stock": "惠科股份"
+            },
+            {
+              "industry": "军工装备",
+              "ts_code": "881166.TI",
+              "value": 21.0,
+              "unit": "亿元",
+              "pct_change": -1.01,
+              "lead_stock": "电科蓝天"
+            },
+            {
+              "industry": "风电设备",
+              "ts_code": "881280.TI",
+              "value": 11.0,
+              "unit": "亿元",
+              "pct_change": -0.93,
+              "lead_stock": "三一重能"
+            },
+            {
+              "industry": "电子化学品",
+              "ts_code": "881172.TI",
+              "value": 9.0,
+              "unit": "亿元",
+              "pct_change": 0.26,
+              "lead_stock": "硅烷科技"
+            },
+            {
+              "industry": "军工电子",
+              "ts_code": "881276.TI",
+              "value": 9.0,
+              "unit": "亿元",
+              "pct_change": -1.38,
+              "lead_stock": "上海瀚讯"
+            }
+          ],
+          "growth_signal": {
+            "active": true,
+            "industries": [
+              "光学光电子",
+              "电子化学品",
+              "军工电子"
+            ],
+            "matched_rows": [
+              {
+                "industry": "光学光电子",
+                "ts_code": "881122.TI",
+                "value": 45.0,
+                "unit": "亿元",
+                "pct_change": 0.1,
+                "lead_stock": "惠科股份"
+              },
+              {
+                "industry": "电子化学品",
+                "ts_code": "881172.TI",
+                "value": 9.0,
+                "unit": "亿元",
+                "pct_change": 0.26,
+                "lead_stock": "硅烷科技"
+              },
+              {
+                "industry": "军工电子",
+                "ts_code": "881276.TI",
+                "value": 9.0,
+                "unit": "亿元",
+                "pct_change": -1.38,
+                "lead_stock": "上海瀚讯"
+              }
+            ]
+          }
+        },
+        "traditional_weight_reversal": {
+          "active": true,
+          "industries": [
+            "建筑材料",
+            "农林牧渔",
+            "家用电器",
+            "公用事业"
+          ],
+          "matched_rows": [
+            {
+              "industry": "建筑材料",
+              "ts_code": "801710.SI",
+              "value": 1.97,
+              "unit": "%",
+              "pct_change": 1.97,
+              "lead_stock": null
+            },
+            {
+              "industry": "农林牧渔",
+              "ts_code": "801010.SI",
+              "value": 0.39,
+              "unit": "%",
+              "pct_change": 0.39,
+              "lead_stock": null
+            },
+            {
+              "industry": "家用电器",
+              "ts_code": "801110.SI",
+              "value": -0.43,
+              "unit": "%",
+              "pct_change": -0.43,
+              "lead_stock": null
+            },
+            {
+              "industry": "公用事业",
+              "ts_code": "801160.SI",
+              "value": -0.57,
+              "unit": "%",
+              "pct_change": -0.57,
+              "lead_stock": null
+            },
+            {
+              "industry": "房地产",
+              "ts_code": "801180.SI",
+              "value": -0.92,
+              "unit": "%",
+              "pct_change": -0.92,
+              "lead_stock": null
+            }
+          ]
+        },
+        "capital_flow": {
+          "northbound_net_inflow_100m_cny": 41.31,
+          "main_net_inflow_100m_cny": -1809.88
+        },
+        "risk_read": {
+          "risk_cap_count": 2,
+          "risk_caps": [
+            {
+              "reason": "expensive_valuation",
+              "score_cap": 55,
+              "severity": "medium",
+              "evidence": {
+                "pre_cap_market_position_score": 13.09,
+                "opportunity_score": 37.68,
+                "crowding_penalty": 12.72,
+                "valuation_score_pct": 0.2,
+                "realized_volatility_30d": 0.28
+              },
+              "message": "估值模块得分偏低，股票账户仓位分上限限制为55。"
+            },
+            {
+              "reason": "bubble_top_combo",
+              "score_cap": 35,
+              "severity": "high",
+              "evidence": {
+                "pre_cap_market_position_score": 13.09,
+                "opportunity_score": 37.68,
+                "crowding_penalty": 12.72,
+                "valuation_score_pct": 0.2,
+                "realized_volatility_30d": 0.28
+              },
+              "message": "估值极贵且波动率偏高，泡沫顶部风险触发强仓位上限。"
+            }
+          ],
+          "crowding_penalty": 12.72,
+          "risk_penalty_score": 65.03
+        },
+        "observations": [
+          "主线得分 31.6%，宽度得分 6.56%，差值 25.04pct。",
+          "成长主线线索：光学光电子, 电子化学品, 军工电子 位于涨幅或资金流入前列。",
+          "传统权重反抽线索：建筑材料, 农林牧渔, 家用电器, 公用事业 位于涨幅或资金流入前列。",
+          "宽度仍弱：上涨占比 14.33%，个股中位数 -2.88%，强跌占比 47.78%。",
+          "资金分歧：北向 41.31亿元，主力 -1809.88亿元。",
+          "已触发 2 项风险上限，仓位分优先服从风控。"
+        ],
+        "watch_points": [
+          "宽度修复是否发生：上涨占比、行业上涨占比和个股中位数需要同步改善。",
+          "半导体/芯片等成长主线是继续扩散，还是仅维持资金抱团。",
+          "传统权重反抽是否延续，并能否带动指数与个股宽度共振。",
+          "主力资金是否收敛流出，风险上限数量是否下降。"
+        ]
       }
     },
     {
@@ -39281,6 +41320,224 @@
           "volatility.market",
           "macro",
           "data_quality"
+        ]
+      },
+      "market_observation": {
+        "version": "market_observation_v1",
+        "basis_trade_date": "2026-06-29",
+        "label": "宽度偏弱，等待确认",
+        "stance": "风险上限压制，仓位先服从风控",
+        "summary": "主线 82.69%，宽度 46.53%；成长线索在 半导体, 电子化学品；传统权重反抽在 农林牧渔；市场中位数 -0.3%、上涨占比 44.81%；仓位分 35，推荐 20%-40%，风险上限压制，仓位先服从风控。",
+        "opportunity_score": 58.22,
+        "position_score": 35.0,
+        "recommended_equity_position_range": "20%-40%",
+        "divergence": {
+          "mainline_score_pct": 82.69,
+          "breadth_score_pct": 46.53,
+          "capital_flow_score_pct": 66.95,
+          "valuation_score_pct": 19.05,
+          "spread_pct": 36.16,
+          "severe": false
+        },
+        "broad_market": {
+          "weak": true,
+          "advancer_ratio_pct": 44.81,
+          "median_pct_change": -0.3,
+          "strong_advancers_pct": 16.72,
+          "strong_decliners_pct": 18.49,
+          "industry_up_ratio_pct": 51.61,
+          "advancers": 2469,
+          "decliners": 2933,
+          "limit_up": 107,
+          "limit_down": 38
+        },
+        "mainline": {
+          "status": "strong",
+          "top_return_industries": [
+            {
+              "industry": "医药生物",
+              "ts_code": "801150.SI",
+              "value": 5.91,
+              "unit": "%",
+              "pct_change": 5.91,
+              "lead_stock": null
+            },
+            {
+              "industry": "农林牧渔",
+              "ts_code": "801010.SI",
+              "value": 2.96,
+              "unit": "%",
+              "pct_change": 2.96,
+              "lead_stock": null
+            },
+            {
+              "industry": "美容护理",
+              "ts_code": "801980.SI",
+              "value": 2.86,
+              "unit": "%",
+              "pct_change": 2.86,
+              "lead_stock": null
+            },
+            {
+              "industry": "食品饮料",
+              "ts_code": "801120.SI",
+              "value": 1.9,
+              "unit": "%",
+              "pct_change": 1.9,
+              "lead_stock": null
+            },
+            {
+              "industry": "电子",
+              "ts_code": "801080.SI",
+              "value": 1.7,
+              "unit": "%",
+              "pct_change": 1.7,
+              "lead_stock": null
+            }
+          ],
+          "top_inflow_industries": [
+            {
+              "industry": "半导体",
+              "ts_code": "881121.TI",
+              "value": 112.0,
+              "unit": "亿元",
+              "pct_change": 2.74,
+              "lead_stock": "神工股份"
+            },
+            {
+              "industry": "化学制药",
+              "ts_code": "881140.TI",
+              "value": 49.0,
+              "unit": "亿元",
+              "pct_change": 5.88,
+              "lead_stock": "新赣江"
+            },
+            {
+              "industry": "电子化学品",
+              "ts_code": "881172.TI",
+              "value": 29.0,
+              "unit": "亿元",
+              "pct_change": 1.29,
+              "lead_stock": "广钢气体"
+            },
+            {
+              "industry": "电池",
+              "ts_code": "881281.TI",
+              "value": 22.0,
+              "unit": "亿元",
+              "pct_change": -1.09,
+              "lead_stock": "尚太科技"
+            },
+            {
+              "industry": "光伏设备",
+              "ts_code": "881279.TI",
+              "value": 18.0,
+              "unit": "亿元",
+              "pct_change": -0.04,
+              "lead_stock": "聚和材料"
+            }
+          ],
+          "growth_signal": {
+            "active": true,
+            "industries": [
+              "半导体",
+              "电子化学品",
+              "电子"
+            ],
+            "matched_rows": [
+              {
+                "industry": "半导体",
+                "ts_code": "881121.TI",
+                "value": 112.0,
+                "unit": "亿元",
+                "pct_change": 2.74,
+                "lead_stock": "神工股份"
+              },
+              {
+                "industry": "电子化学品",
+                "ts_code": "881172.TI",
+                "value": 29.0,
+                "unit": "亿元",
+                "pct_change": 1.29,
+                "lead_stock": "广钢气体"
+              },
+              {
+                "industry": "电子",
+                "ts_code": "801080.SI",
+                "value": 1.7,
+                "unit": "%",
+                "pct_change": 1.7,
+                "lead_stock": null
+              }
+            ]
+          }
+        },
+        "traditional_weight_reversal": {
+          "active": true,
+          "industries": [
+            "农林牧渔"
+          ],
+          "matched_rows": [
+            {
+              "industry": "农林牧渔",
+              "ts_code": "801010.SI",
+              "value": 2.96,
+              "unit": "%",
+              "pct_change": 2.96,
+              "lead_stock": null
+            }
+          ]
+        },
+        "capital_flow": {
+          "northbound_net_inflow_100m_cny": 42.67,
+          "main_net_inflow_100m_cny": 49.23
+        },
+        "risk_read": {
+          "risk_cap_count": 2,
+          "risk_caps": [
+            {
+              "reason": "expensive_valuation",
+              "score_cap": 55,
+              "severity": "medium",
+              "evidence": {
+                "pre_cap_market_position_score": 37.81,
+                "opportunity_score": 58.22,
+                "crowding_penalty": 9.04,
+                "valuation_score_pct": 0.19,
+                "realized_volatility_30d": 0.28
+              },
+              "message": "估值模块得分偏低，股票账户仓位分上限限制为55。"
+            },
+            {
+              "reason": "bubble_top_combo",
+              "score_cap": 35,
+              "severity": "high",
+              "evidence": {
+                "pre_cap_market_position_score": 37.81,
+                "opportunity_score": 58.22,
+                "crowding_penalty": 9.04,
+                "valuation_score_pct": 0.19,
+                "realized_volatility_30d": 0.28
+              },
+              "message": "估值极贵且波动率偏高，泡沫顶部风险触发强仓位上限。"
+            }
+          ],
+          "crowding_penalty": 9.04,
+          "risk_penalty_score": 50.63
+        },
+        "observations": [
+          "主线得分 82.69%，宽度得分 46.53%，差值 36.16pct。",
+          "成长主线线索：半导体, 电子化学品, 电子 位于涨幅或资金流入前列。",
+          "传统权重反抽线索：农林牧渔 位于涨幅或资金流入前列。",
+          "宽度仍弱：上涨占比 44.81%，个股中位数 -0.3%，强跌占比 18.49%。",
+          "资金分歧：北向 42.67亿元，主力 49.23亿元。",
+          "已触发 2 项风险上限，仓位分优先服从风控。"
+        ],
+        "watch_points": [
+          "宽度修复是否发生：上涨占比、行业上涨占比和个股中位数需要同步改善。",
+          "半导体/芯片等成长主线是继续扩散，还是仅维持资金抱团。",
+          "传统权重反抽是否延续，并能否带动指数与个股宽度共振。",
+          "主力资金是否收敛流出，风险上限数量是否下降。"
         ]
       }
     },
@@ -40895,6 +43152,260 @@
           "macro",
           "data_quality"
         ]
+      },
+      "market_observation": {
+        "version": "market_observation_v1",
+        "basis_trade_date": "2026-06-30",
+        "label": "结构中性观察",
+        "stance": "风险上限压制，仓位先服从风控",
+        "summary": "主线 94.91%，宽度 85.97%；成长线索在 半导体, 通信设备；仓位分 35，推荐 20%-40%，风险上限压制，仓位先服从风控。",
+        "opportunity_score": 69.32,
+        "position_score": 35.0,
+        "recommended_equity_position_range": "20%-40%",
+        "divergence": {
+          "mainline_score_pct": 94.91,
+          "breadth_score_pct": 85.97,
+          "capital_flow_score_pct": 77.17,
+          "valuation_score_pct": 18.41,
+          "spread_pct": 8.94,
+          "severe": false
+        },
+        "broad_market": {
+          "weak": false,
+          "advancer_ratio_pct": 55.45,
+          "median_pct_change": 0.49,
+          "strong_advancers_pct": 25.4,
+          "strong_decliners_pct": 7.41,
+          "industry_up_ratio_pct": 61.29,
+          "advancers": 3054,
+          "decliners": 2364,
+          "limit_up": 140,
+          "limit_down": 5
+        },
+        "mainline": {
+          "status": "strong",
+          "top_return_industries": [
+            {
+              "industry": "通信",
+              "ts_code": "801770.SI",
+              "value": 4.89,
+              "unit": "%",
+              "pct_change": 4.89,
+              "lead_stock": null
+            },
+            {
+              "industry": "电子",
+              "ts_code": "801080.SI",
+              "value": 4.22,
+              "unit": "%",
+              "pct_change": 4.22,
+              "lead_stock": null
+            },
+            {
+              "industry": "国防军工",
+              "ts_code": "801740.SI",
+              "value": 3.72,
+              "unit": "%",
+              "pct_change": 3.72,
+              "lead_stock": null
+            },
+            {
+              "industry": "计算机",
+              "ts_code": "801750.SI",
+              "value": 3.51,
+              "unit": "%",
+              "pct_change": 3.51,
+              "lead_stock": null
+            },
+            {
+              "industry": "机械设备",
+              "ts_code": "801890.SI",
+              "value": 3.11,
+              "unit": "%",
+              "pct_change": 3.11,
+              "lead_stock": null
+            }
+          ],
+          "top_inflow_industries": [
+            {
+              "industry": "半导体",
+              "ts_code": "881121.TI",
+              "value": 305.0,
+              "unit": "亿元",
+              "pct_change": 6.32,
+              "lead_stock": "格科微"
+            },
+            {
+              "industry": "元件",
+              "ts_code": "881270.TI",
+              "value": 139.0,
+              "unit": "亿元",
+              "pct_change": 3.98,
+              "lead_stock": "本川智能"
+            },
+            {
+              "industry": "通信设备",
+              "ts_code": "881129.TI",
+              "value": 131.0,
+              "unit": "亿元",
+              "pct_change": 4.76,
+              "lead_stock": "锐捷网络"
+            },
+            {
+              "industry": "消费电子",
+              "ts_code": "881124.TI",
+              "value": 109.0,
+              "unit": "亿元",
+              "pct_change": 4.07,
+              "lead_stock": "易天股份"
+            },
+            {
+              "industry": "光学光电子",
+              "ts_code": "881122.TI",
+              "value": 79.0,
+              "unit": "亿元",
+              "pct_change": 5.9,
+              "lead_stock": "联建光电"
+            }
+          ],
+          "growth_signal": {
+            "active": true,
+            "industries": [
+              "半导体",
+              "通信设备",
+              "消费电子",
+              "光学光电子"
+            ],
+            "matched_rows": [
+              {
+                "industry": "半导体",
+                "ts_code": "881121.TI",
+                "value": 305.0,
+                "unit": "亿元",
+                "pct_change": 6.32,
+                "lead_stock": "格科微"
+              },
+              {
+                "industry": "通信设备",
+                "ts_code": "881129.TI",
+                "value": 131.0,
+                "unit": "亿元",
+                "pct_change": 4.76,
+                "lead_stock": "锐捷网络"
+              },
+              {
+                "industry": "消费电子",
+                "ts_code": "881124.TI",
+                "value": 109.0,
+                "unit": "亿元",
+                "pct_change": 4.07,
+                "lead_stock": "易天股份"
+              },
+              {
+                "industry": "光学光电子",
+                "ts_code": "881122.TI",
+                "value": 79.0,
+                "unit": "亿元",
+                "pct_change": 5.9,
+                "lead_stock": "联建光电"
+              },
+              {
+                "industry": "通信",
+                "ts_code": "801770.SI",
+                "value": 4.89,
+                "unit": "%",
+                "pct_change": 4.89,
+                "lead_stock": null
+              },
+              {
+                "industry": "电子",
+                "ts_code": "801080.SI",
+                "value": 4.22,
+                "unit": "%",
+                "pct_change": 4.22,
+                "lead_stock": null
+              },
+              {
+                "industry": "计算机",
+                "ts_code": "801750.SI",
+                "value": 3.51,
+                "unit": "%",
+                "pct_change": 3.51,
+                "lead_stock": null
+              }
+            ]
+          }
+        },
+        "traditional_weight_reversal": {
+          "active": false,
+          "industries": [],
+          "matched_rows": []
+        },
+        "capital_flow": {
+          "northbound_net_inflow_100m_cny": 36.45,
+          "main_net_inflow_100m_cny": 850.04
+        },
+        "risk_read": {
+          "risk_cap_count": 3,
+          "risk_caps": [
+            {
+              "reason": "volume_blowoff_top",
+              "score_cap": 45,
+              "severity": "high",
+              "evidence": {
+                "pre_cap_market_position_score": 57.16,
+                "opportunity_score": 69.32,
+                "crowding_penalty": 11.81,
+                "valuation_score_pct": 0.18,
+                "realized_volatility_30d": 0.29,
+                "avg_volume_ratio": 0.89,
+                "total_turnover_100m_cny": 32938.2,
+                "index_trend_score_pct": 0.71,
+                "extreme_volume": true,
+                "elevated_valuation_or_volatility": true
+              },
+              "message": "成交额或换手极端放量，且估值或波动已偏高，爆量顶部风险触发仓位分上限。"
+            },
+            {
+              "reason": "expensive_valuation",
+              "score_cap": 55,
+              "severity": "medium",
+              "evidence": {
+                "pre_cap_market_position_score": 57.16,
+                "opportunity_score": 69.32,
+                "crowding_penalty": 11.81,
+                "valuation_score_pct": 0.18,
+                "realized_volatility_30d": 0.29
+              },
+              "message": "估值模块得分偏低，股票账户仓位分上限限制为55。"
+            },
+            {
+              "reason": "bubble_top_combo",
+              "score_cap": 35,
+              "severity": "high",
+              "evidence": {
+                "pre_cap_market_position_score": 57.16,
+                "opportunity_score": 69.32,
+                "crowding_penalty": 11.81,
+                "valuation_score_pct": 0.18,
+                "realized_volatility_30d": 0.29
+              },
+              "message": "估值极贵且波动率偏高，泡沫顶部风险触发强仓位上限。"
+            }
+          ],
+          "crowding_penalty": 11.81,
+          "risk_penalty_score": 53.71
+        },
+        "observations": [
+          "主线得分 94.91%，宽度得分 85.97%，差值 8.94pct。",
+          "成长主线线索：半导体, 通信设备, 消费电子, 光学光电子 位于涨幅或资金流入前列。",
+          "资金分歧：北向 36.45亿元，主力 850.04亿元。",
+          "已触发 3 项风险上限，仓位分优先服从风控。"
+        ],
+        "watch_points": [
+          "半导体/芯片等成长主线是继续扩散，还是仅维持资金抱团。",
+          "主力资金是否收敛流出，风险上限数量是否下降。"
+        ]
       }
     },
     {
@@ -42474,6 +44985,231 @@
           "volatility.market",
           "macro",
           "data_quality"
+        ]
+      },
+      "market_observation": {
+        "version": "market_observation_v1",
+        "basis_trade_date": "2026-07-01",
+        "label": "结构中性观察",
+        "stance": "风险上限压制，仓位先服从风控",
+        "summary": "主线 80%，宽度 100%；成长线索在 软件开发, 通信服务；传统权重反抽在 农林牧渔, 证券, 保险；仓位分 35，推荐 20%-40%，风险上限压制，仓位先服从风控。",
+        "opportunity_score": 64.95,
+        "position_score": 35.0,
+        "recommended_equity_position_range": "20%-40%",
+        "divergence": {
+          "mainline_score_pct": 80.0,
+          "breadth_score_pct": 100.0,
+          "capital_flow_score_pct": 42.53,
+          "valuation_score_pct": 17.97,
+          "spread_pct": -20.0,
+          "severe": false
+        },
+        "broad_market": {
+          "weak": false,
+          "advancer_ratio_pct": 78.55,
+          "median_pct_change": 2.11,
+          "strong_advancers_pct": 35.6,
+          "strong_decliners_pct": 7.69,
+          "industry_up_ratio_pct": 83.87,
+          "advancers": 4329,
+          "decliners": 1145,
+          "limit_up": 152,
+          "limit_down": 6
+        },
+        "mainline": {
+          "status": "strong",
+          "top_return_industries": [
+            {
+              "industry": "综合",
+              "ts_code": "801230.SI",
+              "value": 6.83,
+              "unit": "%",
+              "pct_change": 6.83,
+              "lead_stock": null
+            },
+            {
+              "industry": "农林牧渔",
+              "ts_code": "801010.SI",
+              "value": 4.89,
+              "unit": "%",
+              "pct_change": 4.89,
+              "lead_stock": null
+            },
+            {
+              "industry": "非银金融",
+              "ts_code": "801790.SI",
+              "value": 4.63,
+              "unit": "%",
+              "pct_change": 4.63,
+              "lead_stock": null
+            },
+            {
+              "industry": "医药生物",
+              "ts_code": "801150.SI",
+              "value": 3.88,
+              "unit": "%",
+              "pct_change": 3.88,
+              "lead_stock": null
+            },
+            {
+              "industry": "社会服务",
+              "ts_code": "801210.SI",
+              "value": 3.32,
+              "unit": "%",
+              "pct_change": 3.32,
+              "lead_stock": null
+            }
+          ],
+          "top_inflow_industries": [
+            {
+              "industry": "证券",
+              "ts_code": "881157.TI",
+              "value": 135.0,
+              "unit": "亿元",
+              "pct_change": 4.82,
+              "lead_stock": "天风证券"
+            },
+            {
+              "industry": "化学制药",
+              "ts_code": "881140.TI",
+              "value": 49.0,
+              "unit": "亿元",
+              "pct_change": 5.64,
+              "lead_stock": "汇宇制药"
+            },
+            {
+              "industry": "软件开发",
+              "ts_code": "881272.TI",
+              "value": 37.0,
+              "unit": "亿元",
+              "pct_change": 2.99,
+              "lead_stock": "汇金科技"
+            },
+            {
+              "industry": "保险",
+              "ts_code": "881156.TI",
+              "value": 31.0,
+              "unit": "亿元",
+              "pct_change": 7.09,
+              "lead_stock": "中国人寿"
+            },
+            {
+              "industry": "通信服务",
+              "ts_code": "881162.TI",
+              "value": 17.0,
+              "unit": "亿元",
+              "pct_change": 2.76,
+              "lead_stock": "中富通"
+            }
+          ],
+          "growth_signal": {
+            "active": true,
+            "industries": [
+              "软件开发",
+              "通信服务"
+            ],
+            "matched_rows": [
+              {
+                "industry": "软件开发",
+                "ts_code": "881272.TI",
+                "value": 37.0,
+                "unit": "亿元",
+                "pct_change": 2.99,
+                "lead_stock": "汇金科技"
+              },
+              {
+                "industry": "通信服务",
+                "ts_code": "881162.TI",
+                "value": 17.0,
+                "unit": "亿元",
+                "pct_change": 2.76,
+                "lead_stock": "中富通"
+              }
+            ]
+          }
+        },
+        "traditional_weight_reversal": {
+          "active": true,
+          "industries": [
+            "农林牧渔",
+            "证券",
+            "保险"
+          ],
+          "matched_rows": [
+            {
+              "industry": "农林牧渔",
+              "ts_code": "801010.SI",
+              "value": 4.89,
+              "unit": "%",
+              "pct_change": 4.89,
+              "lead_stock": null
+            },
+            {
+              "industry": "证券",
+              "ts_code": "881157.TI",
+              "value": 135.0,
+              "unit": "亿元",
+              "pct_change": 4.82,
+              "lead_stock": "天风证券"
+            },
+            {
+              "industry": "保险",
+              "ts_code": "881156.TI",
+              "value": 31.0,
+              "unit": "亿元",
+              "pct_change": 7.09,
+              "lead_stock": "中国人寿"
+            }
+          ]
+        },
+        "capital_flow": {
+          "northbound_net_inflow_100m_cny": 36.45,
+          "main_net_inflow_100m_cny": -463.06
+        },
+        "risk_read": {
+          "risk_cap_count": 2,
+          "risk_caps": [
+            {
+              "reason": "expensive_valuation",
+              "score_cap": 55,
+              "severity": "medium",
+              "evidence": {
+                "pre_cap_market_position_score": 55.21,
+                "opportunity_score": 64.95,
+                "crowding_penalty": 12.23,
+                "valuation_score_pct": 0.18,
+                "realized_volatility_30d": 0.29
+              },
+              "message": "估值模块得分偏低，股票账户仓位分上限限制为55。"
+            },
+            {
+              "reason": "bubble_top_combo",
+              "score_cap": 35,
+              "severity": "high",
+              "evidence": {
+                "pre_cap_market_position_score": 55.21,
+                "opportunity_score": 64.95,
+                "crowding_penalty": 12.23,
+                "valuation_score_pct": 0.18,
+                "realized_volatility_30d": 0.29
+              },
+              "message": "估值极贵且波动率偏高，泡沫顶部风险触发强仓位上限。"
+            }
+          ],
+          "crowding_penalty": 12.23,
+          "risk_penalty_score": 58.09
+        },
+        "observations": [
+          "主线得分 80%，宽度得分 100%，差值 -20pct。",
+          "成长主线线索：软件开发, 通信服务 位于涨幅或资金流入前列。",
+          "传统权重反抽线索：农林牧渔, 证券, 保险 位于涨幅或资金流入前列。",
+          "资金分歧：北向 36.45亿元，主力 -463.06亿元。",
+          "已触发 2 项风险上限，仓位分优先服从风控。"
+        ],
+        "watch_points": [
+          "半导体/芯片等成长主线是继续扩散，还是仅维持资金抱团。",
+          "传统权重反抽是否延续，并能否带动指数与个股宽度共振。",
+          "主力资金是否收敛流出，风险上限数量是否下降。"
         ]
       }
     },
@@ -44075,6 +46811,228 @@
           "macro",
           "data_quality"
         ]
+      },
+      "market_observation": {
+        "version": "market_observation_v1",
+        "basis_trade_date": "2026-07-02",
+        "label": "宽度偏弱，等待确认",
+        "stance": "防守观察",
+        "summary": "主线 47.38%，宽度 32.19%；成长线索在 光学光电子；传统权重反抽在 煤炭, 银行；市场中位数 -0.49%、上涨占比 40.22%；仓位分 14.29，推荐 0%-20%，防守观察。",
+        "opportunity_score": 40.3,
+        "position_score": 14.29,
+        "recommended_equity_position_range": "0%-20%",
+        "divergence": {
+          "mainline_score_pct": 47.38,
+          "breadth_score_pct": 32.19,
+          "capital_flow_score_pct": 36.46,
+          "valuation_score_pct": 21.07,
+          "spread_pct": 15.19,
+          "severe": false
+        },
+        "broad_market": {
+          "weak": true,
+          "advancer_ratio_pct": 40.22,
+          "median_pct_change": -0.49,
+          "strong_advancers_pct": 9.88,
+          "strong_decliners_pct": 20.39,
+          "industry_up_ratio_pct": 38.71,
+          "advancers": 2219,
+          "decliners": 3162,
+          "limit_up": 93,
+          "limit_down": 40
+        },
+        "mainline": {
+          "status": "neutral",
+          "top_return_industries": [
+            {
+              "industry": "煤炭",
+              "ts_code": "801950.SI",
+              "value": 1.6,
+              "unit": "%",
+              "pct_change": 1.6,
+              "lead_stock": null
+            },
+            {
+              "industry": "纺织服饰",
+              "ts_code": "801130.SI",
+              "value": 1.58,
+              "unit": "%",
+              "pct_change": 1.58,
+              "lead_stock": null
+            },
+            {
+              "industry": "传媒",
+              "ts_code": "801760.SI",
+              "value": 1.17,
+              "unit": "%",
+              "pct_change": 1.17,
+              "lead_stock": null
+            },
+            {
+              "industry": "银行",
+              "ts_code": "801780.SI",
+              "value": 1.08,
+              "unit": "%",
+              "pct_change": 1.08,
+              "lead_stock": null
+            },
+            {
+              "industry": "美容护理",
+              "ts_code": "801980.SI",
+              "value": 0.77,
+              "unit": "%",
+              "pct_change": 0.77,
+              "lead_stock": null
+            }
+          ],
+          "top_inflow_industries": [
+            {
+              "industry": "光学光电子",
+              "ts_code": "881122.TI",
+              "value": 25.0,
+              "unit": "亿元",
+              "pct_change": -3.02,
+              "lead_stock": "华映科技"
+            },
+            {
+              "industry": "贵金属",
+              "ts_code": "881169.TI",
+              "value": 21.0,
+              "unit": "亿元",
+              "pct_change": 3.91,
+              "lead_stock": "招金黄金"
+            },
+            {
+              "industry": "游戏",
+              "ts_code": "881275.TI",
+              "value": 12.0,
+              "unit": "亿元",
+              "pct_change": -0.09,
+              "lead_stock": "昆仑万维"
+            },
+            {
+              "industry": "汽车零部件",
+              "ts_code": "881126.TI",
+              "value": 8.0,
+              "unit": "亿元",
+              "pct_change": 0.76,
+              "lead_stock": "易实精密"
+            },
+            {
+              "industry": "通用设备",
+              "ts_code": "881117.TI",
+              "value": 7.0,
+              "unit": "亿元",
+              "pct_change": -0.15,
+              "lead_stock": "科德数控"
+            }
+          ],
+          "growth_signal": {
+            "active": true,
+            "industries": [
+              "光学光电子"
+            ],
+            "matched_rows": [
+              {
+                "industry": "光学光电子",
+                "ts_code": "881122.TI",
+                "value": 25.0,
+                "unit": "亿元",
+                "pct_change": -3.02,
+                "lead_stock": "华映科技"
+              }
+            ]
+          }
+        },
+        "traditional_weight_reversal": {
+          "active": true,
+          "industries": [
+            "煤炭",
+            "银行"
+          ],
+          "matched_rows": [
+            {
+              "industry": "煤炭",
+              "ts_code": "801950.SI",
+              "value": 1.6,
+              "unit": "%",
+              "pct_change": 1.6,
+              "lead_stock": null
+            },
+            {
+              "industry": "银行",
+              "ts_code": "801780.SI",
+              "value": 1.08,
+              "unit": "%",
+              "pct_change": 1.08,
+              "lead_stock": null
+            }
+          ]
+        },
+        "capital_flow": {
+          "northbound_net_inflow_100m_cny": 42.4,
+          "main_net_inflow_100m_cny": -713.54
+        },
+        "risk_read": {
+          "risk_cap_count": 3,
+          "risk_caps": [
+            {
+              "reason": "expensive_valuation",
+              "score_cap": 55,
+              "severity": "medium",
+              "evidence": {
+                "pre_cap_market_position_score": 14.29,
+                "opportunity_score": 40.3,
+                "crowding_penalty": 13.71,
+                "valuation_score_pct": 0.21,
+                "realized_volatility_30d": 0.31
+              },
+              "message": "估值模块得分偏低，股票账户仓位分上限限制为55。"
+            },
+            {
+              "reason": "bubble_top_combo",
+              "score_cap": 35,
+              "severity": "high",
+              "evidence": {
+                "pre_cap_market_position_score": 14.29,
+                "opportunity_score": 40.3,
+                "crowding_penalty": 13.71,
+                "valuation_score_pct": 0.21,
+                "realized_volatility_30d": 0.31
+              },
+              "message": "估值极贵且波动率偏高，泡沫顶部风险触发强仓位上限。"
+            },
+            {
+              "reason": "high_volatility",
+              "score_cap": 55,
+              "severity": "medium",
+              "evidence": {
+                "pre_cap_market_position_score": 14.29,
+                "opportunity_score": 40.3,
+                "crowding_penalty": 13.71,
+                "valuation_score_pct": 0.21,
+                "realized_volatility_30d": 0.31
+              },
+              "message": "30日年化波动率偏高，股票账户仓位分上限限制为55。"
+            }
+          ],
+          "crowding_penalty": 13.71,
+          "risk_penalty_score": 60.5
+        },
+        "observations": [
+          "主线得分 47.38%，宽度得分 32.19%，差值 15.19pct。",
+          "成长主线线索：光学光电子 位于涨幅或资金流入前列。",
+          "传统权重反抽线索：煤炭, 银行 位于涨幅或资金流入前列。",
+          "宽度仍弱：上涨占比 40.22%，个股中位数 -0.49%，强跌占比 20.39%。",
+          "资金分歧：北向 42.4亿元，主力 -713.54亿元。",
+          "已触发 3 项风险上限，仓位分优先服从风控。"
+        ],
+        "watch_points": [
+          "宽度修复是否发生：上涨占比、行业上涨占比和个股中位数需要同步改善。",
+          "半导体/芯片等成长主线是继续扩散，还是仅维持资金抱团。",
+          "传统权重反抽是否延续，并能否带动指数与个股宽度共振。",
+          "主力资金是否收敛流出，风险上限数量是否下降。"
+        ]
       }
     },
     {
@@ -45674,6 +48632,278 @@
           "volatility.market",
           "macro",
           "data_quality"
+        ]
+      },
+      "market_observation": {
+        "version": "market_observation_v1",
+        "basis_trade_date": "2026-07-02",
+        "label": "宽度偏弱，等待确认",
+        "stance": "防守观察",
+        "summary": "主线 47.38%，宽度 32.19%；成长线索在 半导体；传统权重反抽在 煤炭, 农林牧渔, 石油石化；市场中位数 -1.27%、上涨占比 34%；仓位分 14.26，推荐 0%-20%，防守观察。",
+        "opportunity_score": 40.26,
+        "position_score": 14.26,
+        "recommended_equity_position_range": "0%-20%",
+        "divergence": {
+          "mainline_score_pct": 47.38,
+          "breadth_score_pct": 32.19,
+          "capital_flow_score_pct": 36.46,
+          "valuation_score_pct": 21.07,
+          "spread_pct": 15.19,
+          "severe": false
+        },
+        "broad_market": {
+          "weak": true,
+          "advancer_ratio_pct": 34.0,
+          "median_pct_change": -1.27,
+          "strong_advancers_pct": 9.23,
+          "strong_decliners_pct": 28.35,
+          "industry_up_ratio_pct": 32.26,
+          "advancers": 1876,
+          "decliners": 3541,
+          "limit_up": 64,
+          "limit_down": 46
+        },
+        "mainline": {
+          "status": "neutral",
+          "top_return_industries": [
+            {
+              "industry": "煤炭",
+              "ts_code": "801950.SI",
+              "value": 4.11,
+              "unit": "%",
+              "pct_change": 4.11,
+              "lead_stock": null
+            },
+            {
+              "industry": "农林牧渔",
+              "ts_code": "801010.SI",
+              "value": 2.57,
+              "unit": "%",
+              "pct_change": 2.57,
+              "lead_stock": null
+            },
+            {
+              "industry": "石油石化",
+              "ts_code": "801960.SI",
+              "value": 2.43,
+              "unit": "%",
+              "pct_change": 2.43,
+              "lead_stock": null
+            },
+            {
+              "industry": "银行",
+              "ts_code": "801780.SI",
+              "value": 1.9,
+              "unit": "%",
+              "pct_change": 1.9,
+              "lead_stock": null
+            },
+            {
+              "industry": "交通运输",
+              "ts_code": "801170.SI",
+              "value": 1.45,
+              "unit": "%",
+              "pct_change": 1.45,
+              "lead_stock": null
+            }
+          ],
+          "top_inflow_industries": [
+            {
+              "industry": "半导体",
+              "ts_code": "881121.TI",
+              "value": 65.0,
+              "unit": "亿元",
+              "pct_change": -0.4,
+              "lead_stock": "银河微电"
+            },
+            {
+              "industry": "银行",
+              "ts_code": "881155.TI",
+              "value": 40.0,
+              "unit": "亿元",
+              "pct_change": 2.31,
+              "lead_stock": "青岛银行"
+            },
+            {
+              "industry": "化学制药",
+              "ts_code": "881140.TI",
+              "value": 19.0,
+              "unit": "亿元",
+              "pct_change": 0.97,
+              "lead_stock": "首药控股"
+            },
+            {
+              "industry": "煤炭开采加工",
+              "ts_code": "881105.TI",
+              "value": 10.0,
+              "unit": "亿元",
+              "pct_change": 2.98,
+              "lead_stock": "昊华能源"
+            },
+            {
+              "industry": "保险",
+              "ts_code": "881156.TI",
+              "value": 10.0,
+              "unit": "亿元",
+              "pct_change": 1.21,
+              "lead_stock": "中国平安"
+            }
+          ],
+          "growth_signal": {
+            "active": true,
+            "industries": [
+              "半导体"
+            ],
+            "matched_rows": [
+              {
+                "industry": "半导体",
+                "ts_code": "881121.TI",
+                "value": 65.0,
+                "unit": "亿元",
+                "pct_change": -0.4,
+                "lead_stock": "银河微电"
+              }
+            ]
+          }
+        },
+        "traditional_weight_reversal": {
+          "active": true,
+          "industries": [
+            "煤炭",
+            "农林牧渔",
+            "石油石化",
+            "银行"
+          ],
+          "matched_rows": [
+            {
+              "industry": "煤炭",
+              "ts_code": "801950.SI",
+              "value": 4.11,
+              "unit": "%",
+              "pct_change": 4.11,
+              "lead_stock": null
+            },
+            {
+              "industry": "农林牧渔",
+              "ts_code": "801010.SI",
+              "value": 2.57,
+              "unit": "%",
+              "pct_change": 2.57,
+              "lead_stock": null
+            },
+            {
+              "industry": "石油石化",
+              "ts_code": "801960.SI",
+              "value": 2.43,
+              "unit": "%",
+              "pct_change": 2.43,
+              "lead_stock": null
+            },
+            {
+              "industry": "银行",
+              "ts_code": "801780.SI",
+              "value": 1.9,
+              "unit": "%",
+              "pct_change": 1.9,
+              "lead_stock": null
+            },
+            {
+              "industry": "交通运输",
+              "ts_code": "801170.SI",
+              "value": 1.45,
+              "unit": "%",
+              "pct_change": 1.45,
+              "lead_stock": null
+            },
+            {
+              "industry": "银行",
+              "ts_code": "881155.TI",
+              "value": 40.0,
+              "unit": "亿元",
+              "pct_change": 2.31,
+              "lead_stock": "青岛银行"
+            },
+            {
+              "industry": "煤炭开采加工",
+              "ts_code": "881105.TI",
+              "value": 10.0,
+              "unit": "亿元",
+              "pct_change": 2.98,
+              "lead_stock": "昊华能源"
+            },
+            {
+              "industry": "保险",
+              "ts_code": "881156.TI",
+              "value": 10.0,
+              "unit": "亿元",
+              "pct_change": 1.21,
+              "lead_stock": "中国平安"
+            }
+          ]
+        },
+        "capital_flow": {
+          "northbound_net_inflow_100m_cny": 39.63,
+          "main_net_inflow_100m_cny": -898.14
+        },
+        "risk_read": {
+          "risk_cap_count": 3,
+          "risk_caps": [
+            {
+              "reason": "expensive_valuation",
+              "score_cap": 55,
+              "severity": "medium",
+              "evidence": {
+                "pre_cap_market_position_score": 14.26,
+                "opportunity_score": 40.26,
+                "crowding_penalty": 13.71,
+                "valuation_score_pct": 0.21,
+                "realized_volatility_30d": 0.31
+              },
+              "message": "估值模块得分偏低，股票账户仓位分上限限制为55。"
+            },
+            {
+              "reason": "bubble_top_combo",
+              "score_cap": 35,
+              "severity": "high",
+              "evidence": {
+                "pre_cap_market_position_score": 14.26,
+                "opportunity_score": 40.26,
+                "crowding_penalty": 13.71,
+                "valuation_score_pct": 0.21,
+                "realized_volatility_30d": 0.31
+              },
+              "message": "估值极贵且波动率偏高，泡沫顶部风险触发强仓位上限。"
+            },
+            {
+              "reason": "high_volatility",
+              "score_cap": 55,
+              "severity": "medium",
+              "evidence": {
+                "pre_cap_market_position_score": 14.26,
+                "opportunity_score": 40.26,
+                "crowding_penalty": 13.71,
+                "valuation_score_pct": 0.21,
+                "realized_volatility_30d": 0.31
+              },
+              "message": "30日年化波动率偏高，股票账户仓位分上限限制为55。"
+            }
+          ],
+          "crowding_penalty": 13.71,
+          "risk_penalty_score": 60.5
+        },
+        "observations": [
+          "主线得分 47.38%，宽度得分 32.19%，差值 15.19pct。",
+          "成长主线线索：半导体 位于涨幅或资金流入前列。",
+          "传统权重反抽线索：煤炭, 农林牧渔, 石油石化, 银行 位于涨幅或资金流入前列。",
+          "宽度仍弱：上涨占比 34%，个股中位数 -1.27%，强跌占比 28.35%。",
+          "资金分歧：北向 39.63亿元，主力 -898.14亿元。",
+          "已触发 3 项风险上限，仓位分优先服从风控。"
+        ],
+        "watch_points": [
+          "宽度修复是否发生：上涨占比、行业上涨占比和个股中位数需要同步改善。",
+          "半导体/芯片等成长主线是继续扩散，还是仅维持资金抱团。",
+          "传统权重反抽是否延续，并能否带动指数与个股宽度共振。",
+          "主力资金是否收敛流出，风险上限数量是否下降。"
         ]
       }
     },
@@ -47278,6 +50508,278 @@
           "macro",
           "data_quality"
         ]
+      },
+      "market_observation": {
+        "version": "market_observation_v1",
+        "basis_trade_date": "2026-07-06",
+        "label": "强主线弱宽度，传统权重反抽",
+        "stance": "防守观察，不确认全面反转",
+        "summary": "主线强但宽度弱：主线 81.31%，宽度 21.58%；成长线索在 半导体；传统权重反抽在 煤炭, 农林牧渔, 石油石化；市场中位数 -1.27%、上涨占比 34%；仓位分 15.74，推荐 0%-20%，防守观察，不确认全面反转。",
+        "opportunity_score": 43.7,
+        "position_score": 15.74,
+        "recommended_equity_position_range": "0%-20%",
+        "divergence": {
+          "mainline_score_pct": 81.31,
+          "breadth_score_pct": 21.58,
+          "capital_flow_score_pct": 38.67,
+          "valuation_score_pct": 20.88,
+          "spread_pct": 59.73,
+          "severe": true
+        },
+        "broad_market": {
+          "weak": true,
+          "advancer_ratio_pct": 34.0,
+          "median_pct_change": -1.27,
+          "strong_advancers_pct": 9.23,
+          "strong_decliners_pct": 28.35,
+          "industry_up_ratio_pct": 32.26,
+          "advancers": 1876,
+          "decliners": 3541,
+          "limit_up": 64,
+          "limit_down": 46
+        },
+        "mainline": {
+          "status": "strong",
+          "top_return_industries": [
+            {
+              "industry": "煤炭",
+              "ts_code": "801950.SI",
+              "value": 4.11,
+              "unit": "%",
+              "pct_change": 4.11,
+              "lead_stock": null
+            },
+            {
+              "industry": "农林牧渔",
+              "ts_code": "801010.SI",
+              "value": 2.57,
+              "unit": "%",
+              "pct_change": 2.57,
+              "lead_stock": null
+            },
+            {
+              "industry": "石油石化",
+              "ts_code": "801960.SI",
+              "value": 2.43,
+              "unit": "%",
+              "pct_change": 2.43,
+              "lead_stock": null
+            },
+            {
+              "industry": "银行",
+              "ts_code": "801780.SI",
+              "value": 1.9,
+              "unit": "%",
+              "pct_change": 1.9,
+              "lead_stock": null
+            },
+            {
+              "industry": "交通运输",
+              "ts_code": "801170.SI",
+              "value": 1.45,
+              "unit": "%",
+              "pct_change": 1.45,
+              "lead_stock": null
+            }
+          ],
+          "top_inflow_industries": [
+            {
+              "industry": "半导体",
+              "ts_code": "881121.TI",
+              "value": 65.0,
+              "unit": "亿元",
+              "pct_change": -0.4,
+              "lead_stock": "银河微电"
+            },
+            {
+              "industry": "银行",
+              "ts_code": "881155.TI",
+              "value": 40.0,
+              "unit": "亿元",
+              "pct_change": 2.31,
+              "lead_stock": "青岛银行"
+            },
+            {
+              "industry": "化学制药",
+              "ts_code": "881140.TI",
+              "value": 19.0,
+              "unit": "亿元",
+              "pct_change": 0.97,
+              "lead_stock": "首药控股"
+            },
+            {
+              "industry": "煤炭开采加工",
+              "ts_code": "881105.TI",
+              "value": 10.0,
+              "unit": "亿元",
+              "pct_change": 2.98,
+              "lead_stock": "昊华能源"
+            },
+            {
+              "industry": "保险",
+              "ts_code": "881156.TI",
+              "value": 10.0,
+              "unit": "亿元",
+              "pct_change": 1.21,
+              "lead_stock": "中国平安"
+            }
+          ],
+          "growth_signal": {
+            "active": true,
+            "industries": [
+              "半导体"
+            ],
+            "matched_rows": [
+              {
+                "industry": "半导体",
+                "ts_code": "881121.TI",
+                "value": 65.0,
+                "unit": "亿元",
+                "pct_change": -0.4,
+                "lead_stock": "银河微电"
+              }
+            ]
+          }
+        },
+        "traditional_weight_reversal": {
+          "active": true,
+          "industries": [
+            "煤炭",
+            "农林牧渔",
+            "石油石化",
+            "银行"
+          ],
+          "matched_rows": [
+            {
+              "industry": "煤炭",
+              "ts_code": "801950.SI",
+              "value": 4.11,
+              "unit": "%",
+              "pct_change": 4.11,
+              "lead_stock": null
+            },
+            {
+              "industry": "农林牧渔",
+              "ts_code": "801010.SI",
+              "value": 2.57,
+              "unit": "%",
+              "pct_change": 2.57,
+              "lead_stock": null
+            },
+            {
+              "industry": "石油石化",
+              "ts_code": "801960.SI",
+              "value": 2.43,
+              "unit": "%",
+              "pct_change": 2.43,
+              "lead_stock": null
+            },
+            {
+              "industry": "银行",
+              "ts_code": "801780.SI",
+              "value": 1.9,
+              "unit": "%",
+              "pct_change": 1.9,
+              "lead_stock": null
+            },
+            {
+              "industry": "交通运输",
+              "ts_code": "801170.SI",
+              "value": 1.45,
+              "unit": "%",
+              "pct_change": 1.45,
+              "lead_stock": null
+            },
+            {
+              "industry": "银行",
+              "ts_code": "881155.TI",
+              "value": 40.0,
+              "unit": "亿元",
+              "pct_change": 2.31,
+              "lead_stock": "青岛银行"
+            },
+            {
+              "industry": "煤炭开采加工",
+              "ts_code": "881105.TI",
+              "value": 10.0,
+              "unit": "亿元",
+              "pct_change": 2.98,
+              "lead_stock": "昊华能源"
+            },
+            {
+              "industry": "保险",
+              "ts_code": "881156.TI",
+              "value": 10.0,
+              "unit": "亿元",
+              "pct_change": 1.21,
+              "lead_stock": "中国平安"
+            }
+          ]
+        },
+        "capital_flow": {
+          "northbound_net_inflow_100m_cny": 39.63,
+          "main_net_inflow_100m_cny": -898.14
+        },
+        "risk_read": {
+          "risk_cap_count": 3,
+          "risk_caps": [
+            {
+              "reason": "expensive_valuation",
+              "score_cap": 55,
+              "severity": "medium",
+              "evidence": {
+                "pre_cap_market_position_score": 15.74,
+                "opportunity_score": 43.7,
+                "crowding_penalty": 13.32,
+                "valuation_score_pct": 0.21,
+                "realized_volatility_30d": 0.3
+              },
+              "message": "估值模块得分偏低，股票账户仓位分上限限制为55。"
+            },
+            {
+              "reason": "bubble_top_combo",
+              "score_cap": 35,
+              "severity": "high",
+              "evidence": {
+                "pre_cap_market_position_score": 15.74,
+                "opportunity_score": 43.7,
+                "crowding_penalty": 13.32,
+                "valuation_score_pct": 0.21,
+                "realized_volatility_30d": 0.3
+              },
+              "message": "估值极贵且波动率偏高，泡沫顶部风险触发强仓位上限。"
+            },
+            {
+              "reason": "high_volatility",
+              "score_cap": 55,
+              "severity": "medium",
+              "evidence": {
+                "pre_cap_market_position_score": 15.74,
+                "opportunity_score": 43.7,
+                "crowding_penalty": 13.32,
+                "valuation_score_pct": 0.21,
+                "realized_volatility_30d": 0.3
+              },
+              "message": "30日年化波动率偏高，股票账户仓位分上限限制为55。"
+            }
+          ],
+          "crowding_penalty": 13.32,
+          "risk_penalty_score": 67.09
+        },
+        "observations": [
+          "主线得分 81.31%，宽度得分 21.58%，差值 59.73pct。",
+          "成长主线线索：半导体 位于涨幅或资金流入前列。",
+          "传统权重反抽线索：煤炭, 农林牧渔, 石油石化, 银行 位于涨幅或资金流入前列。",
+          "宽度仍弱：上涨占比 34%，个股中位数 -1.27%，强跌占比 28.35%。",
+          "资金分歧：北向 39.63亿元，主力 -898.14亿元。",
+          "已触发 3 项风险上限，仓位分优先服从风控。"
+        ],
+        "watch_points": [
+          "宽度修复是否发生：上涨占比、行业上涨占比和个股中位数需要同步改善。",
+          "半导体/芯片等成长主线是继续扩散，还是仅维持资金抱团。",
+          "传统权重反抽是否延续，并能否带动指数与个股宽度共振。",
+          "主力资金是否收敛流出，风险上限数量是否下降。"
+        ]
       }
     },
     {
@@ -48874,6 +52376,235 @@
           "volatility.market",
           "macro",
           "data_quality"
+        ]
+      },
+      "market_observation": {
+        "version": "market_observation_v1",
+        "basis_trade_date": "2026-07-03",
+        "label": "结构中性观察",
+        "stance": "风险上限压制，仓位先服从风控",
+        "summary": "主线 73.69%，宽度 85.06%；成长线索在 消费电子, 通信设备；传统权重反抽在 建筑材料, 家用电器；仓位分 35，推荐 20%-40%，风险上限压制，仓位先服从风控。",
+        "opportunity_score": 58.76,
+        "position_score": 35.0,
+        "recommended_equity_position_range": "20%-40%",
+        "divergence": {
+          "mainline_score_pct": 73.69,
+          "breadth_score_pct": 85.06,
+          "capital_flow_score_pct": 62.54,
+          "valuation_score_pct": 20.47,
+          "spread_pct": -11.37,
+          "severe": false
+        },
+        "broad_market": {
+          "weak": false,
+          "advancer_ratio_pct": 68.96,
+          "median_pct_change": 1.22,
+          "strong_advancers_pct": 23.26,
+          "strong_decliners_pct": 10.86,
+          "industry_up_ratio_pct": 70.97,
+          "advancers": 3804,
+          "decliners": 1628,
+          "limit_up": 108,
+          "limit_down": 19
+        },
+        "mainline": {
+          "status": "strong",
+          "top_return_industries": [
+            {
+              "industry": "汽车",
+              "ts_code": "801880.SI",
+              "value": 4.43,
+              "unit": "%",
+              "pct_change": 4.43,
+              "lead_stock": null
+            },
+            {
+              "industry": "国防军工",
+              "ts_code": "801740.SI",
+              "value": 3.53,
+              "unit": "%",
+              "pct_change": 3.53,
+              "lead_stock": null
+            },
+            {
+              "industry": "机械设备",
+              "ts_code": "801890.SI",
+              "value": 2.37,
+              "unit": "%",
+              "pct_change": 2.37,
+              "lead_stock": null
+            },
+            {
+              "industry": "建筑材料",
+              "ts_code": "801710.SI",
+              "value": 2.23,
+              "unit": "%",
+              "pct_change": 2.23,
+              "lead_stock": null
+            },
+            {
+              "industry": "家用电器",
+              "ts_code": "801110.SI",
+              "value": 2.03,
+              "unit": "%",
+              "pct_change": 2.03,
+              "lead_stock": null
+            }
+          ],
+          "top_inflow_industries": [
+            {
+              "industry": "汽车零部件",
+              "ts_code": "881126.TI",
+              "value": 65.0,
+              "unit": "亿元",
+              "pct_change": 4.24,
+              "lead_stock": "贝斯特"
+            },
+            {
+              "industry": "消费电子",
+              "ts_code": "881124.TI",
+              "value": 57.0,
+              "unit": "亿元",
+              "pct_change": 2.39,
+              "lead_stock": "信濠光电"
+            },
+            {
+              "industry": "元件",
+              "ts_code": "881270.TI",
+              "value": 55.0,
+              "unit": "亿元",
+              "pct_change": 0.2,
+              "lead_stock": "贤丰控股"
+            },
+            {
+              "industry": "军工装备",
+              "ts_code": "881166.TI",
+              "value": 51.0,
+              "unit": "亿元",
+              "pct_change": 4.42,
+              "lead_stock": "航天环宇"
+            },
+            {
+              "industry": "通信设备",
+              "ts_code": "881129.TI",
+              "value": 41.0,
+              "unit": "亿元",
+              "pct_change": 0.71,
+              "lead_stock": "锐捷网络"
+            }
+          ],
+          "growth_signal": {
+            "active": true,
+            "industries": [
+              "消费电子",
+              "通信设备"
+            ],
+            "matched_rows": [
+              {
+                "industry": "消费电子",
+                "ts_code": "881124.TI",
+                "value": 57.0,
+                "unit": "亿元",
+                "pct_change": 2.39,
+                "lead_stock": "信濠光电"
+              },
+              {
+                "industry": "通信设备",
+                "ts_code": "881129.TI",
+                "value": 41.0,
+                "unit": "亿元",
+                "pct_change": 0.71,
+                "lead_stock": "锐捷网络"
+              }
+            ]
+          }
+        },
+        "traditional_weight_reversal": {
+          "active": true,
+          "industries": [
+            "建筑材料",
+            "家用电器"
+          ],
+          "matched_rows": [
+            {
+              "industry": "建筑材料",
+              "ts_code": "801710.SI",
+              "value": 2.23,
+              "unit": "%",
+              "pct_change": 2.23,
+              "lead_stock": null
+            },
+            {
+              "industry": "家用电器",
+              "ts_code": "801110.SI",
+              "value": 2.03,
+              "unit": "%",
+              "pct_change": 2.03,
+              "lead_stock": null
+            }
+          ]
+        },
+        "capital_flow": {
+          "northbound_net_inflow_100m_cny": 39.15,
+          "main_net_inflow_100m_cny": -53.18
+        },
+        "risk_read": {
+          "risk_cap_count": 3,
+          "risk_caps": [
+            {
+              "reason": "expensive_valuation",
+              "score_cap": 55,
+              "severity": "medium",
+              "evidence": {
+                "pre_cap_market_position_score": 36.62,
+                "opportunity_score": 58.76,
+                "crowding_penalty": 9.45,
+                "valuation_score_pct": 0.2,
+                "realized_volatility_30d": 0.3
+              },
+              "message": "估值模块得分偏低，股票账户仓位分上限限制为55。"
+            },
+            {
+              "reason": "bubble_top_combo",
+              "score_cap": 35,
+              "severity": "high",
+              "evidence": {
+                "pre_cap_market_position_score": 36.62,
+                "opportunity_score": 58.76,
+                "crowding_penalty": 9.45,
+                "valuation_score_pct": 0.2,
+                "realized_volatility_30d": 0.3
+              },
+              "message": "估值极贵且波动率偏高，泡沫顶部风险触发强仓位上限。"
+            },
+            {
+              "reason": "high_volatility",
+              "score_cap": 55,
+              "severity": "medium",
+              "evidence": {
+                "pre_cap_market_position_score": 36.62,
+                "opportunity_score": 58.76,
+                "crowding_penalty": 9.45,
+                "valuation_score_pct": 0.2,
+                "realized_volatility_30d": 0.3
+              },
+              "message": "30日年化波动率偏高，股票账户仓位分上限限制为55。"
+            }
+          ],
+          "crowding_penalty": 9.45,
+          "risk_penalty_score": 56.44
+        },
+        "observations": [
+          "主线得分 73.69%，宽度得分 85.06%，差值 -11.37pct。",
+          "成长主线线索：消费电子, 通信设备 位于涨幅或资金流入前列。",
+          "传统权重反抽线索：建筑材料, 家用电器 位于涨幅或资金流入前列。",
+          "资金分歧：北向 39.15亿元，主力 -53.18亿元。",
+          "已触发 3 项风险上限，仓位分优先服从风控。"
+        ],
+        "watch_points": [
+          "半导体/芯片等成长主线是继续扩散，还是仅维持资金抱团。",
+          "传统权重反抽是否延续，并能否带动指数与个股宽度共振。",
+          "主力资金是否收敛流出，风险上限数量是否下降。"
         ]
       }
     }

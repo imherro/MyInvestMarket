@@ -100,7 +100,7 @@
 
 主要数据接口：
 
-- `GET /api/index`：主页核心内容、当前研究基准日、数据/研究新鲜度状态、评分摘要、四仓配置、仓位映射、风险概览和历史曲线数据。
+- `GET /api/index`：主页核心内容、当前研究基准日、盘感观察、数据/研究新鲜度状态、评分摘要、四仓配置、仓位映射、风险概览和历史曲线数据。
 - `GET /api/service`：服务版本、模型版本、配置策略版本和允许的风险上限类型。
 - `GET /api/history`：当前版本评分历史。
 - `GET /api/history?include_legacy=true`：包含旧版本的完整历史。
@@ -161,3 +161,4 @@ python .\scripts\run_post_close_update.py
 
 脚本会获取最新完整交易日数据、生成评分记录、写入研究报告、验证 API，并在有更新时提交推送到 `origin main`。
 每日更新也会生成 `data/model_validation_latest.md` 和 `data/model_validation_latest.json`，供页面和外部系统读取。
+每条评分记录会同步保存 `market_observation` 盘感观察，并在 Markdown 研究报告、Web 首页和 `/api/index.summary.market_observation` 中展示，用于复盘当日主线强弱、市场宽度、传统权重反抽和反转确认度。
