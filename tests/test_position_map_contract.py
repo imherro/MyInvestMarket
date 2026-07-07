@@ -133,6 +133,14 @@ class PositionMapContractTest(unittest.TestCase):
         self.assertIn("basis_trade_date", function_body)
         self.assertIn("slice(0, 10)", function_body)
         self.assertNotIn("slice(11, 19)", function_body)
+
+    def test_frontend_record_sort_prefers_basis_date(self) -> None:
+        app_js = (ROOT / "web" / "app.js").read_text(encoding="utf-8")
+        function_start = app_js.index("function normalizeRecords(records)")
+        function_body = app_js[function_start : function_start + 260]
+
+        self.assertIn("basis_trade_date", function_body)
+        self.assertLess(function_body.index("basis_trade_date"), function_body.index("scored_at"))
         self.assertNotIn("${basis} ${scored}", function_body)
 
     def test_frontend_point_tooltip_keeps_generation_time(self) -> None:

@@ -111,6 +111,36 @@ class DataQualityOptimizationTest(unittest.TestCase):
             for path in paths:
                 self.assertEqual(json.loads(path.read_text(encoding="utf-8"))["date"], path.stem.removeprefix("market_snapshot_"))
 
+    def test_backfilled_snapshot_scores_are_appended(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            data_dir = Path(tmp_dir)
+            first = data_dir / "market_snapshot_2026-07-03.json"
+            second = data_dir / "market_snapshot_2026-07-06.json"
+            first.write_text(json.dumps({"date": "2026-07-03"}) + "\n", encoding="utf-8")
+            second.write_text(json.dumps({"date": "2026-07-06"}) + "\n", encoding="utf-8")
+
+            def append_stub(snapshot: dict, snapshot_path: Path, snapshot_bytes: bytes) -> dict:
+                trade_date = snapshot["date"]
+                return {
+                    "appended": trade_date == "2026-07-03",
+                    "duplicate": trade_date == "2026-07-06",
+                    "duplicate_of_run_id": "old-run" if trade_date == "2026-07-06" else None,
+                    "record": {
+                        "basis_trade_date": trade_date,
+                        "run_id": f"run-{trade_date}",
+                        "market_position_score": 35,
+                        "recommended_equity_position_range": "20%-40%",
+                    },
+                }
+
+            with patch.object(run_post_close_update, "append_score", side_effect=append_stub):
+                results = run_post_close_update.append_backfilled_scores([second, first])
+
+            self.assertEqual([item["basis_trade_date"] for item in results], ["2026-07-03", "2026-07-06"])
+            self.assertTrue(results[0]["appended"])
+            self.assertTrue(results[1]["duplicate"])
+            self.assertEqual(results[1]["duplicate_of_run_id"], "old-run")
+
 
 if __name__ == "__main__":
     unittest.main()

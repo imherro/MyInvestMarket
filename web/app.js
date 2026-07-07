@@ -125,7 +125,11 @@ async function fetchJson(url, options = {}) {
 }
 
 function normalizeRecords(records) {
-  return [...records].sort((a, b) => String(a.scored_at).localeCompare(String(b.scored_at)));
+  return [...records].sort((a, b) => {
+    const left = `${a.basis_trade_date || ""}|${a.scored_at || ""}`;
+    const right = `${b.basis_trade_date || ""}|${b.scored_at || ""}`;
+    return left.localeCompare(right);
+  });
 }
 
 function renderAll() {

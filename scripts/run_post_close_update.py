@@ -226,12 +226,37 @@ def latest_record(history: dict[str, Any] | None) -> dict[str, Any] | None:
     records = (history or {}).get("records", [])
     if not isinstance(records, list) or not records:
         return None
-    return sorted(records, key=lambda row: str(row.get("scored_at", "")))[-1]
+    return sorted(records, key=lambda row: (str(row.get("basis_trade_date") or ""), str(row.get("scored_at") or "")))[-1]
 
 
 def append_score(snapshot: dict[str, Any], snapshot_path: Path, snapshot_bytes: bytes) -> dict[str, Any]:
     record = market_scoring.score_snapshot(snapshot, snapshot_path=snapshot_path, snapshot_bytes=snapshot_bytes)
     return market_scoring.append_score_record(record, market_scoring.DEFAULT_HISTORY_PATH)
+
+
+def append_backfilled_scores(snapshot_paths: list[Path]) -> list[dict[str, Any]]:
+    results: list[dict[str, Any]] = []
+    for snapshot_path in sorted(snapshot_paths):
+        snapshot = load_json(snapshot_path)
+        score_result = append_score(snapshot, snapshot_path, snapshot_path.read_bytes())
+        record = score_result.get("record", {}) if isinstance(score_result.get("record"), dict) else {}
+        try:
+            display_snapshot_path = str(snapshot_path.resolve().relative_to(ROOT))
+        except ValueError:
+            display_snapshot_path = str(snapshot_path)
+        results.append(
+            {
+                "snapshot": display_snapshot_path,
+                "basis_trade_date": record.get("basis_trade_date") or snapshot.get("date"),
+                "run_id": record.get("run_id"),
+                "appended": bool(score_result.get("appended")),
+                "duplicate": bool(score_result.get("duplicate")),
+                "duplicate_of_run_id": score_result.get("duplicate_of_run_id"),
+                "market_position_score": record.get("market_position_score"),
+                "recommended_equity_position_range": record.get("recommended_equity_position_range"),
+            }
+        )
+    return results
 
 
 def fmt(value: Any, default: str = "--") -> str:
@@ -776,6 +801,7 @@ def main() -> None:
         return
 
     dated_path, latest_path, snapshot_bytes = write_snapshot(snapshot)
+    backfilled_score_results = append_backfilled_scores(backfilled_paths)
     score_result = append_score(snapshot, latest_path, snapshot_bytes)
     record = score_result["record"]
     report_path = write_report(snapshot, record)
@@ -804,6 +830,7 @@ def main() -> None:
         {
             "status": "updated",
             "run_id": record.get("run_id"),
+            "backfilled_score_results": backfilled_score_results,
             "score_appended": score_result.get("appended"),
             "score_duplicate": score_result.get("duplicate"),
             "duplicate_of_run_id": score_result.get("duplicate_of_run_id"),

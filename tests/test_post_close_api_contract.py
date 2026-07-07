@@ -276,6 +276,28 @@ class PostCloseApiContractTest(unittest.TestCase):
         self.assertEqual(payload["position_policy_version"], market_scoring.POSITION_POLICY_VERSION)
         self.assertEqual(payload["allocation_policy_version"], market_scoring.ALLOCATION_POLICY_VERSION)
 
+    def test_latest_record_prefers_basis_date_over_backfill_scored_at(self) -> None:
+        latest_trade_day = {
+            "run_id": "latest-trade-day",
+            "basis_trade_date": "2026-07-06",
+            "scored_at": "2026-07-07T09:16:17+08:00",
+        }
+        late_backfill = {
+            "run_id": "late-backfill",
+            "basis_trade_date": "2026-07-03",
+            "scored_at": "2026-07-07T09:27:27+08:00",
+        }
+
+        self.assertEqual(
+            run_post_close_update.latest_record({"records": [latest_trade_day, late_backfill]})["run_id"],
+            "latest-trade-day",
+        )
+
+        with patch.object(serve_market_web, "score_records", return_value=[latest_trade_day, late_backfill]):
+            payload = serve_market_web.latest_market_score_result()
+
+        self.assertEqual(payload["record"]["run_id"], "latest-trade-day")
+
 
 if __name__ == "__main__":
     unittest.main()

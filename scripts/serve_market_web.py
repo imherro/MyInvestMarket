@@ -685,11 +685,21 @@ def api_docs_html(title: str) -> str:
 </html>"""
 
 
+def score_record_sort_key(record: dict[str, object]) -> tuple[str, str]:
+    return (str(record.get("basis_trade_date") or ""), str(record.get("scored_at") or ""))
+
+
+def latest_score_record(records: list[dict[str, object]]) -> dict[str, object] | None:
+    if not records:
+        return None
+    return sorted(records, key=score_record_sort_key)[-1]
+
+
 def latest_market_score_result() -> dict[str, object]:
     records = score_records(include_legacy=False)
-    if not records:
+    record = latest_score_record(records)
+    if not record:
         return {"available": False, "kind": "market_score", "error": "market_score_history.json has no current-version records"}
-    record = sorted(records, key=lambda row: str(row.get("scored_at", "")))[-1]
     result: dict[str, object] = {
         "available": True,
         "kind": "market_score",
@@ -989,7 +999,7 @@ def score_records(include_legacy: bool = False) -> list[dict[str, object]]:
     records = filtered_history(history, include_legacy=include_legacy).get("records", [])
     if not isinstance(records, list):
         return []
-    return sorted(records, key=lambda row: str(row.get("scored_at", "")))
+    return sorted(records, key=score_record_sort_key)
 
 
 def recommended_equity_position_range(record: dict[str, object]) -> object:
