@@ -81,6 +81,13 @@ class AFearScoringTests(unittest.TestCase):
             score_with_future["metrics"]["io_iv_30d"]["sample_count"],
             6,
         )
+        self.assertEqual(score_with_future["input_hash"], score_without_future["input_hash"])
+
+    def test_input_hash_changes_when_prior_scoring_context_changes(self) -> None:
+        target = self.observations[5]
+        full_context = a_fear.score_observation(target, self.observations[:6], minimum_sample=3)
+        shortened_context = a_fear.score_observation(target, self.observations[1:6], minimum_sample=3)
+        self.assertNotEqual(full_context["input_hash"], shortened_context["input_hash"])
 
     def test_missing_both_iv_families_publishes_proxy_only(self) -> None:
         missing = [observation(date(2025, 2, 1) + timedelta(days=index), float(index + 1), include_iv=False) for index in range(6)]

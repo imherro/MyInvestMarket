@@ -401,7 +401,18 @@ def score_observation(
             (csi1000_tail, 0.25),
         ]
     )
-    canonical_input = json.dumps(observation, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    scoring_context = {
+        "observation": observation,
+        "trailing_observation_hashes": [
+            hashlib.sha256(
+                json.dumps(item, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
+            ).hexdigest()
+            for item in eligible[-lookback:]
+        ],
+        "lookback": lookback,
+        "minimum_sample": minimum_sample,
+    }
+    canonical_input = json.dumps(scoring_context, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
     input_hash = hashlib.sha256(canonical_input.encode("utf-8")).hexdigest()
     generated_at = datetime.now(TZ).isoformat(timespec="seconds")
     level = fear_level(active_score)
