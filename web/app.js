@@ -28,6 +28,9 @@ const chartColors = {
   alphaActive: "#bf3d2b",
   defensiveFactor: "#2f7d4f",
   liquidity: "#6b7280",
+  fear: "#b42318",
+  fear300: "#2c68a0",
+  fear1000: "#c26a16",
 };
 
 const allocationColors = {
@@ -70,6 +73,7 @@ let state = {
   records: [],
   latest: null,
   index: null,
+  fearHistory: [],
   historyVersionFilter: null,
   selectedModule: "index_trend",
 };
@@ -86,12 +90,17 @@ document.addEventListener("DOMContentLoaded", () => {
 
 async function loadHistory() {
   setStatus("读取历史");
-  const [payload, indexPayload] = await Promise.all([fetchJson("/api/history"), fetchJson("/api/index")]);
+  const [payload, indexPayload, fearPayload] = await Promise.all([
+    fetchJson("/api/history"),
+    fetchJson("/api/index"),
+    fetchJson("/api/fear/history"),
+  ]);
   state.history = payload.history;
   state.historyVersionFilter = payload.version_filter || payload.history?.version_filter || null;
   state.records = normalizeRecords(payload.history.records || []);
   state.latest = state.records[state.records.length - 1] || null;
   state.index = indexPayload;
+  state.fearHistory = fearPayload.history || [];
   setStatus(state.latest ? "已更新" : "无评分记录");
   renderAll();
 }
@@ -105,7 +114,12 @@ async function appendCurrentScore() {
     state.history = payload.history;
     state.records = normalizeRecords(payload.history.records || []);
     state.latest = state.records[state.records.length - 1] || null;
-    state.index = await fetchJson("/api/index");
+    const [indexPayload, fearPayload] = await Promise.all([
+      fetchJson("/api/index"),
+      fetchJson("/api/fear/history"),
+    ]);
+    state.index = indexPayload;
+    state.fearHistory = fearPayload.history || [];
     setStatus("已记录");
     renderAll();
   } catch (error) {
@@ -135,6 +149,7 @@ function normalizeRecords(records) {
 function renderAll() {
   renderBasisStatus();
   renderMarketObservation();
+  renderFear();
   renderSummary();
   renderRiskOverview();
   renderContrarianOverlay();
@@ -188,6 +203,100 @@ function renderMarketObservation() {
   setText("marketObservationSummary", observation.summary || "--");
   renderMessageList("marketObservationEvidence", observation.observations || [], "暂无关键证据");
   renderMessageList("marketObservationWatchPoints", observation.watch_points || [], "暂无后续观察");
+}
+
+function renderFear() {
+  const payload = state.index?.fear || {};
+  const record = payload.record || {};
+  const activeScore = numeric(record.fear_score) ?? numeric(record.realized_fear_proxy);
+  if (activeScore === null) {
+    setText("fearStatus", "暂不可用");
+    setText("fearScore", "--");
+    setText("fearLevel", "历史样本或期权数据不足");
+    setText("fearChange1d", "--");
+    setText("fearChange3d", "--");
+    setText("fearMarketSplit", "--");
+    setText("fearSpread", "--");
+    setMeter("fearScaleFill", 0, 100);
+    renderEmpty(document.getElementById("fearComponents"), "暂无组件数据");
+    renderEmpty(document.getElementById("fearChart"), "暂无恐慌历史");
+    return;
+  }
+
+  const level = record.level?.label || "--";
+  const phase = record.phase?.label || "--";
+  setText("fearStatus", `${record.basis_trade_date || "--"} · ${record.confidence || "--"}`);
+  setText("fearScore", formatNumber(activeScore, 1));
+  setText("fearLevel", `${level} · ${phase}`);
+  setText("fearChange1d", formatSigned(record.change_1d));
+  setText("fearChange3d", formatSigned(record.change_3d));
+  setText("fearMarketSplit", `${formatNumber(record.fear_300, 1)} / ${formatNumber(record.fear_1000, 1)}`);
+  setText("fearSpread", `小盘恐慌差 ${formatSigned(record.small_cap_fear_spread)}`);
+  setMeter("fearScaleFill", activeScore, 100);
+  renderFearComponents(record.components || {});
+
+  const history = (state.fearHistory || [])
+    .filter((item) => numeric(item.fear_score) !== null)
+    .slice(-250);
+  renderLineChart(
+    document.getElementById("fearChart"),
+    [
+      {
+        name: "A-FEAR",
+        color: chartColors.fear,
+        weight: "bold",
+        points: false,
+        data: history.map((item) => ({ label: item.basis_trade_date, value: item.fear_score })),
+      },
+      {
+        name: "沪深300恐慌",
+        color: chartColors.fear300,
+        points: false,
+        data: history.map((item) => ({ label: item.basis_trade_date, value: item.fear_300 })),
+      },
+      {
+        name: "中证1000恐慌",
+        color: chartColors.fear1000,
+        points: false,
+        data: history.map((item) => ({ label: item.basis_trade_date, value: item.fear_1000 })),
+      },
+    ],
+    { leftMin: 0, leftMax: 100 },
+  );
+}
+
+function renderFearComponents(components) {
+  const container = document.getElementById("fearComponents");
+  const definitions = [
+    ["implied_volatility", "30日ATM隐含波动"],
+    ["downside_volatility", "20日下行波动"],
+    ["market_breadth", "市场宽度恐慌"],
+    ["tail_loss", "指数尾部损失"],
+  ];
+  const rows = definitions.filter(([key]) => numeric(components[key]?.score) !== null);
+  if (!rows.length) {
+    renderEmpty(container, "暂无组件数据");
+    return;
+  }
+  container.innerHTML = rows
+    .map(([key, label]) => {
+      const score = numeric(components[key].score);
+      const weight = numeric(components[key].weight);
+      return `
+        <div class="fear-component-row">
+          <div><span>${escapeHtml(label)}</span><small>权重 ${formatNumber((weight || 0) * 100, 0)}%</small></div>
+          <div class="fear-component-track"><span style="width:${clamp(score, 0, 100)}%"></span></div>
+          <strong>${formatNumber(score, 1)}</strong>
+        </div>
+      `;
+    })
+    .join("");
+}
+
+function formatSigned(value) {
+  const number = numeric(value);
+  if (number === null) return "--";
+  return `${number > 0 ? "+" : ""}${formatNumber(number, 1)}`;
 }
 
 function renderSummary() {

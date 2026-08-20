@@ -52,6 +52,44 @@
         </div>
       </section>
 
+      <section class="fear-band" aria-label="市场恐慌状态">
+        <div class="section-head">
+          <h2>市场恐慌状态</h2>
+          <span id="fearStatus">--</span>
+        </div>
+        <div class="fear-summary-grid">
+          <div class="fear-primary">
+            <span class="label">A-FEAR</span>
+            <strong id="fearScore">--</strong>
+            <div class="fear-scale" aria-hidden="true"><span id="fearScaleFill"></span></div>
+            <small id="fearLevel">--</small>
+          </div>
+          <div class="fear-stat">
+            <span class="label">1日变化</span>
+            <strong id="fearChange1d">--</strong>
+            <small>恐慌变化速度</small>
+          </div>
+          <div class="fear-stat">
+            <span class="label">3日变化</span>
+            <strong id="fearChange3d">--</strong>
+            <small>短期恐慌趋势</small>
+          </div>
+          <div class="fear-stat">
+            <span class="label">300 / 1000</span>
+            <strong id="fearMarketSplit">--</strong>
+            <small id="fearSpread">--</small>
+          </div>
+        </div>
+        <div class="fear-detail-grid">
+          <div>
+            <span class="label">四项构成</span>
+            <div id="fearComponents" class="fear-components"></div>
+          </div>
+          <div id="fearChart" class="chart-frame fear-chart"></div>
+        </div>
+        <p class="fear-safety-note">A-FEAR 衡量当前恐慌强度，不是买入分；第一期不直接改变仓位建议。</p>
+      </section>
+
       <section class="summary-grid" aria-label="评分摘要">
         <article class="score-card primary">
           <span class="label">股票账户仓位分</span>

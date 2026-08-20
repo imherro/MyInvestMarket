@@ -135,6 +135,7 @@ select {
 
 .basis-status-band,
 .market-observation-band,
+.fear-band,
 .score-card,
 .chart-band,
 .allocation-band,
@@ -147,6 +148,133 @@ select {
   border-radius: 8px;
   background: var(--surface);
   box-shadow: var(--shadow);
+}
+
+.fear-band {
+  margin-bottom: 16px;
+  padding: 18px;
+}
+
+.fear-band .section-head {
+  margin-top: 0;
+}
+
+.fear-summary-grid {
+  display: grid;
+  grid-template-columns: minmax(220px, 1.15fr) repeat(3, minmax(150px, 0.8fr));
+  gap: 12px;
+}
+
+.fear-primary,
+.fear-stat {
+  min-height: 132px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-soft);
+}
+
+.fear-primary {
+  border-left: 5px solid #b42318;
+  background: #fff8f6;
+}
+
+.fear-primary strong,
+.fear-stat strong {
+  display: block;
+  margin-top: 8px;
+  font-size: 1.65rem;
+  line-height: 1.2;
+}
+
+.fear-primary strong {
+  color: #9f241a;
+  font-size: 2.5rem;
+}
+
+.fear-primary small,
+.fear-stat small {
+  display: block;
+  margin-top: 8px;
+  color: var(--muted);
+}
+
+.fear-scale {
+  height: 9px;
+  margin-top: 8px;
+  overflow: hidden;
+  border-radius: 4px;
+  background: linear-gradient(90deg, #3b8f62 0 20%, #d2a53b 40% 60%, #d16a37 80%, #b42318 100%);
+}
+
+.fear-scale span {
+  display: block;
+  width: 0;
+  height: 100%;
+  border-right: 3px solid #1c2420;
+  background: rgba(255, 255, 255, 0.5);
+  transition: width 180ms ease;
+}
+
+.fear-detail-grid {
+  display: grid;
+  grid-template-columns: minmax(300px, 0.8fr) minmax(480px, 1.5fr);
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.fear-components {
+  display: grid;
+  gap: 14px;
+  margin-top: 14px;
+}
+
+.fear-component-row {
+  display: grid;
+  grid-template-columns: minmax(130px, 1fr) minmax(100px, 1.25fr) 46px;
+  align-items: center;
+  gap: 10px;
+}
+
+.fear-component-row div:first-child span,
+.fear-component-row div:first-child small {
+  display: block;
+}
+
+.fear-component-row small {
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+.fear-component-row strong {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.fear-component-track {
+  height: 9px;
+  overflow: hidden;
+  border-radius: 4px;
+  background: #e2e7e4;
+}
+
+.fear-component-track span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: #b42318;
+}
+
+.fear-chart {
+  min-height: 330px;
+}
+
+.fear-safety-note {
+  margin-top: 12px;
+  color: var(--muted);
+  font-size: 0.82rem;
+  line-height: 1.5;
 }
 
 .basis-status-band {
@@ -1254,6 +1382,14 @@ td.score-risk {
 }
 
 @media (max-width: 1180px) {
+  .fear-summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .fear-detail-grid {
+    grid-template-columns: 1fr;
+  }
+
   .summary-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -1323,6 +1459,7 @@ td.score-risk {
   }
 
   .summary-grid,
+  .fear-summary-grid,
   .market-observation-grid,
   .allocation-grid,
   .allocation-triggers,
@@ -1336,8 +1473,21 @@ td.score-risk {
     grid-template-columns: 1fr;
   }
 
+  .fear-component-row {
+    grid-template-columns: minmax(120px, 1fr) minmax(90px, 1fr) 42px;
+  }
+
   .chart-frame {
     height: 360px;
+  }
+
+  .fear-chart {
+    height: auto;
+    min-height: 0;
+  }
+
+  .fear-chart .chart-svg {
+    min-height: 0;
   }
 
   .market-cycle-frame {
