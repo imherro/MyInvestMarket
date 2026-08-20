@@ -2,6 +2,23 @@
 
 当前模型版本：`v3.4_contrarian`。系统服务于股票账户，不做总资产配置，也不再用 8% 目标波动率缩放官方股票仓位。波动率只作为风险扣分、风险上限和提示。
 
+## A-FEAR v1 市场恐慌系统
+
+系统新增独立的日频 `A-FEAR v1`，以 0～100 衡量当前恐慌强度。它与趋势、估值互不替代，第一期只做观察和预警，不直接修改官方股票仓位分。
+
+```text
+A-FEAR = 300/1000 ATM 30日IV百分位 × 40%
+       + 20日下行波动率百分位 × 20%
+       + 市场宽度恐慌百分位 × 25%
+       + 300/1000尾部跌幅百分位 × 15%
+```
+
+- 历史窗口：750个交易日，最低正式发布样本250日。
+- 期权：中金所沪深300 `IO` 与中证1000 `MO`，使用认购认沽平价估算远期，Black-76反解ATM IV，再按总方差插值到固定30日。
+- 输出：A-FEAR、1日变化、3日变化、恐慌等级、恐慌阶段、300/1000分化和完整组件依据。
+- 安全边界：高恐慌不等于立即抄底；v1不下单、不改变仓位建议。
+- 完整设计契约：`docs/a_fear_v1.md`。
+
 ## 核心输出
 
 - `market_opportunity_score`：市场机会分，衡量趋势、宽度、流动性、资金、主线、估值和宏观环境。
@@ -109,6 +126,11 @@
 - `GET /api/research/latest/model-validation`：最新回测与模型验证报告。
 - `GET /api/research/latest/model-health`：模型漂移、滚动表现、健康分和校准触发建议。
 - `GET /api/research/latest/strategy-robustness`：因果代理分析、样本外验证、压力测试和策略稳健性评分。
+- `GET /api/fear/latest`：最新 A-FEAR、变化、等级、阶段和数据质量。
+- `GET /api/fear/history`：完整 A-FEAR 历史，支持 `start_date`、`end_date`。
+- `GET /api/fear/components/latest`：最新四组件、底层指标和300/1000恐慌差。
+- `GET /api/fear/status`：数据日期、样本门槛、置信度和新鲜度。
+- `GET /api/fear/audit/latest`：最新历史深度、分数边界、组件相关性和跳变审计。
 
 写入接口：
 
@@ -117,6 +139,8 @@
 ## 参数审计
 
 - `python .\scripts\audit_contrarian_beta_overlay.py`：生成深熊逆向 β 模块参数审计，检查估值、回撤、拥挤、资金踩踏、波动率和强度阈值边界，并输出 JSON/Markdown 报告。
+- `python .\scripts\build_a_fear_dataset.py --trading-days 1`：更新最新交易日 A-FEAR 原始观测和历史评分。
+- `python .\scripts\audit_a_fear_v1.py`：审计历史深度、分数边界、组件相关性、跳变频率和最新极端读数一致性。
 
 ## 模型验证
 

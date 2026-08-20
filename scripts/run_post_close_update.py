@@ -17,6 +17,7 @@ from uuid import uuid4
 from zoneinfo import ZoneInfo
 
 import a_fear
+import audit_a_fear_v1
 import build_a_fear_dataset
 import build_market_dataset
 import market_scoring
@@ -41,6 +42,7 @@ VERIFY_ENDPOINTS = [
     "/api/research/latest/strategy-robustness",
     "/api/fear/latest",
     "/api/fear/status",
+    "/api/fear/audit/latest",
 ]
 
 
@@ -849,6 +851,11 @@ def main() -> None:
     fear_update: dict[str, Any]
     try:
         fear_update = build_a_fear_dataset.build(as_of, 1)
+        fear_audit = audit_a_fear_v1.write_audit()
+        fear_update["audit"] = {
+            "passed": fear_audit.get("passed"),
+            "summary": fear_audit.get("summary"),
+        }
     except Exception as exc:
         fear_update = {
             "version": a_fear.VERSION,
@@ -863,6 +870,8 @@ def main() -> None:
             a_fear.DEFAULT_SOURCE_CACHE_PATH,
             a_fear.DEFAULT_HISTORY_PATH,
             a_fear.DEFAULT_LATEST_PATH,
+            audit_a_fear_v1.DEFAULT_JSON_PATH,
+            audit_a_fear_v1.DEFAULT_MARKDOWN_PATH,
         )
         if path.exists()
     ]

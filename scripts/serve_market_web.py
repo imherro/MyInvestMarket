@@ -478,6 +478,13 @@ def api_groups_result() -> list[dict[str, object]]:
                     "basis_trade_date、stale、confidence、sample counts、data_quality。",
                     read_only=True,
                 ),
+                api_endpoint(
+                    "GET",
+                    "/api/fear/audit/latest",
+                    "读取最新 A-FEAR 历史深度、边界、相关性和跳变审计。",
+                    "审计 JSON、检查项、极端日期、局限性和文件元数据。",
+                    read_only=True,
+                ),
             ],
         },
         {
@@ -988,6 +995,27 @@ def a_fear_status_result() -> dict[str, object]:
     }
 
 
+def latest_a_fear_audit_result() -> dict[str, object]:
+    path = DATA_DIR / "a_fear_audit_latest.json"
+    if not path.exists():
+        return {
+            "available": False,
+            "kind": "a_fear_audit",
+            "endpoint": "/api/fear/audit/latest",
+            "error": "a_fear_audit_latest.json not found",
+        }
+    payload = json.loads(path.read_text(encoding="utf-8-sig"))
+    return {
+        "available": bool(payload.get("passed") is not None),
+        "kind": "a_fear_audit",
+        "endpoint": "/api/fear/audit/latest",
+        "version": payload.get("version", a_fear.VERSION),
+        "payload": payload,
+        "metadata": file_meta(path),
+        "safety": {"read_only": True, "triggers_recalculation": False},
+    }
+
+
 def latest_research_bundle() -> dict[str, object]:
     return {
         "schema_version": 1,
@@ -1005,6 +1033,7 @@ def latest_research_bundle() -> dict[str, object]:
             "strategy_robustness": "/api/research/latest/strategy-robustness",
             "fear_latest": "/api/fear/latest",
             "fear_history": "/api/fear/history",
+            "fear_audit": "/api/fear/audit/latest",
             "score_history": "/api/history",
             "score_history_with_legacy": "/api/history?include_legacy=true",
         },
@@ -1017,6 +1046,7 @@ def latest_research_bundle() -> dict[str, object]:
             "model_health": latest_model_health_result(),
             "strategy_robustness": latest_strategy_robustness_result(),
             "fear": latest_a_fear_result(),
+            "fear_audit": latest_a_fear_audit_result(),
         },
     }
 
@@ -1828,6 +1858,7 @@ def homepage_index_result() -> dict[str, object]:
             "fear_latest": "/api/fear/latest",
             "fear_history": "/api/fear/history",
             "fear_status": "/api/fear/status",
+            "fear_audit": "/api/fear/audit/latest",
         },
     }
 
@@ -1887,6 +1918,9 @@ class MarketWebHandler(BaseHTTPRequestHandler):
                 return
             if path == "/api/fear/status":
                 self.send_json(a_fear_status_result())
+                return
+            if path == "/api/fear/audit/latest":
+                self.send_json(latest_a_fear_audit_result())
                 return
             if path == "/api/fear/history":
                 start_date = (query.get("start_date", [None])[0] or None)

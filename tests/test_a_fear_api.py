@@ -79,6 +79,7 @@ class AFearApiTests(unittest.TestCase):
             "/api/fear/history",
             "/api/fear/components/latest",
             "/api/fear/status",
+            "/api/fear/audit/latest",
         ):
             self.assertIn(path, endpoints)
             self.assertTrue(endpoints[path]["read_only"])

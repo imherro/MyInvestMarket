@@ -1,0 +1,275 @@
+{
+  "schema_version": 1,
+  "version": "a_fear_v1",
+  "generated_at": "2026-08-20T10:28:27+08:00",
+  "passed": true,
+  "summary": {
+    "source_observation_count": 750,
+    "option_complete_observation_count": 704,
+    "record_count": 750,
+    "official_record_count": 455,
+    "official_start_date": "2024-08-14",
+    "latest_basis_trade_date": "2026-08-19",
+    "latest_fear_score": 89.3386,
+    "latest_level": {
+      "code": "extreme",
+      "label": "极端恐慌"
+    },
+    "latest_phase": {
+      "code": "panic_accelerating",
+      "label": "恐慌加速"
+    },
+    "latest_confidence": "high",
+    "score_min": 10.9538,
+    "score_median": 50.5605,
+    "score_max": 99.0023,
+    "jump_count_over_30": 14,
+    "jump_ratio_over_30": 0.0308,
+    "highest_component_correlation": 0.666
+  },
+  "checks": [
+    {
+      "key": "source_history_depth",
+      "passed": true,
+      "detail": "750 source observations; target 750."
+    },
+    {
+      "key": "official_history_depth",
+      "passed": true,
+      "detail": "455 official daily scores after the minimum-sample warm-up."
+    },
+    {
+      "key": "latest_is_official",
+      "passed": true,
+      "detail": "Latest 2026-08-19 score=89.3386 confidence=high."
+    },
+    {
+      "key": "score_bounds",
+      "passed": true,
+      "detail": "Observed range 10.9538..99.0023."
+    },
+    {
+      "key": "component_independence",
+      "passed": true,
+      "detail": "Highest absolute pairwise component Spearman correlation=0.666."
+    },
+    {
+      "key": "jump_frequency",
+      "passed": true,
+      "detail": "Absolute one-day changes above 30: 14/455 (3.08%)."
+    },
+    {
+      "key": "latest_broad_panic_consistency",
+      "passed": true,
+      "detail": "Latest extreme reading is confirmed by both breadth and tail-loss components."
+    }
+  ],
+  "component_correlations": [
+    {
+      "left": "implied_volatility",
+      "right": "downside_volatility",
+      "spearman": 0.6071
+    },
+    {
+      "left": "implied_volatility",
+      "right": "market_breadth",
+      "spearman": 0.1476
+    },
+    {
+      "left": "implied_volatility",
+      "right": "tail_loss",
+      "spearman": 0.1478
+    },
+    {
+      "left": "downside_volatility",
+      "right": "market_breadth",
+      "spearman": 0.1201
+    },
+    {
+      "left": "downside_volatility",
+      "right": "tail_loss",
+      "spearman": 0.2359
+    },
+    {
+      "left": "market_breadth",
+      "right": "tail_loss",
+      "spearman": 0.666
+    }
+  ],
+  "largest_jumps": [
+    {
+      "basis_trade_date": "2025-04-07",
+      "fear_score": 99.0023,
+      "previous_fear_score": 47.9524,
+      "absolute_change": 51.0499
+    },
+    {
+      "basis_trade_date": "2024-10-09",
+      "fear_score": 91.0875,
+      "previous_fear_score": 47.7758,
+      "absolute_change": 43.3117
+    },
+    {
+      "basis_trade_date": "2026-03-10",
+      "fear_score": 31.5121,
+      "previous_fear_score": 68.9744,
+      "absolute_change": 37.4623
+    },
+    {
+      "basis_trade_date": "2026-03-24",
+      "fear_score": 59.1975,
+      "previous_fear_score": 96.3819,
+      "absolute_change": 37.1844
+    },
+    {
+      "basis_trade_date": "2026-02-03",
+      "fear_score": 50.1056,
+      "previous_fear_score": 84.265,
+      "absolute_change": 34.1594
+    },
+    {
+      "basis_trade_date": "2026-03-19",
+      "fear_score": 80.5506,
+      "previous_fear_score": 46.9378,
+      "absolute_change": 33.6128
+    },
+    {
+      "basis_trade_date": "2026-07-27",
+      "fear_score": 55.2758,
+      "previous_fear_score": 87.8748,
+      "absolute_change": 32.599
+    },
+    {
+      "basis_trade_date": "2026-07-28",
+      "fear_score": 87.8712,
+      "previous_fear_score": 55.2758,
+      "absolute_change": 32.5954
+    },
+    {
+      "basis_trade_date": "2026-07-31",
+      "fear_score": 59.5231,
+      "previous_fear_score": 91.8694,
+      "absolute_change": 32.3463
+    },
+    {
+      "basis_trade_date": "2025-02-28",
+      "fear_score": 71.4431,
+      "previous_fear_score": 40.2356,
+      "absolute_change": 31.2075
+    },
+    {
+      "basis_trade_date": "2024-09-02",
+      "fear_score": 47.8867,
+      "previous_fear_score": 16.8375,
+      "absolute_change": 31.0492
+    },
+    {
+      "basis_trade_date": "2026-03-26",
+      "fear_score": 83.4316,
+      "previous_fear_score": 53.0334,
+      "absolute_change": 30.3982
+    },
+    {
+      "basis_trade_date": "2025-02-19",
+      "fear_score": 25.8401,
+      "previous_fear_score": 56.2015,
+      "absolute_change": 30.3614
+    },
+    {
+      "basis_trade_date": "2026-03-09",
+      "fear_score": 68.9744,
+      "previous_fear_score": 38.6798,
+      "absolute_change": 30.2946
+    }
+  ],
+  "highest_fear_dates": [
+    {
+      "basis_trade_date": "2025-04-07",
+      "fear_score": 99.0023
+    },
+    {
+      "basis_trade_date": "2026-03-23",
+      "fear_score": 96.3819
+    },
+    {
+      "basis_trade_date": "2026-07-13",
+      "fear_score": 93.6474
+    },
+    {
+      "basis_trade_date": "2026-07-30",
+      "fear_score": 91.8694
+    },
+    {
+      "basis_trade_date": "2024-11-01",
+      "fear_score": 91.3529
+    },
+    {
+      "basis_trade_date": "2024-10-09",
+      "fear_score": 91.0875
+    },
+    {
+      "basis_trade_date": "2024-10-15",
+      "fear_score": 90.9077
+    },
+    {
+      "basis_trade_date": "2024-10-11",
+      "fear_score": 90.2044
+    },
+    {
+      "basis_trade_date": "2026-08-19",
+      "fear_score": 89.3386
+    },
+    {
+      "basis_trade_date": "2026-06-08",
+      "fear_score": 88.9576
+    }
+  ],
+  "lowest_fear_dates": [
+    {
+      "basis_trade_date": "2025-06-09",
+      "fear_score": 10.9538
+    },
+    {
+      "basis_trade_date": "2025-06-23",
+      "fear_score": 13.2846
+    },
+    {
+      "basis_trade_date": "2025-06-30",
+      "fear_score": 13.3957
+    },
+    {
+      "basis_trade_date": "2025-07-03",
+      "fear_score": 13.6871
+    },
+    {
+      "basis_trade_date": "2025-05-08",
+      "fear_score": 13.9295
+    },
+    {
+      "basis_trade_date": "2025-06-24",
+      "fear_score": 14.3018
+    },
+    {
+      "basis_trade_date": "2025-07-08",
+      "fear_score": 14.6865
+    },
+    {
+      "basis_trade_date": "2025-06-04",
+      "fear_score": 15.0522
+    },
+    {
+      "basis_trade_date": "2025-05-12",
+      "fear_score": 15.6744
+    },
+    {
+      "basis_trade_date": "2025-07-17",
+      "fear_score": 15.7801
+    }
+  ],
+  "limitations": [
+    "This is an implementation and behavior audit, not evidence that A-FEAR predicts future returns.",
+    "The first official score appears only after the 250-observation warm-up and sufficient option-IV history.",
+    "Large daily changes are retained because the indicator is intended to react to panic shocks; they require live monitoring.",
+    "A-FEAR v1 remains observational and does not modify the official position recommendation."
+  ]
+}
