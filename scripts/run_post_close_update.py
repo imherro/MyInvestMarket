@@ -16,6 +16,8 @@ from typing import Any
 from uuid import uuid4
 from zoneinfo import ZoneInfo
 
+import a_fear
+import build_a_fear_dataset
 import build_market_dataset
 import market_scoring
 import report_generator
@@ -37,6 +39,8 @@ VERIFY_ENDPOINTS = [
     "/api/research/latest/model-validation",
     "/api/research/latest/model-health",
     "/api/research/latest/strategy-robustness",
+    "/api/fear/latest",
+    "/api/fear/status",
 ]
 
 
@@ -367,7 +371,41 @@ def cycle_profile_section(record: dict[str, Any]) -> str:
 """
 
 
-def write_report(snapshot: dict[str, Any], record: dict[str, Any]) -> Path:
+def fear_report_section(fear_record: dict[str, Any] | None) -> str:
+    if not fear_record:
+        return """## 市场恐慌状态
+
+- A-FEAR 暂不可用；本次市场评分与仓位建议不受影响。
+"""
+    components = fear_record.get("components", {}) if isinstance(fear_record.get("components"), dict) else {}
+    return f"""## 市场恐慌状态
+
+- A-FEAR: {fmt(fear_record.get('fear_score'))}
+- 1日变化: {fmt(fear_record.get('change_1d'))}
+- 3日变化: {fmt(fear_record.get('change_3d'))}
+- 恐慌等级: {(fear_record.get('level') or {}).get('label') if isinstance(fear_record.get('level'), dict) else '--'}
+- 恐慌阶段: {(fear_record.get('phase') or {}).get('label') if isinstance(fear_record.get('phase'), dict) else '--'}
+- 置信度: {fear_record.get('confidence') or '--'}
+- 沪深300恐慌: {fmt(fear_record.get('fear_300'))}
+- 中证1000恐慌: {fmt(fear_record.get('fear_1000'))}
+- 小盘恐慌差: {fmt(fear_record.get('small_cap_fear_spread'))}
+
+| 组件 | 分数 | 权重 |
+|---|---:|---:|
+| 30日ATM隐含波动 | {fmt((components.get('implied_volatility') or {}).get('score'))} | 40% |
+| 20日下行波动 | {fmt((components.get('downside_volatility') or {}).get('score'))} | 20% |
+| 市场宽度恐慌 | {fmt((components.get('market_breadth') or {}).get('score'))} | 25% |
+| 指数尾部损失 | {fmt((components.get('tail_loss') or {}).get('score'))} | 15% |
+
+> A-FEAR 衡量当前恐慌强度，不是买入分；v1 不直接改变仓位建议。
+"""
+
+
+def write_report(
+    snapshot: dict[str, Any],
+    record: dict[str, Any],
+    fear_record: dict[str, Any] | None = None,
+) -> Path:
     now = datetime.now(TZ)
     report_path = DATA_DIR / f"market_analysis_{now.strftime('%Y%m%d_%H%M%S')}.md"
     valuation_score = (((snapshot.get("valuation", {}) or {}).get("market", {}) or {}).get("valuation_score"))
@@ -384,6 +422,8 @@ def write_report(snapshot: dict[str, Any], record: dict[str, Any]) -> Path:
 ---
 
 {market_observation_section(snapshot, record)}
+
+{fear_report_section(fear_record)}
 
 ## 结论
 
@@ -806,6 +846,26 @@ def main() -> None:
         return
     new_fingerprint = stable_fingerprint(snapshot)
     trade_date = snapshot.get("date")
+    fear_update: dict[str, Any]
+    try:
+        fear_update = build_a_fear_dataset.build(as_of, 1)
+    except Exception as exc:
+        fear_update = {
+            "version": a_fear.VERSION,
+            "available": False,
+            "error": str(exc),
+            "type": exc.__class__.__name__,
+        }
+    fear_record = fear_update.get("latest") if isinstance(fear_update.get("latest"), dict) else None
+    fear_paths = [
+        path
+        for path in (
+            a_fear.DEFAULT_SOURCE_CACHE_PATH,
+            a_fear.DEFAULT_HISTORY_PATH,
+            a_fear.DEFAULT_LATEST_PATH,
+        )
+        if path.exists()
+    ]
     backfilled_paths = backfill_recent_market_snapshots(as_of, str(trade_date))
 
     history = market_scoring.load_history(market_scoring.DEFAULT_HISTORY_PATH)
@@ -825,6 +885,8 @@ def main() -> None:
         result["status"] = "skipped"
         result["reason"] = "latest complete trading day and stable snapshot are unchanged"
         result["api"] = verify_api()
+        result["fear"] = fear_update
+        result["git"] = commit_and_push(fear_paths, str(trade_date), args.no_git)
         print(json.dumps(result, ensure_ascii=False, indent=2))
         return
 
@@ -832,7 +894,7 @@ def main() -> None:
     backfilled_score_results = append_backfilled_scores(backfilled_paths)
     score_result = append_score(snapshot, latest_path, snapshot_bytes)
     record = score_result["record"]
-    report_path = write_report(snapshot, record)
+    report_path = write_report(snapshot, record, fear_record)
     validation_report = report_generator.write_validation_report(backtest_engine_records(include_legacy=True))
     api = verify_api()
     audit_path = Path(score_result.get("audit_path") or market_scoring.history_audit_log_path(market_scoring.DEFAULT_HISTORY_PATH))
@@ -849,6 +911,7 @@ def main() -> None:
             Path(validation_report["markdown_path"]),
             Path(validation_report["latest_markdown_path"]),
             Path(validation_report["json_path"]),
+            *fear_paths,
         ],
         str(trade_date),
         args.no_git,
@@ -895,6 +958,7 @@ def main() -> None:
                 "available": (validation_report.get("report") or {}).get("available"),
             },
             "api": api,
+            "fear": fear_update,
             "git": git_result,
         }
     )

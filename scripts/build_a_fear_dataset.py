@@ -312,6 +312,13 @@ def merge_scored_history(
             merged.append(previous)
         else:
             merged.append(record)
+    generated_dates = {str(record.get("basis_trade_date")) for record in records}
+    merged.extend(
+        item
+        for item in existing.get("records", [])
+        if str(item.get("basis_trade_date")) not in generated_dates
+    )
+    merged.sort(key=lambda item: str(item.get("basis_trade_date")))
     if conflicts:
         raise RuntimeError(f"A-FEAR immutable history conflict on: {', '.join(conflicts)}")
     payload = {

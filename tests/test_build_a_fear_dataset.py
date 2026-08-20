@@ -84,6 +84,30 @@ class BuildAFearDatasetTests(unittest.TestCase):
             )
         self.assertEqual(result["latest"]["input_hash"], "new")
 
+    def test_partial_rebuild_preserves_existing_future_records(self) -> None:
+        earlier = {
+            "version": a_fear.VERSION,
+            "basis_trade_date": "2026-08-18",
+            "input_hash": "earlier",
+            "confidence": "high",
+        }
+        future = {
+            "version": a_fear.VERSION,
+            "basis_trade_date": "2026-08-19",
+            "input_hash": "future",
+            "confidence": "high",
+        }
+        with tempfile.TemporaryDirectory() as temp_dir:
+            history = Path(temp_dir) / "history.json"
+            latest = Path(temp_dir) / "latest.json"
+            build_a_fear_dataset.write_json(
+                history,
+                {"schema_version": 1, "version": a_fear.VERSION, "records": [earlier, future]},
+            )
+            result = build_a_fear_dataset.merge_scored_history([earlier], history, latest)
+        self.assertEqual(result["record_count"], 2)
+        self.assertEqual(result["latest"]["basis_trade_date"], "2026-08-19")
+
 
 if __name__ == "__main__":
     unittest.main()

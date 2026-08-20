@@ -11,6 +11,8 @@ from pathlib import Path
 from urllib.parse import parse_qs, unquote, urlparse
 from zoneinfo import ZoneInfo
 
+import a_fear
+
 from market_scoring import (
     ALLOCATION_POLICY_VERSION,
     ALLOCATION_SLEEVE_ORDER,
@@ -455,6 +457,27 @@ def api_groups_result() -> list[dict[str, object]]:
                     "因果代理、样本外验证、压力测试和 robustness payload。",
                     read_only=True,
                 ),
+                api_endpoint(
+                    "GET",
+                    "/api/fear/latest",
+                    "读取最新 A-FEAR 恐慌状态、变化、阶段和数据质量。",
+                    "最新 A-FEAR record、文件元数据和只读安全边界。",
+                    read_only=True,
+                ),
+                api_endpoint(
+                    "GET",
+                    "/api/fear/components/latest",
+                    "读取最新恐慌分的四个组件、底层指标及300/1000分化。",
+                    "components、metrics、fear_300、fear_1000、small_cap_fear_spread。",
+                    read_only=True,
+                ),
+                api_endpoint(
+                    "GET",
+                    "/api/fear/status",
+                    "检查 A-FEAR 数据日期、样本门槛、置信度和新鲜度。",
+                    "basis_trade_date、stale、confidence、sample counts、data_quality。",
+                    read_only=True,
+                ),
             ],
         },
         {
@@ -477,6 +500,29 @@ def api_groups_result() -> list[dict[str, object]]:
                             "default": False,
                             "description": "true 时返回包含旧模型版本的完整历史。",
                         }
+                    ],
+                ),
+                api_endpoint(
+                    "GET",
+                    "/api/fear/history",
+                    "读取 A-FEAR 每日历史，可按基准日起止日期过滤。",
+                    "历史 records、数量、过滤条件、文件元数据和只读安全边界。",
+                    read_only=True,
+                    parameters=[
+                        {
+                            "name": "start_date",
+                            "in": "query",
+                            "required": False,
+                            "type": "string",
+                            "description": "起始基准日，YYYY-MM-DD。",
+                        },
+                        {
+                            "name": "end_date",
+                            "in": "query",
+                            "required": False,
+                            "type": "string",
+                            "description": "结束基准日，YYYY-MM-DD。",
+                        },
                     ],
                 ),
             ],
@@ -838,6 +884,110 @@ def latest_strategy_robustness_result() -> dict[str, object]:
         }
 
 
+def a_fear_history_result(start_date: str | None = None, end_date: str | None = None) -> dict[str, object]:
+    history = a_fear.load_history(a_fear.DEFAULT_HISTORY_PATH)
+    records = history.get("records", [])
+    filtered = [
+        record
+        for record in records
+        if (not start_date or str(record.get("basis_trade_date") or "") >= start_date)
+        and (not end_date or str(record.get("basis_trade_date") or "") <= end_date)
+    ]
+    return {
+        "available": bool(filtered),
+        "kind": "a_fear_history",
+        "endpoint": "/api/fear/history",
+        "version": a_fear.VERSION,
+        "record_count": len(filtered),
+        "total_record_count": len(records),
+        "filters": {"start_date": start_date, "end_date": end_date},
+        "history": filtered,
+        "metadata": file_meta(a_fear.DEFAULT_HISTORY_PATH) if a_fear.DEFAULT_HISTORY_PATH.exists() else None,
+        "safety": {"read_only": True, "triggers_recalculation": False},
+    }
+
+
+def latest_a_fear_result() -> dict[str, object]:
+    history = a_fear.load_history(a_fear.DEFAULT_HISTORY_PATH)
+    records = history.get("records", [])
+    if not records:
+        return {
+            "available": False,
+            "kind": "a_fear_latest",
+            "endpoint": "/api/fear/latest",
+            "version": a_fear.VERSION,
+            "error": "A-FEAR history has no records",
+        }
+    record = records[-1]
+    return {
+        "available": bool(record.get("fear_score") is not None or record.get("realized_fear_proxy") is not None),
+        "kind": "a_fear_latest",
+        "endpoint": "/api/fear/latest",
+        "history_endpoint": "/api/fear/history",
+        "version": a_fear.VERSION,
+        "record": record,
+        "metadata": file_meta(a_fear.DEFAULT_HISTORY_PATH),
+        "safety": {
+            "read_only": True,
+            "triggers_recalculation": False,
+            "changes_position_recommendation": False,
+            "note": "A-FEAR measures fear intensity; it is not a buy score.",
+        },
+    }
+
+
+def latest_a_fear_components_result() -> dict[str, object]:
+    latest = latest_a_fear_result()
+    record = latest.get("record", {}) if isinstance(latest.get("record"), dict) else {}
+    return {
+        "available": bool(latest.get("available")),
+        "kind": "a_fear_components",
+        "endpoint": "/api/fear/components/latest",
+        "version": a_fear.VERSION,
+        "basis_trade_date": record.get("basis_trade_date"),
+        "fear_score": record.get("fear_score"),
+        "realized_fear_proxy": record.get("realized_fear_proxy"),
+        "components": record.get("components", {}),
+        "metrics": record.get("metrics", {}),
+        "fear_300": record.get("fear_300"),
+        "fear_1000": record.get("fear_1000"),
+        "small_cap_fear_spread": record.get("small_cap_fear_spread"),
+        "data_quality": record.get("data_quality", {}),
+        "safety": {"read_only": True, "triggers_recalculation": False},
+    }
+
+
+def a_fear_status_result() -> dict[str, object]:
+    latest = latest_a_fear_result()
+    record = latest.get("record", {}) if isinstance(latest.get("record"), dict) else {}
+    basis_trade_date = record.get("basis_trade_date")
+    expected = expected_latest_complete_trade_date()
+    metrics = record.get("metrics", {}) if isinstance(record.get("metrics"), dict) else {}
+    sample_counts = [
+        int(metric.get("sample_count") or 0)
+        for metric in metrics.values()
+        if isinstance(metric, dict)
+    ]
+    return {
+        "available": bool(latest.get("available")),
+        "kind": "a_fear_status",
+        "endpoint": "/api/fear/status",
+        "version": a_fear.VERSION,
+        "basis_trade_date": basis_trade_date,
+        "expected_latest_complete_trade_date": expected,
+        "stale": bool(basis_trade_date and str(basis_trade_date) < expected),
+        "official": record.get("official"),
+        "confidence": record.get("confidence"),
+        "minimum_metric_sample_count": min(sample_counts) if sample_counts else 0,
+        "required_sample_count": a_fear.MIN_SAMPLE_COUNT,
+        "data_quality": record.get("data_quality", {}),
+        "source_cache": file_meta(a_fear.DEFAULT_SOURCE_CACHE_PATH)
+        if a_fear.DEFAULT_SOURCE_CACHE_PATH.exists()
+        else None,
+        "safety": {"read_only": True, "triggers_recalculation": False},
+    }
+
+
 def latest_research_bundle() -> dict[str, object]:
     return {
         "schema_version": 1,
@@ -853,6 +1003,8 @@ def latest_research_bundle() -> dict[str, object]:
             "model_validation": "/api/research/latest/model-validation",
             "model_health": "/api/research/latest/model-health",
             "strategy_robustness": "/api/research/latest/strategy-robustness",
+            "fear_latest": "/api/fear/latest",
+            "fear_history": "/api/fear/history",
             "score_history": "/api/history",
             "score_history_with_legacy": "/api/history?include_legacy=true",
         },
@@ -864,6 +1016,7 @@ def latest_research_bundle() -> dict[str, object]:
             "model_validation": latest_model_validation_result(),
             "model_health": latest_model_health_result(),
             "strategy_robustness": latest_strategy_robustness_result(),
+            "fear": latest_a_fear_result(),
         },
     }
 
@@ -1394,6 +1547,7 @@ def homepage_index_result() -> dict[str, object]:
     market_data_status = market_data_status_result(latest, latest_research)
     policy_map = position_policy_map_result(latest)
     allocation_map = allocation_policy_result(latest, records)
+    fear_result = latest_a_fear_result()
 
     module_cards = []
     for key, module in modules.items():
@@ -1428,6 +1582,7 @@ def homepage_index_result() -> dict[str, object]:
         "position_policy_version": latest.get("position_policy_version", POSITION_POLICY_VERSION) if latest else POSITION_POLICY_VERSION,
         "allocation_policy_version": latest.get("allocation_policy_version", ALLOCATION_POLICY_VERSION) if latest else ALLOCATION_POLICY_VERSION,
         "stable_release": stable_release_result(),
+        "fear": fear_result,
         "page": {
             "path": "/",
             "title": "A股市场评分",
@@ -1670,6 +1825,9 @@ def homepage_index_result() -> dict[str, object]:
             "latest_model_validation": "/api/research/latest/model-validation",
             "latest_model_health": "/api/research/latest/model-health",
             "latest_strategy_robustness": "/api/research/latest/strategy-robustness",
+            "fear_latest": "/api/fear/latest",
+            "fear_history": "/api/fear/history",
+            "fear_status": "/api/fear/status",
         },
     }
 
@@ -1720,6 +1878,20 @@ class MarketWebHandler(BaseHTTPRequestHandler):
                 return
             if path == "/api/research/latest/strategy-robustness":
                 self.send_json(latest_strategy_robustness_result())
+                return
+            if path == "/api/fear/latest":
+                self.send_json(latest_a_fear_result())
+                return
+            if path == "/api/fear/components/latest":
+                self.send_json(latest_a_fear_components_result())
+                return
+            if path == "/api/fear/status":
+                self.send_json(a_fear_status_result())
+                return
+            if path == "/api/fear/history":
+                start_date = (query.get("start_date", [None])[0] or None)
+                end_date = (query.get("end_date", [None])[0] or None)
+                self.send_json(a_fear_history_result(start_date=start_date, end_date=end_date))
                 return
             if path == "/api/history":
                 include_legacy = (query.get("include_legacy", ["false"])[0] or "").lower() == "true"
