@@ -18,10 +18,14 @@ OPTION_FAMILIES = {"io": "IO", "mo": "MO"}
 
 
 def api_call(call: Callable[..., pd.DataFrame], *args: Any, **kwargs: Any) -> pd.DataFrame:
+    require_nonempty = bool(kwargs.pop("_require_nonempty", False))
     last_error: Exception | None = None
     for attempt in range(4):
         try:
-            return call(*args, **kwargs)
+            frame = call(*args, **kwargs)
+            if require_nonempty and frame.empty:
+                raise RuntimeError(f"{getattr(call, '__name__', 'API')} returned an empty response")
+            return frame
         except Exception as exc:
             last_error = exc
             if attempt == 3:
@@ -54,6 +58,7 @@ def open_trade_dates(pro: Any, as_of: date, count: int) -> list[str]:
         start_date=build_market_dataset.yyyymmdd(start),
         end_date=build_market_dataset.yyyymmdd(as_of),
         is_open="1",
+        _require_nonempty=True,
     )
     if calendar.empty:
         raise RuntimeError("Tushare trade calendar returned no open dates")
@@ -63,7 +68,13 @@ def open_trade_dates(pro: Any, as_of: date, count: int) -> list[str]:
 def fetch_index_history(pro: Any, start_date: str, end_date: str) -> dict[str, pd.DataFrame]:
     result: dict[str, pd.DataFrame] = {}
     for name, code in INDEX_CODES.items():
-        frame = api_call(pro.index_daily, ts_code=code, start_date=start_date, end_date=end_date)
+        frame = api_call(
+            pro.index_daily,
+            ts_code=code,
+            start_date=start_date,
+            end_date=end_date,
+            _require_nonempty=True,
+        )
         if frame.empty:
             raise RuntimeError(f"Tushare.index_daily returned no data for {code}")
         frame = frame.copy()
@@ -102,6 +113,7 @@ def fetch_contracts(pro: Any) -> pd.DataFrame:
         pro.opt_basic,
         exchange="CFFEX",
         fields="ts_code,exchange,call_put,exercise_price,maturity_date,list_date,delist_date",
+        _require_nonempty=True,
     )
     if frame.empty:
         raise RuntimeError("Tushare.opt_basic returned no CFFEX contracts")
@@ -170,12 +182,13 @@ def build_observation(
     index_history: dict[str, pd.DataFrame],
     shibor: pd.DataFrame,
 ) -> dict[str, Any] | None:
-    stock_daily = api_call(pro.daily, trade_date=trade_date)
+    stock_daily = api_call(pro.daily, trade_date=trade_date, _require_nonempty=True)
     option_daily = api_call(
         pro.opt_daily,
         trade_date=trade_date,
         exchange="CFFEX",
         fields="ts_code,trade_date,exchange,close,settle,vol,oi",
+        _require_nonempty=True,
     )
     if stock_daily.empty or option_daily.empty:
         return None
@@ -271,7 +284,12 @@ def build_observation(
     }
 
 
-def merge_scored_history(records: list[dict[str, Any]], history_path: Path, latest_path: Path) -> dict[str, Any]:
+def merge_scored_history(
+    records: list[dict[str, Any]],
+    history_path: Path,
+    latest_path: Path,
+    bootstrap_rebuild: bool = False,
+) -> dict[str, Any]:
     existing = a_fear.load_history(history_path)
     existing_by_date = {
         str(item.get("basis_trade_date")): item
@@ -287,6 +305,8 @@ def merge_scored_history(records: list[dict[str, Any]], history_path: Path, late
             merged.append(previous)
         elif previous and previous.get("confidence") == "unavailable" and record.get("confidence") != "unavailable":
             merged.append(record)
+        elif previous and bootstrap_rebuild:
+            merged.append(record)
         elif previous:
             conflicts.append(trade_date)
             merged.append(previous)
@@ -294,7 +314,12 @@ def merge_scored_history(records: list[dict[str, Any]], history_path: Path, late
             merged.append(record)
     if conflicts:
         raise RuntimeError(f"A-FEAR immutable history conflict on: {', '.join(conflicts)}")
-    payload = {"schema_version": a_fear.SCHEMA_VERSION, "version": a_fear.VERSION, "records": merged}
+    payload = {
+        "schema_version": a_fear.SCHEMA_VERSION,
+        "version": a_fear.VERSION,
+        "build_mode": "bootstrap_rebuild" if bootstrap_rebuild else "immutable_append",
+        "records": merged,
+    }
     write_json(history_path, payload)
     if merged:
         write_json(latest_path, merged[-1])
@@ -308,6 +333,7 @@ def build(
     cache_path: Path = a_fear.DEFAULT_SOURCE_CACHE_PATH,
     history_path: Path = a_fear.DEFAULT_HISTORY_PATH,
     latest_path: Path = a_fear.DEFAULT_LATEST_PATH,
+    bootstrap_rebuild: bool = False,
 ) -> dict[str, Any]:
     build_market_dataset.load_dotenv(build_market_dataset.ROOT / ".env")
     pro = build_market_dataset.tushare_client()
@@ -323,12 +349,18 @@ def build(
     by_date = {str(item.get("basis_trade_date")): item for item in cache["observations"]}
     fetched = 0
     skipped = 0
+    fetch_errors: list[dict[str, str]] = []
     for index, trade_date in enumerate(trade_dates, start=1):
         iso_trade_date = build_market_dataset.iso_date(trade_date)
         if iso_trade_date in by_date and not refresh:
             skipped += 1
             continue
-        observation = build_observation(pro, trade_date, contracts, index_history, shibor)
+        try:
+            observation = build_observation(pro, trade_date, contracts, index_history, shibor)
+        except Exception as exc:
+            fetch_errors.append({"basis_trade_date": iso_trade_date, "error": str(exc)})
+            print(f"A-FEAR source unavailable {iso_trade_date}: {exc}", flush=True)
+            continue
         if observation is None:
             continue
         by_date[iso_trade_date] = observation
@@ -343,13 +375,19 @@ def build(
 
     observations = [by_date[key] for key in sorted(by_date) if key <= build_market_dataset.iso_date(end_date)]
     records = a_fear.score_observation_series(observations)
-    persistence = merge_scored_history(records, history_path, latest_path)
+    persistence = merge_scored_history(
+        records,
+        history_path,
+        latest_path,
+        bootstrap_rebuild=bootstrap_rebuild,
+    )
     return {
         "version": a_fear.VERSION,
         "requested_trading_days": trading_days,
         "source_observation_count": len(observations),
         "fetched": fetched,
         "skipped_cached": skipped,
+        "fetch_errors": fetch_errors,
         **persistence,
     }
 
@@ -359,13 +397,23 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--as-of", help="Calendar date in YYYY-MM-DD format; defaults to today")
     parser.add_argument("--trading-days", type=int, default=1, help="Number of latest open trading days to ensure")
     parser.add_argument("--refresh", action="store_true", help="Refetch dates already present in the source cache")
+    parser.add_argument(
+        "--bootstrap-rebuild",
+        action="store_true",
+        help="Explicitly rebuild derived history while creating the initial trailing sample",
+    )
     return parser.parse_args()
 
 
 def main() -> None:
     args = parse_args()
     as_of = datetime.strptime(args.as_of, "%Y-%m-%d").date() if args.as_of else date.today()
-    result = build(as_of, max(args.trading_days, 1), refresh=args.refresh)
+    result = build(
+        as_of,
+        max(args.trading_days, 1),
+        refresh=args.refresh,
+        bootstrap_rebuild=args.bootstrap_rebuild,
+    )
     print(json.dumps(result, ensure_ascii=False, indent=2))
 
 

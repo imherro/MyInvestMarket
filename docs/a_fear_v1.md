@@ -116,6 +116,10 @@ Files:
 - `data/a_fear_source_cache.json`: reusable raw daily observations for
   reproducible backfills.
 
+Initial history creation may use the explicit `--bootstrap-rebuild` command
+line switch while earlier source gaps are being filled. Normal daily runs never
+enable it and retain immutable same-day conflict protection.
+
 Read-only endpoints:
 
 - `GET /api/fear/latest`

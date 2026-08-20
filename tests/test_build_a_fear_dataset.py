@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import math
+import tempfile
 import sys
 import unittest
 from datetime import date
@@ -60,6 +61,28 @@ class BuildAFearDatasetTests(unittest.TestCase):
         self.assertEqual(source_date, "20260805")
         self.assertAlmostEqual(rate, 0.015)
         self.assertFalse(fallback)
+
+    def test_bootstrap_rebuild_is_explicit(self) -> None:
+        original = {
+            "version": a_fear.VERSION,
+            "basis_trade_date": "2026-08-19",
+            "input_hash": "old",
+            "confidence": "medium",
+        }
+        replacement = {**original, "input_hash": "new", "fear_score": 80}
+        with tempfile.TemporaryDirectory() as temp_dir:
+            history = Path(temp_dir) / "history.json"
+            latest = Path(temp_dir) / "latest.json"
+            build_a_fear_dataset.write_json(
+                history,
+                {"schema_version": 1, "version": a_fear.VERSION, "records": [original]},
+            )
+            with self.assertRaises(RuntimeError):
+                build_a_fear_dataset.merge_scored_history([replacement], history, latest)
+            result = build_a_fear_dataset.merge_scored_history(
+                [replacement], history, latest, bootstrap_rebuild=True
+            )
+        self.assertEqual(result["latest"]["input_hash"], "new")
 
 
 if __name__ == "__main__":
