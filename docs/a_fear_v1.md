@@ -103,6 +103,10 @@ rising, accelerating, stable, or easing.
 - Partial non-IV components may be renormalized only when at least two realized
   components remain; confidence must be reduced.
 - Stale data never creates a new official history record.
+- Daily updates scan the most recent 30 open trading days for missing raw
+  observations. Each missing date is fetched independently, so an option-data
+  failure on one date does not block later dates and is retried by subsequent
+  post-close runs.
 - A-FEAR v1 is read-only decision support. It does not trigger trading,
   synchronization, score recomputation through GET requests, or automatic
   position changes.
@@ -118,7 +122,9 @@ Files:
 
 Initial history creation may use the explicit `--bootstrap-rebuild` command
 line switch while earlier source gaps are being filled. Normal daily runs never
-enable it and retain immutable same-day conflict protection.
+enable it and retain immutable same-day conflict protection. Normal runs use a
+30-trading-day gap scan; `--no-fill-gaps` disables this only for focused manual
+diagnostics, and `--gap-scan-trading-days` changes the scan window.
 
 Read-only endpoints:
 

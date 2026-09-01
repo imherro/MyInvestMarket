@@ -139,7 +139,7 @@ A-FEAR = 300/1000 ATM 30日IV百分位 × 40%
 ## 参数审计
 
 - `python .\scripts\audit_contrarian_beta_overlay.py`：生成深熊逆向 β 模块参数审计，检查估值、回撤、拥挤、资金踩踏、波动率和强度阈值边界，并输出 JSON/Markdown 报告。
-- `python .\scripts\build_a_fear_dataset.py --trading-days 1`：更新最新交易日 A-FEAR 原始观测和历史评分。
+- `python .\scripts\build_a_fear_dataset.py --trading-days 1`：更新最新交易日 A-FEAR；默认同时扫描最近30个交易日并逐日补齐缺失原始观测。可用 `--gap-scan-trading-days 60` 扩大补洞窗口，或用 `--no-fill-gaps` 进行单日诊断。
 - `python .\scripts\audit_a_fear_v1.py`：审计历史深度、分数边界、组件相关性、跳变频率和最新极端读数一致性。
 
 ## 模型验证

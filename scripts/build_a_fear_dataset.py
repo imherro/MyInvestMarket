@@ -15,6 +15,7 @@ import build_market_dataset
 
 INDEX_CODES = {"csi300": "000300.SH", "csi1000": "000852.SH"}
 OPTION_FAMILIES = {"io": "IO", "mo": "MO"}
+DEFAULT_GAP_SCAN_TRADING_DAYS = 30
 
 
 def api_call(call: Callable[..., pd.DataFrame], *args: Any, **kwargs: Any) -> pd.DataFrame:
@@ -63,6 +64,17 @@ def open_trade_dates(pro: Any, as_of: date, count: int) -> list[str]:
     if calendar.empty:
         raise RuntimeError("Tushare trade calendar returned no open dates")
     return sorted(calendar["cal_date"].astype(str).tolist())[-count:]
+
+
+def pending_gap_trade_dates(
+    pro: Any,
+    as_of: date,
+    cached_dates: set[str],
+    scan_trading_days: int = DEFAULT_GAP_SCAN_TRADING_DAYS,
+) -> list[str]:
+    """Find absent source dates in a recent window so failures are retried individually."""
+    candidates = open_trade_dates(pro, as_of, max(scan_trading_days, 1))
+    return [trade_date for trade_date in candidates if build_market_dataset.iso_date(trade_date) not in cached_dates]
 
 
 def fetch_index_history(pro: Any, start_date: str, end_date: str) -> dict[str, pd.DataFrame]:
@@ -337,6 +349,8 @@ def build(
     as_of: date,
     trading_days: int,
     refresh: bool = False,
+    fill_gaps: bool = True,
+    gap_scan_trading_days: int = DEFAULT_GAP_SCAN_TRADING_DAYS,
     cache_path: Path = a_fear.DEFAULT_SOURCE_CACHE_PATH,
     history_path: Path = a_fear.DEFAULT_HISTORY_PATH,
     latest_path: Path = a_fear.DEFAULT_LATEST_PATH,
@@ -344,43 +358,55 @@ def build(
 ) -> dict[str, Any]:
     build_market_dataset.load_dotenv(build_market_dataset.ROOT / ".env")
     pro = build_market_dataset.tushare_client()
-    trade_dates = open_trade_dates(pro, as_of, trading_days)
-    history_start = datetime.strptime(trade_dates[0], "%Y%m%d").date() - timedelta(days=60)
-    start_date = build_market_dataset.yyyymmdd(history_start)
-    end_date = trade_dates[-1]
-    index_history = fetch_index_history(pro, start_date, end_date)
-    shibor = fetch_shibor_history(pro, start_date, end_date)
-    contracts = fetch_contracts(pro)
-
     cache = load_source_cache(cache_path)
     by_date = {str(item.get("basis_trade_date")): item for item in cache["observations"]}
+    requested_trade_dates = open_trade_dates(pro, as_of, trading_days)
+    gap_trade_dates = (
+        pending_gap_trade_dates(pro, as_of, set(by_date), gap_scan_trading_days)
+        if fill_gaps and not refresh
+        else []
+    )
+    trade_dates = sorted(set(requested_trade_dates) | set(gap_trade_dates))
     fetched = 0
     skipped = 0
     fetch_errors: list[dict[str, str]] = []
-    for index, trade_date in enumerate(trade_dates, start=1):
-        iso_trade_date = build_market_dataset.iso_date(trade_date)
-        if iso_trade_date in by_date and not refresh:
-            skipped += 1
-            continue
-        try:
-            observation = build_observation(pro, trade_date, contracts, index_history, shibor)
-        except Exception as exc:
-            fetch_errors.append({"basis_trade_date": iso_trade_date, "error": str(exc)})
-            print(f"A-FEAR source unavailable {iso_trade_date}: {exc}", flush=True)
-            continue
-        if observation is None:
-            continue
-        by_date[iso_trade_date] = observation
-        fetched += 1
-        cache_payload = {
-            "schema_version": 1,
-            "version": a_fear.VERSION,
-            "observations": [by_date[key] for key in sorted(by_date)],
-        }
-        write_json(cache_path, cache_payload)
-        print(f"A-FEAR source {index}/{len(trade_dates)}: {iso_trade_date}", flush=True)
+    fetch_trade_dates = [
+        trade_date
+        for trade_date in trade_dates
+        if refresh or build_market_dataset.iso_date(trade_date) not in by_date
+    ]
+    skipped = len(trade_dates) - len(fetch_trade_dates)
 
-    observations = [by_date[key] for key in sorted(by_date) if key <= build_market_dataset.iso_date(end_date)]
+    if fetch_trade_dates:
+        history_start = datetime.strptime(fetch_trade_dates[0], "%Y%m%d").date() - timedelta(days=60)
+        start_date = build_market_dataset.yyyymmdd(history_start)
+        end_date = fetch_trade_dates[-1]
+        index_history = fetch_index_history(pro, start_date, end_date)
+        shibor = fetch_shibor_history(pro, start_date, end_date)
+        contracts = fetch_contracts(pro)
+
+        for index, trade_date in enumerate(fetch_trade_dates, start=1):
+            iso_trade_date = build_market_dataset.iso_date(trade_date)
+            try:
+                observation = build_observation(pro, trade_date, contracts, index_history, shibor)
+            except Exception as exc:
+                fetch_errors.append({"basis_trade_date": iso_trade_date, "error": str(exc)})
+                print(f"A-FEAR source unavailable {iso_trade_date}: {exc}", flush=True)
+                continue
+            if observation is None:
+                fetch_errors.append({"basis_trade_date": iso_trade_date, "error": "source observation is incomplete"})
+                continue
+            by_date[iso_trade_date] = observation
+            fetched += 1
+            cache_payload = {
+                "schema_version": 1,
+                "version": a_fear.VERSION,
+                "observations": [by_date[key] for key in sorted(by_date)],
+            }
+            write_json(cache_path, cache_payload)
+            print(f"A-FEAR source {index}/{len(fetch_trade_dates)}: {iso_trade_date}", flush=True)
+
+    observations = [by_date[key] for key in sorted(by_date) if key <= as_of.isoformat()]
     records = a_fear.score_observation_series(observations)
     persistence = merge_scored_history(
         records,
@@ -391,6 +417,10 @@ def build(
     return {
         "version": a_fear.VERSION,
         "requested_trading_days": trading_days,
+        "requested_trade_dates": [build_market_dataset.iso_date(value) for value in requested_trade_dates],
+        "gap_scan_trading_days": gap_scan_trading_days if fill_gaps and not refresh else 0,
+        "gap_trade_dates": [build_market_dataset.iso_date(value) for value in gap_trade_dates],
+        "attempted_trade_dates": [build_market_dataset.iso_date(value) for value in fetch_trade_dates],
         "source_observation_count": len(observations),
         "fetched": fetched,
         "skipped_cached": skipped,
@@ -404,6 +434,13 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--as-of", help="Calendar date in YYYY-MM-DD format; defaults to today")
     parser.add_argument("--trading-days", type=int, default=1, help="Number of latest open trading days to ensure")
     parser.add_argument("--refresh", action="store_true", help="Refetch dates already present in the source cache")
+    parser.add_argument("--no-fill-gaps", action="store_true", help="Only process the requested latest trading days.")
+    parser.add_argument(
+        "--gap-scan-trading-days",
+        type=int,
+        default=DEFAULT_GAP_SCAN_TRADING_DAYS,
+        help="Recent trading-day window used to find and retry absent raw observations.",
+    )
     parser.add_argument(
         "--bootstrap-rebuild",
         action="store_true",
@@ -419,6 +456,8 @@ def main() -> None:
         as_of,
         max(args.trading_days, 1),
         refresh=args.refresh,
+        fill_gaps=not args.no_fill_gaps,
+        gap_scan_trading_days=max(args.gap_scan_trading_days, 1),
         bootstrap_rebuild=args.bootstrap_rebuild,
     )
     print(json.dumps(result, ensure_ascii=False, indent=2))

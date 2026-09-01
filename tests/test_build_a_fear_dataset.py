@@ -39,6 +39,27 @@ def option_rows(prefix: str, maturity: str, days: int, volatility: float) -> lis
 
 
 class BuildAFearDatasetTests(unittest.TestCase):
+    def test_gap_scan_retries_missing_dates_inside_recent_window(self) -> None:
+        class Pro:
+            def trade_cal(self, **_: object) -> pd.DataFrame:
+                return pd.DataFrame(
+                    [
+                        {"cal_date": "20260818"},
+                        {"cal_date": "20260819"},
+                        {"cal_date": "20260820"},
+                        {"cal_date": "20260821"},
+                    ]
+                )
+
+        pending = build_a_fear_dataset.pending_gap_trade_dates(
+            Pro(),
+            date(2026, 8, 21),
+            {"2026-08-18", "2026-08-21"},
+            scan_trading_days=4,
+        )
+
+        self.assertEqual(pending, ["20260819", "20260820"])
+
     def test_family_iv_interpolates_to_fixed_30_days(self) -> None:
         basis = date(2026, 8, 1)
         rows = option_rows("IO", "20260821", 20, 0.20) + option_rows("IO", "20260910", 40, 0.30)
