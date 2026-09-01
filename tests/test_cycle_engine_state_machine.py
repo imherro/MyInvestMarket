@@ -128,9 +128,62 @@ class StateMachineTests(unittest.TestCase):
         self.assertGreater(result["future_information_dependency_count"], 0)
         self.assertFalse(result["passed"])
 
+    def test_phase31_final_contract_mutations_are_rejected(self) -> None:
+        mutated = copy.deepcopy(self.output)
+        item = next(row for row in mutated["diagnostics"]["window_extracts"]["2024"] if row["month"] == "2024-01")
+        item["stable_state"] = "mutated"
+        result = machine.audit(mutated, self.candidate, self.candidate_audit)
+        self.assertGreater(result["stable_diagnostics_violation_count"], 0)
+        self.assertFalse(result["passed"])
+
+        for field in ("first_evidence_month", "confirmation_delay_months"):
+            mutated = copy.deepcopy(self.output)
+            event = mutated["diagnostics"]["transitions"]["transition_events"][0]
+            event[field] = "mutated" if field == "first_evidence_month" else 99
+            result = machine.audit(mutated, self.candidate, self.candidate_audit)
+            self.assertGreater(result["transition_diagnostics_violation_count"], 0, field)
+            self.assertFalse(result["passed"])
+
+        for field in ("longest_run", "median_run"):
+            mutated = copy.deepcopy(self.output)
+            state_data = mutated["diagnostics"]["stable_state_distribution"]["bull"]
+            state_data[field] = 99
+            result = machine.audit(mutated, self.candidate, self.candidate_audit)
+            self.assertGreater(result["stable_diagnostics_violation_count"], 0, field)
+            self.assertFalse(result["passed"])
+
+        mutated = copy.deepcopy(self.output)
+        mutated["diagnostics"]["pending"]["pending_cancelled_by_current_state_count"] = 46
+        result = machine.audit(mutated, self.candidate, self.candidate_audit)
+        self.assertGreater(result["transition_diagnostics_violation_count"], 0)
+        self.assertFalse(result["passed"])
+
+        for field, value in (("record_count", 999), ("first_core_ready_month", "2099-01"), ("research_only", False), ("schema", "mutated")):
+            mutated = copy.deepcopy(self.output)
+            mutated[field] = value
+            result = machine.audit(mutated, self.candidate, self.candidate_audit)
+            self.assertGreater(result["artifact_contract_violation_count"], 0, field)
+            self.assertFalse(result["passed"])
+
+    def test_future_candidate_mutations_do_not_change_historical_prefix(self) -> None:
+        cutoff = "2025-12"
+        mutated = copy.deepcopy(self.candidate)
+        for row in mutated["records"]:
+            if row["month"] > cutoff:
+                row["candidate_state"] = "bull" if row["candidate_state"] != "bull" else "bear"
+                row["reason_codes"] = ["future_mutation"]
+                row["macro_alignment"] = "contradictory"
+                row["sentiment_overlay"]["score"] = 100
+        original_rows = machine.build(self.candidate)["records"]
+        changed_rows = machine.build(mutated)["records"]
+        fields = ("stable_state", "initialized", "transition_status", "transition_from", "transition_to", "pending_target", "pending_count", "pending_gap_months", "stable_reason_codes")
+        for original, changed in zip(original_rows, changed_rows):
+            if original["month"] <= cutoff:
+                self.assertEqual([original[field] for field in fields], [changed[field] for field in fields], original["month"])
+
     def test_audit_replay_is_independent_and_output_is_restricted(self) -> None:
         source = inspect.getsource(machine.audit) + inspect.getsource(machine._audit_replay) + inspect.getsource(machine._audit_diagnostics)
-        for token in ("build(", "_step(", "state_machine(", "transition_step(", "update_pending("):
+        for token in ("build(", "_step(", "state_machine(", "transition_step(", "update_pending(", "_overlay("):
             self.assertNotIn(token, source)
         text = json.dumps(self.output, ensure_ascii=False).lower()
         for token in ("cycle_score", "position", "allocation", "buy_signal", "sell_signal", "backtest", "forward_return"):
@@ -138,6 +191,11 @@ class StateMachineTests(unittest.TestCase):
 
     def test_audit_diagnostics_does_not_call_production_diagnostics(self) -> None:
         with mock.patch.object(machine, "_diagnostics", side_effect=AssertionError("production diagnostics called")):
+            result = machine.audit(self.output, self.candidate, self.candidate_audit)
+        self.assertTrue(result["passed"], result)
+
+    def test_audit_replay_does_not_call_production_overlay(self) -> None:
+        with mock.patch.object(machine, "_overlay", side_effect=AssertionError("production overlay called")):
             result = machine.audit(self.output, self.candidate, self.candidate_audit)
         self.assertTrue(result["passed"], result)
 

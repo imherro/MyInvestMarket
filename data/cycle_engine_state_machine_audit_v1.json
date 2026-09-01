@@ -19,5 +19,6 @@
   "future_information_dependency_count": 0,
   "forbidden_output_violation_count": 0,
   "upstream_mutation_count": 0,
+  "artifact_contract_violation_count": 0,
   "passed": true
 }

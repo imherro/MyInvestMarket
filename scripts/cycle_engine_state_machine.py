@@ -252,7 +252,9 @@ def _audit_replay(records: list[dict[str, Any]]) -> list[dict[str, Any]]:
         reason = {"insufficient_history": "insufficient_history", "uninitialized_ambiguous": "uninitialized_ambiguous", "initialized": "initial_non_ambiguous_state", "held_same": "current_state_reconfirmed", "held_ambiguous": "ambiguous_hold", "pending_started": "pending_first_evidence", "pending_replaced": "pending_replaced_by_competing_candidate", "pending_expired": "pending_expired_after_two_ambiguous", "transition_confirmed": "two_hit_transition_confirmed"}[status]
         if status == "held_same" and had_pending:
             reason = "pending_cancelled_by_current_state"
-        output.append({"month": source["month"], "basis_trade_date": source["basis_trade_date"], "core_ready": source["core_ready"], "raw_candidate_state": raw, "stable_state": stable, "initialized": initialized, "transition_status": status, "transition_from": from_state, "transition_to": to_state, "pending_target": pending, "pending_count": count, "pending_gap_months": gap, "raw_reason_codes": source.get("reason_codes", []), "stable_reason_codes": [reason], "macro_alignment": source.get("macro_alignment"), "sentiment_overlay": _overlay(source.get("sentiment_overlay", {}))})
+        overlay_source = source.get("sentiment_overlay", {})
+        overlay = {key: overlay_source.get(key) for key in ("state", "score", "available", "observations", "model_ready", "role")}
+        output.append({"month": source["month"], "basis_trade_date": source["basis_trade_date"], "core_ready": source["core_ready"], "raw_candidate_state": raw, "stable_state": stable, "initialized": initialized, "transition_status": status, "transition_from": from_state, "transition_to": to_state, "pending_target": pending, "pending_count": count, "pending_gap_months": gap, "raw_reason_codes": source.get("reason_codes", []), "stable_reason_codes": [reason], "macro_alignment": source.get("macro_alignment"), "sentiment_overlay": overlay})
     return output
 
 
@@ -358,6 +360,7 @@ def _contains_future_marker(value: Any) -> bool:
 def audit(data: dict[str, Any], candidate: dict[str, Any], candidate_audit: dict[str, Any]) -> dict[str, Any]:
     names = ("source_candidate_audit_violation_count", "source_candidate_hash_violation_count", "record_alignment_violation_count", "initialization_violation_count", "ambiguous_hold_violation_count", "pending_state_violation_count", "confirmation_rule_violation_count", "pending_expiry_violation_count", "stable_state_violation_count", "transition_metadata_violation_count", "stable_diagnostics_violation_count", "transition_diagnostics_violation_count", "stability_improvement_violation_count", "macro_core_leakage_count", "sentiment_core_leakage_count", "future_information_dependency_count", "forbidden_output_violation_count", "upstream_mutation_count")
     errors = {name: 0 for name in names}
+    errors["artifact_contract_violation_count"] = 0
     actual_file_sha = sha256_bytes(CANDIDATE_PATH.read_bytes())
     errors["source_candidate_audit_violation_count"] = int(candidate_audit.get("passed") is not True)
     errors["source_candidate_hash_violation_count"] = int(actual_file_sha != FROZEN_PHASE3_CANDIDATE_SHA256 or candidate_byte_sha(candidate) != FROZEN_PHASE3_CANDIDATE_SHA256 or data.get("source_candidate_sha256") != FROZEN_PHASE3_CANDIDATE_SHA256)
@@ -365,6 +368,8 @@ def audit(data: dict[str, Any], candidate: dict[str, Any], candidate_audit: dict
     expected = _audit_replay(candidate["records"])
     actual = data.get("records", [])
     errors["record_alignment_violation_count"] = int([row.get("month") for row in actual] != [row["month"] for row in expected] or len(actual) != len(expected))
+    expected_first_ready = next((row["month"] for row in expected if row["core_ready"]), None)
+    errors["artifact_contract_violation_count"] = sum((data.get("schema") != "cycle_engine_state_machine_v1", data.get("research_only") is not True, data.get("record_count") != len(expected), data.get("first_core_ready_month") != expected_first_ready))
     for left, right in zip(actual, expected):
         if left.get("month") != right["month"] or left.get("basis_trade_date") != right["basis_trade_date"] or left.get("core_ready") != right["core_ready"] or left.get("raw_candidate_state") != right["raw_candidate_state"] or left.get("raw_reason_codes") != right["raw_reason_codes"]:
             errors["record_alignment_violation_count"] += 1
@@ -392,6 +397,8 @@ def audit(data: dict[str, Any], candidate: dict[str, Any], candidate_audit: dict
     if diagnostics.get("raw_vs_stable") != expected_diag["raw_vs_stable"]:
         errors["stability_improvement_violation_count"] += 1
     if diagnostics.get("ambiguous") != expected_diag["ambiguous"] or diagnostics.get("stable_state_distribution") != expected_diag["stable_state_distribution"] or diagnostics.get("raw_to_stable_matrix") != expected_diag["raw_to_stable_matrix"]:
+        errors["stable_diagnostics_violation_count"] += 1
+    if diagnostics.get("window_extracts") != expected_diag["window_extracts"]:
         errors["stable_diagnostics_violation_count"] += 1
     independent_cancelled = sum("pending_cancelled_by_current_state" in row.get("stable_reason_codes", []) for row in expected)
     if diagnostics.get("transitions") != expected_diag["transitions"] or diagnostics.get("pending") != expected_diag["pending"]:
