@@ -1,0 +1,232 @@
+{
+  "version": "market_history_backfill_v1",
+  "generated_at": "2026-09-01T09:31:54+08:00",
+  "requested_range": {
+    "start_date": "2026-07-23",
+    "end_date": "2026-09-01"
+  },
+  "source_complete_trade_dates": [
+    "2026-07-23",
+    "2026-07-24",
+    "2026-07-27",
+    "2026-07-28",
+    "2026-07-29",
+    "2026-07-30",
+    "2026-07-31",
+    "2026-08-03",
+    "2026-08-04",
+    "2026-08-05",
+    "2026-08-06",
+    "2026-08-07",
+    "2026-08-10",
+    "2026-08-11",
+    "2026-08-12",
+    "2026-08-13",
+    "2026-08-14",
+    "2026-08-17",
+    "2026-08-18",
+    "2026-08-19",
+    "2026-08-20",
+    "2026-08-21",
+    "2026-08-24",
+    "2026-08-25",
+    "2026-08-26",
+    "2026-08-27",
+    "2026-08-28",
+    "2026-08-31"
+  ],
+  "scored": [
+    {
+      "basis_trade_date": "2026-07-24",
+      "snapshot": "data\\market_snapshot_2026-07-24.json",
+      "run_id": "20260901T092928-e61a1b45",
+      "appended": true,
+      "duplicate": false,
+      "market_opportunity_score": 32.3,
+      "market_position_score": 6.78,
+      "recommended_equity_position_range": "0%-20%"
+    },
+    {
+      "basis_trade_date": "2026-08-12",
+      "snapshot": "data\\market_snapshot_2026-08-12.json",
+      "run_id": "20260901T092937-e9644d04",
+      "appended": true,
+      "duplicate": false,
+      "market_opportunity_score": 68.33,
+      "market_position_score": 35.0,
+      "recommended_equity_position_range": "20%-40%"
+    },
+    {
+      "basis_trade_date": "2026-08-13",
+      "snapshot": "data\\market_snapshot_2026-08-13.json",
+      "run_id": "20260901T092947-5f7221ad",
+      "appended": true,
+      "duplicate": false,
+      "market_opportunity_score": 46.19,
+      "market_position_score": 13.86,
+      "recommended_equity_position_range": "0%-20%"
+    },
+    {
+      "basis_trade_date": "2026-08-14",
+      "snapshot": "data\\market_snapshot_2026-08-14.json",
+      "run_id": "20260901T092958-c02257f9",
+      "appended": true,
+      "duplicate": false,
+      "market_opportunity_score": 55.82,
+      "market_position_score": 22.97,
+      "recommended_equity_position_range": "20%-40%"
+    },
+    {
+      "basis_trade_date": "2026-08-17",
+      "snapshot": "data\\market_snapshot_2026-08-17.json",
+      "run_id": "20260901T093022-4df03b46",
+      "appended": true,
+      "duplicate": false,
+      "market_opportunity_score": 70.23,
+      "market_position_score": 35.0,
+      "recommended_equity_position_range": "20%-40%"
+    },
+    {
+      "basis_trade_date": "2026-08-18",
+      "snapshot": "data\\market_snapshot_2026-08-18.json",
+      "run_id": "20260901T093052-96707bf6",
+      "appended": true,
+      "duplicate": false,
+      "market_opportunity_score": 56.0,
+      "market_position_score": 24.97,
+      "recommended_equity_position_range": "20%-40%"
+    },
+    {
+      "basis_trade_date": "2026-08-19",
+      "snapshot": "data\\market_snapshot_2026-08-19.json",
+      "run_id": "20260901T093109-38a031e6",
+      "appended": true,
+      "duplicate": false,
+      "market_opportunity_score": 39.1,
+      "market_position_score": 12.91,
+      "recommended_equity_position_range": "0%-20%"
+    },
+    {
+      "basis_trade_date": "2026-08-20",
+      "snapshot": "data\\market_snapshot_2026-08-20.json",
+      "run_id": "20260901T093123-3f90d803",
+      "appended": true,
+      "duplicate": false,
+      "market_opportunity_score": 54.6,
+      "market_position_score": 34.09,
+      "recommended_equity_position_range": "20%-40%"
+    },
+    {
+      "basis_trade_date": "2026-08-21",
+      "snapshot": "data\\market_snapshot_2026-08-21.json",
+      "run_id": "20260901T093140-c029d220",
+      "appended": true,
+      "duplicate": false,
+      "market_opportunity_score": 57.55,
+      "market_position_score": 27.08,
+      "recommended_equity_position_range": "20%-40%"
+    },
+    {
+      "basis_trade_date": "2026-08-24",
+      "snapshot": "data\\market_snapshot_2026-08-24.json",
+      "run_id": "20260901T093154-c8cd7c8c",
+      "appended": true,
+      "duplicate": false,
+      "market_opportunity_score": 38.27,
+      "market_position_score": 11.97,
+      "recommended_equity_position_range": "0%-20%"
+    }
+  ],
+  "skipped": [
+    {
+      "basis_trade_date": "2026-07-23",
+      "reason": "score record already exists"
+    },
+    {
+      "basis_trade_date": "2026-07-27",
+      "reason": "score record already exists"
+    },
+    {
+      "basis_trade_date": "2026-07-28",
+      "reason": "score record already exists"
+    },
+    {
+      "basis_trade_date": "2026-07-29",
+      "reason": "score record already exists"
+    },
+    {
+      "basis_trade_date": "2026-07-30",
+      "reason": "score record already exists"
+    },
+    {
+      "basis_trade_date": "2026-07-31",
+      "reason": "score record already exists"
+    },
+    {
+      "basis_trade_date": "2026-08-03",
+      "reason": "score record already exists"
+    },
+    {
+      "basis_trade_date": "2026-08-04",
+      "reason": "score record already exists"
+    },
+    {
+      "basis_trade_date": "2026-08-05",
+      "reason": "score record already exists"
+    },
+    {
+      "basis_trade_date": "2026-08-06",
+      "reason": "score record already exists"
+    },
+    {
+      "basis_trade_date": "2026-08-07",
+      "reason": "score record already exists"
+    },
+    {
+      "basis_trade_date": "2026-08-10",
+      "reason": "score record already exists"
+    },
+    {
+      "basis_trade_date": "2026-08-11",
+      "reason": "score record already exists"
+    },
+    {
+      "basis_trade_date": "2026-08-25",
+      "reason": "score record already exists"
+    },
+    {
+      "basis_trade_date": "2026-08-26",
+      "reason": "score record already exists"
+    },
+    {
+      "basis_trade_date": "2026-08-27",
+      "reason": "score record already exists"
+    },
+    {
+      "basis_trade_date": "2026-08-28",
+      "reason": "score record already exists"
+    },
+    {
+      "basis_trade_date": "2026-08-31",
+      "reason": "score record already exists"
+    }
+  ],
+  "source_unavailable": [
+    {
+      "basis_trade_date": "2026-09-01",
+      "reason": "daily or Shanghai Composite source data is unavailable"
+    }
+  ],
+  "written_snapshot_paths": [
+    "data\\market_snapshot_2026-07-24.json",
+    "data\\market_snapshot_2026-08-12.json",
+    "data\\market_snapshot_2026-08-13.json",
+    "data\\market_snapshot_2026-08-14.json",
+    "data\\market_snapshot_2026-08-17.json",
+    "data\\market_snapshot_2026-08-18.json",
+    "data\\market_snapshot_2026-08-19.json",
+    "data\\market_snapshot_2026-08-20.json",
+    "data\\market_snapshot_2026-08-21.json",
+    "data\\market_snapshot_2026-08-24.json"
+  ]
+}

@@ -1,0 +1,459 @@
+{
+  "date": "2026-08-19",
+  "market": {
+    "as_of_trade_date": "2026-08-19",
+    "indices": {
+      "000001.SH": {
+        "name": "上证指数",
+        "name_en": "Shanghai Composite",
+        "trade_date": "2026-08-19",
+        "close": 3894.4224,
+        "return_5d_pct": -1.324,
+        "return_20d_pct": 0.7083,
+        "ma20": 3887.3804,
+        "ma20_deviation_pct": 0.1812,
+        "volume_ratio_5d": 1.1103,
+        "above_ma20": true,
+        "source": "Tushare.index_daily"
+      },
+      "399001.SZ": {
+        "name": "深证成指",
+        "name_en": "Shenzhen Component",
+        "trade_date": "2026-08-19",
+        "close": 13890.1523,
+        "return_5d_pct": -3.6372,
+        "return_20d_pct": -1.2181,
+        "ma20": 14041.5199,
+        "ma20_deviation_pct": -1.078,
+        "volume_ratio_5d": 1.0735,
+        "above_ma20": false,
+        "source": "Tushare.index_daily"
+      },
+      "399006.SZ": {
+        "name": "创业板指",
+        "name_en": "ChiNext Index",
+        "trade_date": "2026-08-19",
+        "close": 3473.4932,
+        "return_5d_pct": -3.5699,
+        "return_20d_pct": -2.6141,
+        "ma20": 3508.342,
+        "ma20_deviation_pct": -0.9933,
+        "volume_ratio_5d": 1.0058,
+        "above_ma20": false,
+        "source": "Tushare.index_daily"
+      },
+      "899050.BJ": {
+        "name": "北证50",
+        "name_en": "BSE 50",
+        "trade_date": "2026-08-19",
+        "close": 1082.1912,
+        "return_5d_pct": -3.0152,
+        "return_20d_pct": 0.7204,
+        "ma20": 1091.3149,
+        "ma20_deviation_pct": -0.836,
+        "volume_ratio_5d": 1.2028,
+        "above_ma20": false,
+        "source": "Tushare.index_daily"
+      }
+    }
+  },
+  "breadth": {
+    "trade_date": "2026-08-19",
+    "advancers": 449,
+    "decliners": 5069,
+    "flat": 23,
+    "total": 5541,
+    "median_pct_change": -3.9223,
+    "strong_advancers_gt3_pct": 0.0217,
+    "strong_decliners_lt_minus3_pct": 0.627,
+    "limit_up": 36,
+    "limit_down": 118,
+    "max_limit_up_streak": 3,
+    "industry_up_ratio": 0.0968,
+    "industry_count": 31
+  },
+  "capital_flow": {
+    "trade_date": "2026-08-19",
+    "market_cap_bucket_thresholds_100m_cny": {
+      "large_cap_min": 2000,
+      "mid_cap_min": 300,
+      "small_cap_max_exclusive": 300
+    },
+    "northbound_net_inflow_raw": 328465.07,
+    "northbound_net_inflow_100m_cny": 32.8465,
+    "northbound_trade_date": "2026-08-19",
+    "northbound_unit_note": "northbound_net_inflow_100m_cny = raw north_money / 10000; raw field is preserved",
+    "main_net_inflow_100m_cny": -1793.9223,
+    "turnover_distribution": {
+      "large_cap": {
+        "turnover_100m_cny": 4536.7687,
+        "share": 0.1793
+      },
+      "mid_cap": {
+        "turnover_100m_cny": 9631.1996,
+        "share": 0.3807
+      },
+      "small_cap": {
+        "turnover_100m_cny": 11132.1374,
+        "share": 0.44
+      }
+    }
+  },
+  "sector_rotation": {
+    "trade_date": "2026-08-19",
+    "top5_industries_by_return": [
+      {
+        "industry": "银行",
+        "ts_code": "801780.SI",
+        "pct_change": 1.78,
+        "close": 4031.41
+      },
+      {
+        "industry": "石油石化",
+        "ts_code": "801960.SI",
+        "pct_change": 1.12,
+        "close": 2719.44
+      },
+      {
+        "industry": "煤炭",
+        "ts_code": "801950.SI",
+        "pct_change": 0.73,
+        "close": 3326.27
+      },
+      {
+        "industry": "交通运输",
+        "ts_code": "801170.SI",
+        "pct_change": -0.14,
+        "close": 2063.47
+      },
+      {
+        "industry": "家用电器",
+        "ts_code": "801110.SI",
+        "pct_change": -0.55,
+        "close": 8619.35
+      }
+    ],
+    "bottom5_industries_by_return": [
+      {
+        "industry": "通信",
+        "ts_code": "801770.SI",
+        "pct_change": -7.95,
+        "close": 7092.23
+      },
+      {
+        "industry": "电子",
+        "ts_code": "801080.SI",
+        "pct_change": -7.77,
+        "close": 8677.26
+      },
+      {
+        "industry": "机械设备",
+        "ts_code": "801890.SI",
+        "pct_change": -6.58,
+        "close": 2185.1
+      },
+      {
+        "industry": "计算机",
+        "ts_code": "801750.SI",
+        "pct_change": -5.47,
+        "close": 4356.65
+      },
+      {
+        "industry": "国防军工",
+        "ts_code": "801740.SI",
+        "pct_change": -5.11,
+        "close": 1600.47
+      }
+    ],
+    "top5_industries_by_capital_inflow": [
+      {
+        "industry": "银行",
+        "ts_code": "881155.TI",
+        "pct_change": 1.46,
+        "net_amount_100m_cny": 43.0,
+        "lead_stock": "中信银行"
+      },
+      {
+        "industry": "贵金属",
+        "ts_code": "881169.TI",
+        "pct_change": -1.06,
+        "net_amount_100m_cny": 9.0,
+        "lead_stock": "山东黄金"
+      },
+      {
+        "industry": "石油加工贸易",
+        "ts_code": "881180.TI",
+        "pct_change": -1.46,
+        "net_amount_100m_cny": 7.0,
+        "lead_stock": "华锦股份"
+      },
+      {
+        "industry": "港口航运",
+        "ts_code": "881148.TI",
+        "pct_change": 0.37,
+        "net_amount_100m_cny": 7.0,
+        "lead_stock": "南京港"
+      },
+      {
+        "industry": "煤炭开采加工",
+        "ts_code": "881105.TI",
+        "pct_change": 1.52,
+        "net_amount_100m_cny": 2.0,
+        "lead_stock": "宝泰隆"
+      }
+    ]
+  },
+  "valuation": {
+    "trade_date": "2026-08-19",
+    "indices": {
+      "000001.SH": {
+        "name": "上证指数",
+        "trade_date": "2026-08-19",
+        "pe_ttm": 16.5712,
+        "pb": 1.4675,
+        "pe_percentile_5y": 87.18,
+        "pb_percentile_5y": 71.1,
+        "source": "Tushare.index_dailybasic"
+      },
+      "399001.SZ": {
+        "name": "深证成指",
+        "trade_date": "2026-08-19",
+        "pe_ttm": 32.596,
+        "pb": 2.8534,
+        "pe_percentile_5y": 89.94,
+        "pb_percentile_5y": 73.13,
+        "source": "Tushare.index_dailybasic"
+      },
+      "399006.SZ": {
+        "name": "创业板指",
+        "trade_date": "2026-08-19",
+        "pe_ttm": 42.0478,
+        "pb": 5.7685,
+        "pe_percentile_5y": 62.58,
+        "pb_percentile_5y": 73.38,
+        "source": "Tushare.index_dailybasic"
+      }
+    },
+    "market": {
+      "index_pe_value_score": 20.1,
+      "index_pb_value_score": 27.46,
+      "valuation_score": 23.04,
+      "score_note": "Higher score means cheaper relative to the 5-year index_dailybasic history."
+    }
+  },
+  "volatility": {
+    "trade_date": "2026-08-19",
+    "indices": {
+      "000001.SH": {
+        "name": "上证指数",
+        "realized_vol_30d": 0.2003,
+        "realized_vol_60d": 0.1802,
+        "drawdown_60d_pct": -6.4537,
+        "source": "Tushare.index_daily"
+      },
+      "399001.SZ": {
+        "name": "深证成指",
+        "realized_vol_30d": 0.4073,
+        "realized_vol_60d": 0.3622,
+        "drawdown_60d_pct": -15.1617,
+        "source": "Tushare.index_daily"
+      },
+      "399006.SZ": {
+        "name": "创业板指",
+        "realized_vol_30d": 0.567,
+        "realized_vol_60d": 0.4973,
+        "drawdown_60d_pct": -20.5512,
+        "source": "Tushare.index_daily"
+      },
+      "899050.BJ": {
+        "name": "北证50",
+        "realized_vol_30d": 0.3816,
+        "realized_vol_60d": 0.3558,
+        "drawdown_60d_pct": -19.1143,
+        "source": "Tushare.index_daily"
+      }
+    },
+    "market": {
+      "realized_vol_30d": 0.3915,
+      "target_annual_vol": null,
+      "source_note": "Average 30-day annualized realized volatility of Shanghai, Shenzhen, and ChiNext when available; stock-account position policy uses volatility as a risk indicator only."
+    }
+  },
+  "macro": {
+    "us_10y_treasury_yield_pct": {
+      "date": "2026-08-19",
+      "value": 4.65,
+      "source": "FRED:DGS10"
+    },
+    "dxy": {
+      "date": "2026-08-19",
+      "value": 98.83,
+      "source": "yfinance:DX-Y.NYB"
+    },
+    "usd_cny": {
+      "date": "2026-08-19",
+      "value": 6.7426,
+      "source": "yfinance:CNY=X"
+    },
+    "china_10y_government_bond_yield_pct": {
+      "date": "2026-08-19",
+      "value_pct": 1.6831,
+      "source": "Eastmoney:RPTA_WEB_TREASURYYIELD"
+    },
+    "fred_key_indicators": {
+      "FEDFUNDS": {
+        "date": "2026-07-01",
+        "value": 3.63,
+        "source": "FRED:FEDFUNDS"
+      },
+      "DFF": {
+        "date": "2026-08-19",
+        "value": 3.63,
+        "source": "FRED:DFF"
+      },
+      "CPIAUCSL": {
+        "date": "2026-07-01",
+        "value": 332.813,
+        "source": "FRED:CPIAUCSL"
+      },
+      "PCEPI": {
+        "date": "2026-07-01",
+        "value": 131.659,
+        "source": "FRED:PCEPI"
+      }
+    }
+  },
+  "qmt_portfolio": {
+    "available": false,
+    "mode": "read_only_probe",
+    "positions": [],
+    "cash": null,
+    "reason": "xtquant is not installed in the active Python environment"
+  },
+  "data_quality": {
+    "missing_fields": [],
+    "sources_used": [
+      "Tushare.trade_cal",
+      "Tushare.daily",
+      "Tushare.index_daily",
+      "Tushare.index_classify",
+      "Tushare.sw_daily",
+      "Tushare.limit_list_d",
+      "Tushare.limit_step",
+      "Tushare.moneyflow_hsgt",
+      "Tushare.moneyflow",
+      "Tushare.daily_basic",
+      "Tushare.moneyflow_ind_ths",
+      "Tushare.index_dailybasic",
+      "FRED.DGS10",
+      "yfinance.DX-Y.NYB",
+      "yfinance.CNY=X",
+      "Eastmoney.RPTA_WEB_TREASURYYIELD",
+      "FRED.FEDFUNDS",
+      "FRED.DFF",
+      "FRED.CPIAUCSL",
+      "FRED.PCEPI",
+      "BaoStock.query_history_k_data_plus"
+    ],
+    "warnings": [
+      "macro.us_10y_treasury_yield_pct: ignored 7 future-dated observations after 2026-08-19",
+      "macro.china_10y_government_bond_yield_pct: ignored 8 future-dated observations after 2026-08-19",
+      "macro.fred_key_indicators.DFF: ignored 9 future-dated observations after 2026-08-19"
+    ],
+    "feature_freshness": {
+      "macro.us_10y_treasury_yield_pct": {
+        "basis_date": "2026-08-19",
+        "observation_date": "2026-08-19",
+        "lag_days": 0,
+        "source": "FRED:DGS10",
+        "status": "available",
+        "ignored_future_observations": 7
+      },
+      "macro.dxy": {
+        "basis_date": "2026-08-19",
+        "observation_date": "2026-08-19",
+        "lag_days": 0,
+        "source": "yfinance:DX-Y.NYB",
+        "status": "available",
+        "ignored_future_observations": 0
+      },
+      "macro.usd_cny": {
+        "basis_date": "2026-08-19",
+        "observation_date": "2026-08-19",
+        "lag_days": 0,
+        "source": "yfinance:CNY=X",
+        "status": "available",
+        "ignored_future_observations": 0
+      },
+      "macro.china_10y_government_bond_yield_pct": {
+        "basis_date": "2026-08-19",
+        "observation_date": "2026-08-19",
+        "lag_days": 0,
+        "source": "Eastmoney:RPTA_WEB_TREASURYYIELD",
+        "status": "available",
+        "ignored_future_observations": 8
+      },
+      "macro.fred_key_indicators.FEDFUNDS": {
+        "basis_date": "2026-08-19",
+        "observation_date": "2026-07-01",
+        "lag_days": 49,
+        "source": "FRED:FEDFUNDS",
+        "status": "available",
+        "ignored_future_observations": 0
+      },
+      "macro.fred_key_indicators.DFF": {
+        "basis_date": "2026-08-19",
+        "observation_date": "2026-08-19",
+        "lag_days": 0,
+        "source": "FRED:DFF",
+        "status": "available",
+        "ignored_future_observations": 9
+      },
+      "macro.fred_key_indicators.CPIAUCSL": {
+        "basis_date": "2026-08-19",
+        "observation_date": "2026-07-01",
+        "lag_days": 49,
+        "source": "FRED:CPIAUCSL",
+        "status": "available",
+        "ignored_future_observations": 0
+      },
+      "macro.fred_key_indicators.PCEPI": {
+        "basis_date": "2026-08-19",
+        "observation_date": "2026-07-01",
+        "lag_days": 49,
+        "source": "FRED:PCEPI",
+        "status": "available",
+        "ignored_future_observations": 0
+      }
+    },
+    "generated_at": "2026-09-01T09:31:09+08:00",
+    "basis": "latest complete Tushare A-share trading day at or before as_of",
+    "notes": [
+      "optional valuation.indices.899050.BJ: empty index_dailybasic",
+      "macro.china_10y_government_bond_yield_pct: Tushare.yc_cb unavailable, Eastmoney fallback used (抱歉，您没有接口(yc_cb)访问权限，权限的具体详情访问：https://tushare.pro/document/1?doc_id=108。)",
+      "optional qmt_portfolio.positions: xtquant is not installed in the active Python environment"
+    ],
+    "cross_validation": {
+      "baostock_indices": {
+        "000001.SH": {
+          "available": true,
+          "baostock_close": 3894.4224,
+          "tushare_close": 3894.4224,
+          "close_abs_diff": 0.0
+        },
+        "399001.SZ": {
+          "available": true,
+          "baostock_close": 13890.1523,
+          "tushare_close": 13890.1523,
+          "close_abs_diff": 0.0
+        },
+        "399006.SZ": {
+          "available": true,
+          "baostock_close": 3473.4932,
+          "tushare_close": 3473.4932,
+          "close_abs_diff": 0.0
+        }
+      }
+    }
+  }
+}
