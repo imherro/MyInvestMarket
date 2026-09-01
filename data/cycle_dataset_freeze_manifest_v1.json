@@ -4,11 +4,11 @@
   "record_count": 200,
   "start_month": "2010-01",
   "end_month": "2026-08",
-  "baseline_git_commit": "822cbd8fe2b14fa60c5c40561e18a1ce3a87ddf3",
+  "baseline_git_commit": "11deb1dac6e9d73246bbd92775c673d3771965d0",
   "records_sha256": "82d5e6046aa7607d1b9646cd46de02eb512def1bd93a22881b0cc4d02c2c95d0",
   "frozen_records_sha256": "82d5e6046aa7607d1b9646cd46de02eb512def1bd93a22881b0cc4d02c2c95d0",
   "current_records_sha256": "82d5e6046aa7607d1b9646cd46de02eb512def1bd93a22881b0cc4d02c2c95d0",
-  "contract_sha256": "60773b92807c144bfce4304719830337f8b4c848cd466d76c61e8f2c22bd3691",
+  "contract_sha256": "062604d15805b01105f5fdf6aa1ecf8bd3024d0a730a341d635eee9331bd60ff",
   "feature_availability_sha256": "86103098b57d2f084ebec3c565231a785875769841a205eb4685ce1e562b7dca",
   "structural_freeze_passed": true,
   "freshness_at_freeze": false,
@@ -36,5 +36,5 @@
       "description": "Index backfilled history may warm up calculations only on or after the official launch date; pre-launch snapshots are unavailable."
     }
   ],
-  "created_at": "2026-09-01T17:04:27+08:00"
+  "created_at": "2026-09-01T17:16:21+08:00"
 }

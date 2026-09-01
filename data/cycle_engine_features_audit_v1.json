@@ -3,6 +3,7 @@
   "start_month": "2010-01",
   "end_month": "2026-08",
   "source_contract_version": "cycle_dataset_contract_v1",
+  "source_contract_sha256": "062604d15805b01105f5fdf6aa1ecf8bd3024d0a730a341d635eee9331bd60ff",
   "source_frozen_records_sha256": "82d5e6046aa7607d1b9646cd46de02eb512def1bd93a22881b0cc4d02c2c95d0",
   "unauthorized_input_count": 0,
   "unauthorized_inputs": [],
@@ -10,8 +11,11 @@
   "missing_registry_path_count": 0,
   "feature_type_violation_count": 0,
   "normalization_future_leakage_count": 0,
+  "normalization_history_violation_count": 0,
+  "normalization_readiness_violation_count": 0,
   "feature_family_missing_count": 0,
   "candidate_flag_missing_count": 0,
   "unexpected_input_missing_count": 0,
+  "frozen_layer_mutation_count": 0,
   "passed": true
 }

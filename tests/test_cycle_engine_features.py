@@ -81,6 +81,16 @@ class CycleEngineFeaturesTests(unittest.TestCase):
         self.assertTrue(boundary["normalization_history_ready"])
         self.assertGreaterEqual(boundary["normalization_history_observations"], 36)
 
+    def test_readiness_boundary_applies_to_native_and_boolean_candidates(self) -> None:
+        evidence = json.loads((ROOT / "data/cycle_engine_features_v1.json").read_text(encoding="utf-8"))
+        for path in ("valuation.indices.csi300.pe_ttm.percentile_expanding", "trend.indices.csi300.above_ma250.value"):
+            early = next(row for row in evidence["records"] if row["month"] == "2012-11")["features"][path]
+            boundary = next(row for row in evidence["records"] if row["month"] == "2012-12")["features"][path]
+            self.assertEqual(early["normalization_history_observations"], 35)
+            self.assertFalse(early["normalization_history_ready"])
+            self.assertEqual(boundary["normalization_history_observations"], 36)
+            self.assertTrue(boundary["normalization_history_ready"])
+
     def test_normalization_audit_detects_rank_tampering(self) -> None:
         rows = engine.build_features(freeze.records_for_hash(self.payload), self.contract, self.manifest)
         path = "valuation.csi300_erp_pct.value"
@@ -88,6 +98,23 @@ class CycleEngineFeaturesTests(unittest.TestCase):
         audit = engine.build_audit(rows, freeze.records_for_hash(self.payload), self.contract, self.manifest)
         self.assertGreater(audit["normalization_future_leakage_count"], 0)
         self.assertFalse(audit["passed"])
+
+    def test_normalization_audit_detects_history_and_readiness_tampering(self) -> None:
+        rows = engine.build_features(freeze.records_for_hash(self.payload), self.contract, self.manifest)
+        path = "valuation.csi300_erp_pct.value"
+        rows[-1]["features"][path]["normalization_history_observations"] += 1
+        rows[-1]["features"][path]["normalization_history_ready"] = False
+        audit = engine.build_audit(rows, freeze.records_for_hash(self.payload), self.contract, self.manifest)
+        self.assertGreater(audit["normalization_history_violation_count"], 0)
+        self.assertGreater(audit["normalization_readiness_violation_count"], 0)
+        self.assertFalse(audit["passed"])
+
+    def test_engine_generation_does_not_write_frozen_layer(self) -> None:
+        paths = [engine.DATASET_PATH, engine.CONTRACT_PATH, engine.MANIFEST_PATH, engine.MATRIX_PATH, engine.GOLDEN_PATH]
+        before = {path: path.read_bytes() for path in paths}
+        engine.generate()
+        after = {path: path.read_bytes() for path in paths}
+        self.assertEqual(before, after)
 
     def test_future_extreme_value_does_not_change_prior_rank(self) -> None:
         records = freeze.records_for_hash(self.payload)

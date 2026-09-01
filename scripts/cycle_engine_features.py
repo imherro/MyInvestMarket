@@ -28,6 +28,43 @@ AUDIT_PATH = DATA / "cycle_engine_features_audit_v1.json"
 MIN_NORMALIZATION_HISTORY = 36
 
 
+def feature_family(path: str) -> str:
+    if path.startswith("valuation.indices."):
+        return "valuation_level"
+    if path == "valuation.csi300_erp_pct.value":
+        return "relative_valuation"
+    if path.startswith("valuation."):
+        return "valuation_lineage"
+    if "net_profit" in path:
+        return "earnings_growth"
+    if "roe_ttm" in path:
+        return "earnings_quality"
+    if path.startswith("earnings.pmi."):
+        return "macro_confirmation"
+    if path.startswith("trend.indices."):
+        field = path.rsplit(".", 2)[-2]
+        if field in ("ma250_deviation_pct", "above_ma250"):
+            return "trend_level"
+        if field == "ma250_slope_3m_pct":
+            return "trend_direction"
+        if field in ("return_6m_pct", "return_12m_pct"):
+            return "trend_momentum"
+        return "trend_damage"
+    if path == "sentiment.a_fear.fear_score":
+        return "sentiment_overlay"
+    return "unclassified"
+
+
+def model_candidate(path: str) -> bool:
+    if path.startswith("valuation.indices."):
+        return path.endswith("percentile_expanding")
+    return path not in ("valuation.csi300_earnings_yield_pct.value", "valuation.china_10y_government_bond_yield_pct.value")
+
+
+def build_engine_feature_policy(registry: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
+    return {item["path"]: {"feature_family": feature_family(item["path"]), "model_candidate": model_candidate(item["path"])} for item in registry}
+
+
 class FrozenDatasetInvalid(RuntimeError):
     """Raised when the frozen input gate does not pass."""
 
@@ -44,6 +81,8 @@ def load_source() -> tuple[dict[str, Any], dict[str, Any], dict[str, Any], dict[
         missing = sorted(expected_paths - actual_paths)
         extra = sorted(actual_paths - expected_paths)
         raise FrozenDatasetInvalid(f"model input registry mismatch: missing={missing}; extra={extra}")
+    if set(build_engine_feature_policy(contract.get("model_input_registry", []))) != actual_paths:
+        raise FrozenDatasetInvalid("engine feature policy does not cover the frozen registry exactly")
     result = freeze.validate(payload, contract, matrix, manifest, golden)
     if not result["valid"]:
         raise FrozenDatasetInvalid("frozen dataset validation failed: " + "; ".join(result["errors"]))
@@ -107,6 +146,7 @@ def build_features(records: list[dict[str, Any]], contract: dict[str, Any], mani
     history: dict[str, list[float]] = defaultdict(list)
     available_counts: dict[str, int] = defaultdict(int)
     output: list[dict[str, Any]] = []
+    policy_map = build_engine_feature_policy(registry)
     for record in records:
         month = record["month"]
         basis = record["basis_trade_date"]
@@ -114,6 +154,9 @@ def build_features(records: list[dict[str, Any]], contract: dict[str, Any], mani
         domain: dict[str, dict[str, Any]] = defaultdict(lambda: {"candidate_feature_count": 0, "available_candidate_count": 0, "unavailable_paths": []})
         for item in registry:
             path = item["path"]
+            policy_item = policy_map[path]
+            family = policy_item["feature_family"]
+            candidate = policy_item["model_candidate"]
             raw = resolve(record, path)
             available = raw is not None
             pit = pit_date(record, item)
@@ -127,49 +170,49 @@ def build_features(records: list[dict[str, Any]], contract: dict[str, Any], mani
                 "role": item["role"],
                 "unit": item["unit"],
                 "direction_hint": item["direction_hint"],
-                "feature_family": item["feature_family"],
-                "model_candidate": item["model_candidate"],
+                "feature_family": family,
+                "model_candidate": candidate,
                 "pit_date": pit,
                 "pit_safe": pit_safe,
                 "expected_missing": expected,
                 "missing_reason": None if available else missing_reason(record, item, expected),
                 "normalization_source": None,
                 "expanding_rank_pct": None,
-                "normalization_history_observations": len(history[path]),
+                "normalization_history_observations": None if not candidate else available_counts[path],
                 "normalization_history_ready": False,
             }
-            if item["role"] == "core" or item["model_candidate"]:
-                domain_name = item["feature_family"] if item["feature_family"] in ("earnings_growth", "earnings_quality", "macro_confirmation") else ("long_term_trend" if item["feature_family"].startswith("trend_") else ("sentiment_overlay" if item["feature_family"] == "sentiment_overlay" else "valuation"))
-                if item["model_candidate"]:
+            if item["role"] == "core" or candidate:
+                domain_name = family if family in ("earnings_growth", "earnings_quality", "macro_confirmation") else ("long_term_trend" if family.startswith("trend_") else ("sentiment_overlay" if family == "sentiment_overlay" else "valuation"))
+                if candidate:
                     domain[domain_name]["candidate_feature_count"] += 1
                     if available:
                         domain[domain_name]["available_candidate_count"] += 1
                     else:
                         domain[domain_name]["unavailable_paths"].append(path)
-            if available and item["model_candidate"]:
+            if not candidate:
+                feature["normalization_source"] = "not_model_candidate"
+            elif available:
+                available_counts[path] += 1
+                feature["normalization_history_observations"] = available_counts[path]
+                feature["normalization_history_ready"] = available_counts[path] >= MIN_NORMALIZATION_HISTORY
                 if item["unit"] == "boolean":
                     feature["normalization_source"] = "boolean_identity"
                 elif is_native_percentile(path):
                     feature["expanding_rank_pct"] = raw
                     feature["normalization_source"] = "dataset_native_percentile"
-                    available_counts[path] += 1
-                    feature["normalization_history_observations"] = available_counts[path]
-                    feature["normalization_history_ready"] = available_counts[path] >= MIN_NORMALIZATION_HISTORY
                 elif is_native_fear(path):
                     feature["expanding_rank_pct"] = raw
                     feature["normalization_source"] = "native_a_fear_score"
-                    available_counts[path] += 1
-                    feature["normalization_history_observations"] = available_counts[path]
-                    feature["normalization_history_ready"] = available_counts[path] >= MIN_NORMALIZATION_HISTORY
                 elif isinstance(raw, (int, float)) and not isinstance(raw, bool):
                     values = history[path] + [float(raw)]
                     feature["expanding_rank_pct"] = rank_pct(values, float(raw))
                     feature["normalization_source"] = "pit_expanding_rank_pct"
                     feature["normalization_history_observations"] = len(values)
-                    feature["normalization_history_ready"] = len(values) >= MIN_NORMALIZATION_HISTORY
                     history[path].append(float(raw))
                 else:
                     feature["normalization_source"] = "unsupported_value_type"
+            elif candidate:
+                feature["normalization_history_ready"] = available_counts[path] >= MIN_NORMALIZATION_HISTORY
             features[path] = feature
         for value in domain.values():
             count = value["candidate_feature_count"]
@@ -180,6 +223,7 @@ def build_features(records: list[dict[str, Any]], contract: dict[str, Any], mani
 
 def build_audit(rows: list[dict[str, Any]], records: list[dict[str, Any]], contract: dict[str, Any], manifest: dict[str, Any]) -> dict[str, Any]:
     registry_paths = {item["path"] for item in contract["model_input_registry"]}
+    policy_map = build_engine_feature_policy(contract["model_input_registry"])
     unauthorized: list[str] = []
     future_pit = 0
     missing_registry = 0
@@ -188,11 +232,17 @@ def build_audit(rows: list[dict[str, Any]], records: list[dict[str, Any]], contr
     candidate_missing = 0
     unexpected = 0
     normalization_errors = 0
+    normalization_history_errors = 0
+    normalization_readiness_errors = 0
+    frozen_layer_mutations = 0
     rank_history: dict[str, list[float]] = defaultdict(list)
+    observation_counts: dict[str, int] = defaultdict(int)
     for row in rows:
         for path, feature in row["features"].items():
             if path not in registry_paths:
                 unauthorized.append(path)
+            policy_item = policy_map.get(path)
+            candidate = bool(policy_item and policy_item["model_candidate"])
             if feature.get("available") and not feature.get("pit_safe"):
                 future_pit += 1
             if not feature.get("feature_family"):
@@ -211,8 +261,27 @@ def build_audit(rows: list[dict[str, Any]], records: list[dict[str, Any]], contr
                 if feature["expanding_rank_pct"] != expected_rank:
                     normalization_errors += 1
                 rank_history[path].append(float(feature["raw_value"]))
+            if candidate:
+                observation_counts[path] += int(bool(feature.get("available")))
+                if feature.get("normalization_history_observations") != observation_counts[path]:
+                    normalization_history_errors += 1
+                if feature.get("normalization_history_ready") != (observation_counts[path] >= MIN_NORMALIZATION_HISTORY):
+                    normalization_readiness_errors += 1
+                if feature.get("available"):
+                    source = feature.get("normalization_source")
+                    if source in ("dataset_native_percentile", "native_a_fear_score") and feature.get("expanding_rank_pct") != feature.get("raw_value"):
+                        normalization_errors += 1
+                    if feature.get("unit") == "boolean" and feature.get("expanding_rank_pct") is not None:
+                        normalization_errors += 1
+                elif feature.get("expanding_rank_pct") is not None:
+                    normalization_errors += 1
+            elif path in registry_paths:
+                if feature.get("normalization_history_observations") is not None or feature.get("normalization_history_ready") is not False or feature.get("normalization_source") != "not_model_candidate":
+                    normalization_history_errors += 1
         missing_registry += sum(path not in row["features"] for path in registry_paths)
-    audit = {"record_count": len(records), "start_month": records[0]["month"], "end_month": records[-1]["month"], "source_contract_version": contract["contract_version"], "source_frozen_records_sha256": manifest["frozen_records_sha256"], "unauthorized_input_count": len(set(unauthorized)), "unauthorized_inputs": sorted(set(unauthorized)), "future_pit_date_count": future_pit, "missing_registry_path_count": missing_registry, "feature_type_violation_count": type_violations, "normalization_future_leakage_count": normalization_errors, "feature_family_missing_count": family_missing, "candidate_flag_missing_count": candidate_missing, "unexpected_input_missing_count": unexpected, "passed": False}
+    if manifest.get("contract_sha256") != freeze.sha256(contract) or manifest.get("frozen_records_sha256") != freeze.sha256(freeze.records_for_hash({"records": records}, freeze.FROZEN_THROUGH)):
+        frozen_layer_mutations += 1
+    audit = {"record_count": len(records), "start_month": records[0]["month"], "end_month": records[-1]["month"], "source_contract_version": contract["contract_version"], "source_contract_sha256": freeze.sha256(contract), "source_frozen_records_sha256": manifest["frozen_records_sha256"], "unauthorized_input_count": len(set(unauthorized)), "unauthorized_inputs": sorted(set(unauthorized)), "future_pit_date_count": future_pit, "missing_registry_path_count": missing_registry, "feature_type_violation_count": type_violations, "normalization_future_leakage_count": normalization_errors, "normalization_history_violation_count": normalization_history_errors, "normalization_readiness_violation_count": normalization_readiness_errors, "feature_family_missing_count": family_missing, "candidate_flag_missing_count": candidate_missing, "unexpected_input_missing_count": unexpected, "frozen_layer_mutation_count": frozen_layer_mutations, "passed": False}
     audit["passed"] = all(value == 0 for key, value in audit.items() if key.endswith("_count") and key != "record_count")
     return audit
 
