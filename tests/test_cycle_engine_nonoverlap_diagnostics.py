@@ -86,6 +86,21 @@ class NonOverlapTests(unittest.TestCase):
  def test_schema_counters(self):
   x=copy.deepcopy(self.data); x['feature_count']=34; self.assertGreater(n.audit(x)['schema_violation_count'],0)
   x=copy.deepcopy(self.data); x['candidate_feature_count']=33; self.assertGreater(n.audit(x)['schema_violation_count'],0)
+  def test_schema_metadata_mutations_counter(self):
+   for key,value in (('feature_count',999),('candidate_feature_count',1),('horizons_months',[12])):
+    x=copy.deepcopy(self.data); x[key]=value; self.assertGreater(n.audit(x)['schema_metadata_violation_count'],0)
+   x=copy.deepcopy(self.data); del x['features'][next(iter(x['features']))]; self.assertGreater(n.audit(x)['schema_metadata_violation_count'],0)
+  def test_hierarchy_structure_mutations_counter(self):
+   path=next(iter(self.data['features']))
+   for horizon in ('forward_6m','forward_12m'):
+    x=copy.deepcopy(self.data); del x['features'][path]['horizons'][horizon]; self.assertGreater(n.audit(x)['hierarchy_structure_violation_count'],0)
+   for cohort in ('cohort_0','cohort_11','cohort_23'):
+    horizon='forward_6m' if cohort=='cohort_0' else ('forward_12m' if cohort=='cohort_11' else 'forward_24m')
+    x=copy.deepcopy(self.data); del x['features'][path]['horizons'][horizon]['cohorts'][cohort]; self.assertGreater(n.audit(x)['hierarchy_structure_violation_count'],0)
+   x=copy.deepcopy(self.data); x['features'][path]['horizons']['forward_6m']['cohorts']['cohort_99']={}; self.assertGreater(n.audit(x)['hierarchy_structure_violation_count'],0)
+  def test_upstream_fingerprint_keys_are_posix(self):
+   self.assertTrue(n.upstream_file_hashes())
+   self.assertTrue(all('/' in key and '\\' not in key for key in n.upstream_file_hashes()))
  def test_research_only_boundary(self):
   self.assertTrue(self.data['research_only']); self.assertNotIn('score',self.data); self.assertNotIn('position',self.data); self.assertNotIn('signal',self.data)
 if __name__=='__main__': unittest.main()

@@ -32,7 +32,7 @@ def canonical_sha(value: Any) -> str:
 
 
 def upstream_file_hashes() -> dict[str, str]:
-    return {str(path.relative_to(ROOT)): hashlib.sha256(path.read_bytes()).hexdigest() for path in UPSTREAM_INPUTS}
+    return {path.relative_to(ROOT).as_posix(): hashlib.sha256(path.read_bytes()).hexdigest() for path in UPSTREAM_INPUTS}
 
 
 def month_index(month: str) -> int:
@@ -170,14 +170,16 @@ def _comparison(overlapping: float | None, nonoverlap: float | None) -> dict[str
 
 def audit_v2(data: dict[str, Any]) -> dict[str, Any]:
     evidence, targets, phase3 = load(); expected = build(evidence, targets, phase3)
-    errors = {"natural_month_cohort_violation_count": 0, "cohort_rule_violation_count": 0, "overlapping_origin_violation_count": 0, "cohort_spacing_violation_count": 0, "origin_membership_violation_count": 0, "candidate_scope_violation_count": 0, "feature_scope_violation_count": 0, "schema_violation_count": 0, "readiness_rule_violation_count": 0, "target_availability_violation_count": 0, "sample_alignment_violation_count": 0, "correlation_formula_violation_count": 0, "continuous_formula_violation_count": 0, "boolean_formula_violation_count": 0, "stability_summary_violation_count": 0, "stability_formula_violation_count": 0, "overlap_comparison_violation_count": 0, "era_boundary_violation_count": 0, "research_boundary_violation_count": 0, "source_mutation_count": 0, "upstream_mutation_count": 0, "upstream_audit_gate_violation_count": 0, "forbidden_output_violation_count": 0}
+    errors = {"natural_month_cohort_violation_count": 0, "cohort_rule_violation_count": 0, "overlapping_origin_violation_count": 0, "cohort_spacing_violation_count": 0, "origin_membership_violation_count": 0, "candidate_scope_violation_count": 0, "feature_scope_violation_count": 0, "schema_violation_count": 0, "schema_metadata_violation_count": 0, "hierarchy_structure_violation_count": 0, "readiness_rule_violation_count": 0, "target_availability_violation_count": 0, "sample_alignment_violation_count": 0, "correlation_formula_violation_count": 0, "continuous_formula_violation_count": 0, "boolean_formula_violation_count": 0, "stability_summary_violation_count": 0, "stability_formula_violation_count": 0, "overlap_comparison_violation_count": 0, "era_boundary_violation_count": 0, "research_boundary_violation_count": 0, "source_mutation_count": 0, "upstream_mutation_count": 0, "upstream_audit_gate_violation_count": 0, "forbidden_output_violation_count": 0}
     if any(data.get(k) != expected.get(k) for k in ("source_evidence_sha", "source_evaluation_sha", "source_phase3_sha", "source_phase4_sha")): errors["source_mutation_count"] += 1
     if data.get("cohort_rule") != "calendar_month_index = year*12 + month; cohort = calendar_month_index % horizon": errors["natural_month_cohort_violation_count"] += 1; errors["cohort_rule_violation_count"] += 1
     if data.get("eras") != ERAS: errors["era_boundary_violation_count"] += 1
     all_paths = set(evidence["records"][-1]["features"])
     formal = {p for p, f in evidence["records"][-1]["features"].items() if f.get("model_candidate")}
     actual = set(data.get("features", {})); scope_error = len(actual - formal) + len(formal - actual); errors["candidate_scope_violation_count"] += scope_error; errors["feature_scope_violation_count"] += scope_error
-    errors["schema_violation_count"] += int(data.get("feature_count") != len(all_paths) or data.get("candidate_feature_count") != len(formal) or len(actual) != len(formal))
+    metadata_error = int(data.get("feature_count") != len(all_paths) or data.get("candidate_feature_count") != len(formal) or len(actual) != len(formal) or data.get("horizons_months") != list(HORIZONS))
+    errors["schema_violation_count"] += metadata_error
+    errors["schema_metadata_violation_count"] += metadata_error
     errors["research_boundary_violation_count"] += int(data.get("research_only") is not True or data.get("uses_future_information") is not True)
     if [r["month"] for r in evidence["records"]] != [r["month"] for r in targets["records"]]: errors["sample_alignment_violation_count"] += 1
     def forbidden(value: Any) -> int:
@@ -186,13 +188,24 @@ def audit_v2(data: dict[str, Any]) -> dict[str, Any]:
         if isinstance(value, list): return sum(forbidden(v) for v in value)
         return 0
     errors["forbidden_output_violation_count"] = forbidden(data)
-    for path, feature in data.get("features", {}).items():
-        if path not in formal: continue
-        for key, horizon in feature.get("horizons", {}).items():
+    for path in formal:
+        feature = data.get("features", {}).get(path)
+        if not feature: continue
+        expected_feature = expected["features"][path]
+        actual_horizons = set(feature.get("horizons", {}))
+        expected_horizon_keys = set(expected_feature["horizons"])
+        if actual_horizons != expected_horizon_keys:
+            errors["hierarchy_structure_violation_count"] += 1
+        for key in sorted(actual_horizons & expected_horizon_keys):
+            horizon = feature["horizons"][key]
             h = int(key.split("_")[1][:-1]); cohorts = horizon.get("cohorts", {})
-            expected_horizon = expected["features"][path]["horizons"][key]
+            expected_horizon = expected_feature["horizons"][key]
             expected_origins = expected_horizon["cohorts"]
-            for cohort_id, item in cohorts.items():
+            expected_cohort_keys = set(expected_origins)
+            if set(cohorts) != expected_cohort_keys:
+                errors["hierarchy_structure_violation_count"] += 1
+            for cohort_id in sorted(set(cohorts) & expected_cohort_keys):
+                item = cohorts[cohort_id]
                 months = item.get("origin_months", [])
                 if any(month_index(m) % h != int(cohort_id.split("_")[1]) for m in months): errors["natural_month_cohort_violation_count"] += 1
                 if any(month_index(b) - month_index(a) < h for a, b in zip(months, months[1:])): errors["overlapping_origin_violation_count"] += 1; errors["cohort_spacing_violation_count"] += 1
