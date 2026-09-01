@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import copy
 import hashlib
+import inspect
 import json
 import sys
 import unittest
@@ -60,6 +61,24 @@ class DomainDiagnosticsTests(unittest.TestCase):
             records.append({"month": month, "valuation": {"state": valuation, "ready": True}, "earnings": {"state": "mixed", "ready": True}, "macro_confirmation": {"state": "mixed", "ready": True}, "trend": {"state": trend, "ready": True}})
         self.assertEqual(diagnostics.conflicts(records)["valuation_cheap_damaged"]["longest_duration"], 1)
 
+    def test_formal_run_and_conflict_fixtures(self) -> None:
+        distribution = self.output["state_distribution"]
+        self.assertEqual(distribution["valuation"]["states"]["expensive"]["month_count"], 4)
+        self.assertEqual(distribution["valuation"]["states"]["expensive"]["longest_consecutive_run"], 4)
+        self.assertEqual(distribution["trend"]["states"]["bottoming"]["month_count"], 1)
+        self.assertEqual(distribution["trend"]["states"]["bottoming"]["longest_consecutive_run"], 1)
+        for item in distribution["valuation"]["states"].values():
+            self.assertLessEqual(item["longest_consecutive_run"], item["month_count"])
+        for item in self.output["conflicts"].values():
+            self.assertLessEqual(item["longest_duration"], item["occurrence_count"])
+        self.assertEqual(self.output["conflicts"]["valuation_expensive_up"]["longest_duration"], 4)
+
+    def test_conflict_readiness_uses_only_relevant_domains(self) -> None:
+        records = []
+        for month in ("2020-01", "2020-02", "2020-03", "2020-04"):
+            records.append({"month": month, "valuation": {"state": "expensive", "ready": True}, "trend": {"state": "up", "ready": True}, "earnings": {"state": "insufficient_history", "ready": False}, "macro_confirmation": {"state": "insufficient_data", "ready": False}})
+        self.assertEqual(diagnostics.conflicts(records)["valuation_expensive_up"]["occurrence_count"], 4)
+
     def test_nonoverlap_origins_are_spaced(self) -> None:
         for benchmark in self.output["evaluation"]["benchmarks"].values():
             for horizon_key, horizon in benchmark.items():
@@ -94,6 +113,27 @@ class DomainDiagnosticsTests(unittest.TestCase):
         for key in ("coverage", "state_distribution", "transitions", "combinations", "conflicts", "timeline", "window_extracts"):
             self.assertEqual(original[key], changed[key])
         self.assertNotEqual(original["evaluation"], changed["evaluation"])
+        self.assertNotEqual(original["phase3_design_evidence"]["state_forward_return_summary"], changed["phase3_design_evidence"]["state_forward_return_summary"])
+
+    def test_audit_mutation_matrix_hits_specific_counters(self) -> None:
+        mutated = copy.deepcopy(self.output)
+        mutated["state_distribution"]["valuation"]["states"]["expensive"]["longest_consecutive_run"] = 1
+        self.assertGreater(diagnostics.audit(mutated, self.phase2, self.phase2_audit, self.targets)["run_length_violation_count"], 0)
+        mutated = copy.deepcopy(self.output)
+        mutated["conflicts"]["valuation_expensive_up"]["longest_duration"] = 1
+        self.assertGreater(diagnostics.audit(mutated, self.phase2, self.phase2_audit, self.targets)["conflict_diagnostic_violation_count"], 0)
+        mutated = copy.deepcopy(self.output)
+        state_data = mutated["evaluation"]["benchmarks"]["csi300"]["forward_6m"]["valuation"]["cheap"]
+        state_data["cohort_summaries"]["0"]["mean_forward_return"] += 1
+        self.assertGreater(diagnostics.audit(mutated, self.phase2, self.phase2_audit, self.targets)["evaluation_alignment_violation_count"], 0)
+        mutated = copy.deepcopy(self.output)
+        mutated["phase3_design_evidence"]["state_sample_sizes"] = {}
+        self.assertGreater(diagnostics.audit(mutated, self.phase2, self.phase2_audit, self.targets)["evaluation_alignment_violation_count"], 0)
+
+    def test_audit_replay_is_not_production_diagnostics(self) -> None:
+        source = inspect.getsource(diagnostics.audit) + inspect.getsource(diagnostics.audit_replay_snapshot) + inspect.getsource(diagnostics.audit_replay_evaluation)
+        for name in ("expected = build(", "state_distribution(", "conflicts(", "\n    evaluation(", "\n    build("):
+            self.assertNotIn(name, source)
 
     def test_no_global_score_state_or_position_output(self) -> None:
         text = json.dumps(self.output, ensure_ascii=False).lower()

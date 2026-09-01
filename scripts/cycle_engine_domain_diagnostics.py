@@ -215,6 +215,19 @@ def build(phase2: dict[str, Any], targets: dict[str, Any]) -> dict[str, Any]:
 
 
 def audit_replay_snapshot(phase2: dict[str, Any]) -> dict[str, Any]:
+    def true_runs(values: list[str], target: str) -> list[int]:
+        runs: list[int] = []
+        current = 0
+        for value in values:
+            if value == target:
+                current += 1
+            elif current:
+                runs.append(current)
+                current = 0
+        if current:
+            runs.append(current)
+        return runs
+
     records = phase2["records"]
     coverage_out = {}
     distribution_out = {}
@@ -224,7 +237,7 @@ def audit_replay_snapshot(phase2: dict[str, Any]) -> dict[str, Any]:
         values = [record[domain]["state"] for record in selected]
         states = {}
         for value, count in sorted(Counter(values).items()):
-            lengths = target_run_lengths(values, value)
+            lengths = true_runs(values, value)
             months = [record["month"] for record in selected if record[domain]["state"] == value]
             states[value] = {"month_count": count, ("percentage_of_available_months" if descriptive else "percentage_of_ready_months"): round(count / len(selected) * 100, 6) if selected else 0.0, "first_month": min(months) if months else None, "last_month": max(months) if months else None, "longest_consecutive_run": max(lengths, default=0), "median_run_length": median([float(length) for length in lengths])}
         coverage_out[domain] = {"first_ready_month": min([record["month"] for record in records if ready(record, domain)], default=None), "ready_month_count": sum(ready(record, domain) for record in records), "ready_pct": round(sum(ready(record, domain) for record in records) / len(records) * 100, 6), "unavailable_month_count": sum(record[domain]["state"] == "unavailable" for record in records), "insufficient_history_month_count": sum(record[domain]["state"] == "insufficient_history" or (descriptive and not ready(record, domain) and record[domain]["state"] != "unavailable") for record in records)}
@@ -249,7 +262,7 @@ def audit_replay_snapshot(phase2: dict[str, Any]) -> dict[str, Any]:
     for name, (required, predicate) in rules.items():
         months = [record["month"] for record in records if all(ready(record, domain) for domain in required) and predicate(record)]
         hits = ["hit" if record["month"] in months else "miss" for record in records]
-        conflicts_out[name] = {"occurrence_count": len(months), "months": months, "longest_duration": max(target_run_lengths(hits, "hit"), default=0)}
+        conflicts_out[name] = {"occurrence_count": len(months), "months": months, "longest_duration": max(true_runs(hits, "hit"), default=0)}
     timeline = [{"month": record["month"], "valuation": state(record, "valuation"), "earnings": state(record, "earnings"), "macro_confirmation": state(record, "macro_confirmation"), "trend": state(record, "trend"), "a_fear_state": state(record, "sentiment_overlay"), "a_fear_model_ready": record["sentiment_overlay"].get("model_ready") is True} for record in records]
     windows = {name: [item for item in timeline if start <= item["month"] <= end] for name, (start, end) in WINDOWS.items()}
     return {"coverage": coverage_out, "state_distribution": distribution_out, "transitions": transition_out, "combinations": combinations_out, "conflicts": conflicts_out, "timeline": timeline, "window_extracts": windows}
@@ -318,6 +331,17 @@ def audit(data: dict[str, Any], phase2: dict[str, Any] | None = None, phase2_aud
         actual = data.get("transitions", {}).get(domain, {})
         if actual.get("median_state_duration_months") != expected["transitions"][domain].get("median_state_duration_months"):
             errors["run_length_violation_count"] += 1
+    for domain in DOMAINS:
+        actual_states = data.get("state_distribution", {}).get(domain, {}).get("states", {})
+        expected_states = expected["state_distribution"][domain].get("states", {})
+        for state_name, expected_item in expected_states.items():
+            actual_item = actual_states.get(state_name, {})
+            if actual_item.get("longest_consecutive_run") != expected_item.get("longest_consecutive_run") or actual_item.get("median_run_length") != expected_item.get("median_run_length"):
+                errors["run_length_violation_count"] += 1
+    for name, expected_conflict in expected["conflicts"].items():
+        actual_conflict = data.get("conflicts", {}).get(name, {})
+        if actual_conflict.get("occurrence_count") != expected_conflict.get("occurrence_count") or actual_conflict.get("longest_duration") != expected_conflict.get("longest_duration") or actual_conflict.get("months") != expected_conflict.get("months"):
+            errors["conflict_diagnostic_violation_count"] += 1
     for benchmark in data.get("evaluation", {}).get("benchmarks", {}).values():
         for horizon_key, horizon in benchmark.items():
             horizon_months = int(horizon_key.split("_")[1][:-1])
