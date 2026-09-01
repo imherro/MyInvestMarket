@@ -90,13 +90,16 @@ def run_lengths(values: list[str]) -> list[int]:
     return result
 
 
+def target_run_lengths(values: list[str], target: str) -> list[int]:
+    return run_lengths([value if value == target else "__other__" for value in values])
+
+
 def state_distribution(records: list[dict[str, Any]], domain: str) -> dict[str, Any]:
     selected = [record for record in records if ready(record, domain)]
     values = [state(record, domain) for record in selected]
     result: dict[str, Any] = {}
     for value, count in sorted(Counter(values).items()):
-        runs = run_lengths([state(record, domain) for record in selected])
-        state_runs = run_lengths([item if item == value else "__other__" for item in values])
+        state_runs = [length for length in target_run_lengths(values, value) if length]
         months = [record["month"] for record in selected if state(record, domain) == value]
         result[value] = {"month_count": count, "percentage_of_ready_months": round(count / len(selected) * 100, 6) if selected else 0.0, "first_month": min(months) if months else None, "last_month": max(months) if months else None, "longest_consecutive_run": max(state_runs, default=0), "median_run_length": median([float(item) for item in state_runs])}
     return {"ready_month_count": len(selected), "states": result}
@@ -135,7 +138,7 @@ def conflicts(records: list[dict[str, Any]]) -> dict[str, Any]:
     result = {}
     for name, predicate in rules.items():
         months = [record["month"] for record in records if all(ready(record, domain) for domain in CORE) and predicate(record)]
-        result[name] = {"occurrence_count": len(months), "months": months, "longest_duration": max(run_lengths(["hit" if month in months else "miss" for month in [record["month"] for record in records]]), default=0)}
+        result[name] = {"occurrence_count": len(months), "months": months, "longest_duration": max(target_run_lengths(["hit" if month in months else "miss" for month in [record["month"] for record in records]], "hit"), default=0)}
     return result
 
 
@@ -152,17 +155,21 @@ def evaluation(records: list[dict[str, Any]], targets: dict[str, Any]) -> dict[s
         for horizon in HORIZONS:
             domains_out: dict[str, Any] = {}
             for domain in CORE:
-                by_state: dict[str, list[tuple[str, dict[str, Any]]]] = defaultdict(list)
+                by_state: dict[str, dict[int, list[tuple[str, dict[str, Any]]]]] = defaultdict(lambda: defaultdict(list))
                 for cohort in range(horizon):
                     cohort_rows = [(record, target_metric(target_map.get(record["month"], {}), benchmark, horizon)) for record in records if ready(record, domain) and month_index(record["month"]) % horizon == cohort]
                     cohort_rows = [(record, target) for record, target in cohort_rows if target is not None]
                     for record, target in cohort_rows:
-                        by_state[state(record, domain)].append((record["month"], target))
+                        by_state[state(record, domain)][cohort].append((record["month"], target))
                 state_out = {}
-                for value, points in sorted(by_state.items()):
+                for value, cohorts in sorted(by_state.items()):
+                    points = [point for cohort_points in cohorts.values() for point in cohort_points]
                     returns = [float(target["forward_return_pct"]) for _, target in points if target.get("forward_return_pct") is not None]
                     drawdowns = [float(target["max_drawdown_pct"]) for _, target in points if target.get("max_drawdown_pct") is not None]
-                    state_out[value] = {"sample_count": len(returns), "cohort_count": len({month_index(month) % horizon for month, _ in points}), "mean_forward_return": round(statistics.mean(returns), 6) if returns else None, "median_forward_return": median(returns), "win_rate": round(sum(value > 0 for value in returns) / len(returns) * 100, 6) if returns else None, "q25": percentile(returns, .25), "q75": percentile(returns, .75), "median_future_max_drawdown": median(drawdowns), "worst_future_max_drawdown": min(drawdowns) if drawdowns else None, "small_sample": len(returns) < 12, "origin_months": [month for month, _ in points]}
+                    cohort_means = [statistics.mean(float(target["forward_return_pct"]) for _, target in cohort_points if target.get("forward_return_pct") is not None) for cohort_points in cohorts.values() if any(target.get("forward_return_pct") is not None for _, target in cohort_points)]
+                    cohort_medians = [median([float(target["forward_return_pct"]) for _, target in cohort_points if target.get("forward_return_pct") is not None]) for cohort_points in cohorts.values()]
+                    cohort_win_rates = [sum(float(target["forward_return_pct"]) > 0 for _, target in cohort_points if target.get("forward_return_pct") is not None) / len([target for _, target in cohort_points if target.get("forward_return_pct") is not None]) * 100 for cohort_points in cohorts.values() if any(target.get("forward_return_pct") is not None for _, target in cohort_points)]
+                    state_out[value] = {"sample_count": len(returns), "cohort_count": len(cohorts), "mean_forward_return": round(statistics.mean(cohort_means), 6) if cohort_means else None, "median_forward_return": median([value for value in cohort_medians if value is not None]), "win_rate": round(statistics.mean(cohort_win_rates), 6) if cohort_win_rates else None, "q25": percentile([value for value in cohort_medians if value is not None], .25), "q75": percentile([value for value in cohort_medians if value is not None], .75), "median_future_max_drawdown": median(drawdowns), "worst_future_max_drawdown": min(drawdowns) if drawdowns else None, "small_sample": len(returns) < 12, "origin_months": [month for month, _ in points], "cohort_summaries": {str(cohort): {"sample_count": len(cohort_points), "origin_months": [month for month, _ in cohort_points]} for cohort, cohort_points in sorted(cohorts.items())}}
                 domains_out[domain] = state_out
             output["benchmarks"][benchmark][f"forward_{horizon}m"] = domains_out
     return output
