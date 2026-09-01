@@ -30,6 +30,9 @@ def spearman(a:list[float],b:list[float])->float|None:
     ra,rb=rank(a),rank(b); ma=sum(ra)/len(ra); mb=sum(rb)/len(rb)
     den=math.sqrt(sum((x-ma)**2 for x in ra)*sum((y-mb)**2 for y in rb))
     return None if den==0 else round(sum((x-ma)*(y-mb) for x,y in zip(ra,rb))/den,6)
+def rank_bucket(value:float)->str:
+    if value < 0 or value > 100: raise ValueError('rank must be between 0 and 100')
+    return '0-20' if value < 20 else '20-40' if value < 40 else '40-60' if value < 60 else '60-80' if value < 80 else '80-100'
 def quantile(values:list[float],q:float)->float|None:
     if not values:return None
     s=sorted(values); p=(len(s)-1)*q; lo=int(p); hi=min(lo+1,len(s)-1)

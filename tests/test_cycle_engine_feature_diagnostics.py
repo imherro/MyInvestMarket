@@ -9,10 +9,19 @@ class DiagnosticsTests(unittest.TestCase):
   cls.data=json.loads((ROOT/'data/cycle_engine_feature_diagnostics_v1.json').read_text(encoding='utf-8')); cls.e,cls.t=d.load()
  def test_audit_passes(self): self.assertTrue(json.loads((ROOT/'data/cycle_engine_feature_diagnostics_audit_v1.json').read_text())['passed'])
  def test_spearman(self): self.assertEqual(d.spearman([1,2,3,4],[10,20,30,40]),1); self.assertEqual(d.spearman([1,2,3,4],[40,30,20,10]),-1)
+ def test_rank_bucket_boundaries(self):
+  for value,bucket in ((0,'0-20'),(19.999,'0-20'),(20,'20-40'),(39.999,'20-40'),(40,'40-60'),(59.999,'40-60'),(60,'60-80'),(79.999,'60-80'),(80,'80-100'),(100,'80-100')): self.assertEqual(d.rank_bucket(value),bucket)
+  for value in (-.001,100.001):
+   with self.assertRaises(ValueError): d.rank_bucket(value)
  def test_audit_detects_source_mutation(self):
   x=copy.deepcopy(self.data); x['source_evidence_sha']='bad'; self.assertFalse(d.audit(x)['passed'])
  def test_audit_detects_diagnostic_tamper(self):
   x=copy.deepcopy(self.data); p=next(iter(x['feature_diagnostics'])); x['feature_diagnostics'][p]['target_diagnostics']['forward_12m_return_pct']['spearman_rho']=999; self.assertFalse(d.audit(x)['passed'])
+ def test_audit_counter_mutations(self):
+  x=copy.deepcopy(self.data); x['feature_diagnostics']['future_target']= {}; self.assertGreater(d.audit(x)['unauthorized_feature_count'],0)
+  x=copy.deepcopy(self.data); p=next(iter(x['feature_diagnostics'])); x['feature_diagnostics'][p]['ready_sample_count']+=1; self.assertGreater(d.audit(x)['readiness_rule_violation_count'],0)
+  x=copy.deepcopy(self.data); p=next(iter(x['feature_diagnostics'])); x['feature_diagnostics'][p]['bucket_diagnostics']['0-20']['sample_count']+=1; self.assertGreater(d.audit(x)['bucket_assignment_violation_count'],0)
+  x=copy.deepcopy(self.data); x['era_diagnostics']['A']='bad'; self.assertGreater(d.audit(x)['era_boundary_violation_count'],0)
  def test_no_score_or_recommendation_fields(self):
   self.assertNotIn('score',self.data); self.assertNotIn('recommendation',self.data)
   self.assertFalse(any(k in self.data['feature_diagnostics'] for k in ('feature_rank','best_features','recommended_features')))
