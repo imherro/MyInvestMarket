@@ -952,7 +952,9 @@ def run_history_backfill(start_date: date, end_date: date, no_git: bool) -> None
     }
     result["api"] = api
     result["git"] = git_result
-    print(json.dumps(result, ensure_ascii=False, indent=2))
+    output = dict(result)
+    output["written_snapshot_paths"] = [display_path(path) for path in result["written_snapshot_paths"]]
+    print(json.dumps(output, ensure_ascii=False, indent=2))
 
 
 def main() -> None:

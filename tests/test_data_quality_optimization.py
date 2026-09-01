@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import json
+import io
 import sys
 import tempfile
 import unittest
+from contextlib import redirect_stdout
 from datetime import date
 from pathlib import Path
 from unittest.mock import patch
@@ -185,6 +187,42 @@ class DataQualityOptimizationTest(unittest.TestCase):
             self.assertEqual([row["basis_trade_date"] for row in result["scored"]], ["2026-08-13"])
             self.assertEqual([path.name for path in result["written_snapshot_paths"]], ["market_snapshot_2026-08-13.json"])
             self.assertFalse((data_dir / "latest_market_snapshot.json").exists())
+
+    def test_history_backfill_summary_serializes_paths(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            data_dir = Path(tmp_dir)
+            snapshot_path = data_dir / "market_snapshot_2026-08-13.json"
+            manifest_path = data_dir / "market_history_backfill_2026-08-13_2026-08-13.json"
+            audit_path = data_dir / "market_score_history_audit.jsonl"
+            report_path = data_dir / "model_validation_20260813_090000.md"
+            latest_report_path = data_dir / "model_validation_latest.md"
+            validation_json_path = data_dir / "model_validation_latest.json"
+            result = {
+                "requested_range": {"start_date": "2026-08-13", "end_date": "2026-08-13"},
+                "written_snapshot_paths": [snapshot_path],
+                "scored": [],
+            }
+            validation = {
+                "report": {"available": True},
+                "markdown_path": str(report_path),
+                "latest_markdown_path": str(latest_report_path),
+                "json_path": str(validation_json_path),
+            }
+            output = io.StringIO()
+            with (
+                patch.object(run_post_close_update, "score_history_backfill", return_value=result),
+                patch.object(run_post_close_update, "write_history_backfill_manifest", return_value=manifest_path),
+                patch.object(run_post_close_update.report_generator, "write_validation_report", return_value=validation),
+                patch.object(run_post_close_update, "backtest_engine_records", return_value=[]),
+                patch.object(run_post_close_update, "verify_api", return_value={"validation": {"ok": True}}),
+                patch.object(run_post_close_update.market_scoring, "history_audit_log_path", return_value=audit_path),
+                patch.object(run_post_close_update, "commit_and_push", return_value={"skipped": True}),
+                redirect_stdout(output),
+            ):
+                run_post_close_update.run_history_backfill(date(2026, 8, 13), date(2026, 8, 13), no_git=True)
+
+            payload = json.loads(output.getvalue())
+            self.assertEqual(payload["written_snapshot_paths"], [str(snapshot_path)])
 
 
 if __name__ == "__main__":
