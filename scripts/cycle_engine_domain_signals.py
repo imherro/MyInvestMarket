@@ -74,6 +74,16 @@ def band(value: float | None) -> str:
     return "neutral"
 
 
+def erp_band(value: float | None) -> str:
+    if value is None:
+        return "unavailable"
+    if value >= 70:
+        return "cheap"
+    if value <= 30:
+        return "expensive"
+    return "neutral"
+
+
 def component(path: str, row: dict[str, Any]) -> dict[str, Any]:
     value = rank(row, path)
     return {"available": value is not None, "rank": value, "state": band(value)}
@@ -89,10 +99,11 @@ def valuation(row: dict[str, Any]) -> dict[str, Any]:
     states = []
     for name in ("csi300", "csi500"):
         values = [item["rank"] for item in components[name].values() if item["rank"] is not None]
-        state = band(sorted(values)[len(values) // 2] if len(values) == 2 else None)
+        state = band(sum(values) / 2 if len(values) == 2 else None)
         components[name]["state"] = state
         components[name]["available"] = len(values) == 2
         states.append(state)
+    components["erp"]["state"] = erp_band(components["erp"]["rank"])
     states.append(components["erp"]["state"])
     participating = [name for name, state in zip(("csi300", "csi500", "erp"), states) if state != "unavailable"]
     unavailable = ["csi1000"] + [name for name, state in zip(("csi300", "csi500", "erp"), states) if state == "unavailable"]

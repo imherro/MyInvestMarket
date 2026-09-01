@@ -54,11 +54,22 @@ class DomainSignalsTests(unittest.TestCase):
         self.put(row, "valuation.csi300_erp_pct.value", 1, 75)
         result = domain.valuation(row)
         self.assertEqual(result["state"], "cheap")
-        self.assertEqual(result["cheap_count"], 2)
+        self.assertEqual(result["cheap_count"], 3)
         self.assertEqual(result["participating_components"], ["csi300", "csi500", "erp"])
+        self.assertEqual(result["components"]["erp"]["state"], "cheap")
         self.assertEqual(result["components"]["csi1000"]["state"], "unavailable")
         self.assertIn("csi1000", result["unavailable_components"])
         self.assertNotIn("valuation.csi300_earnings_yield_pct.value", json.dumps(result))
+
+    def test_two_component_median_is_the_average(self) -> None:
+        row = self.row()
+        self.put(row, "valuation.indices.csi300.pe_ttm.percentile_expanding", 1, 25)
+        self.put(row, "valuation.indices.csi300.pb.percentile_expanding", 1, 40)
+        self.put(row, "valuation.indices.csi500.pe_ttm.percentile_expanding", 1, 50)
+        self.put(row, "valuation.indices.csi500.pb.percentile_expanding", 1, 50)
+        self.put(row, "valuation.csi300_erp_pct.value", 1, 50)
+        result = domain.valuation(row)
+        self.assertEqual(result["components"]["csi300"]["state"], "neutral")
 
     def test_earnings_states_and_strict_natural_month_change(self) -> None:
         current = self.row("2020-04")

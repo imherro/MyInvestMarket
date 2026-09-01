@@ -193,11 +193,11 @@
       "basis_trade_date": "2010-02-26",
       "source_evidence_sha256": "d617e0226f9957a696f202800fb7034c665e541eabb632891904d12f6aed8d23",
       "valuation": {
-        "state": "expensive",
+        "state": "neutral",
         "ready": true,
-        "cheap_count": 0,
+        "cheap_count": 1,
         "neutral_count": 1,
-        "expensive_count": 2,
+        "expensive_count": 1,
         "disagreement": true,
         "participating_components": [
           "csi300",
@@ -244,13 +244,13 @@
           "erp": {
             "available": true,
             "rank": 75.0,
-            "state": "expensive"
+            "state": "cheap"
           }
         },
         "reason_codes": [
           "csi300_neutral",
           "csi500_expensive",
-          "erp_expensive"
+          "erp_cheap"
         ]
       },
       "earnings": {
@@ -341,9 +341,9 @@
       "valuation": {
         "state": "neutral",
         "ready": true,
-        "cheap_count": 0,
+        "cheap_count": 1,
         "neutral_count": 2,
-        "expensive_count": 1,
+        "expensive_count": 0,
         "disagreement": true,
         "participating_components": [
           "csi300",
@@ -390,13 +390,13 @@
           "erp": {
             "available": true,
             "rank": 83.333333,
-            "state": "expensive"
+            "state": "cheap"
           }
         },
         "reason_codes": [
           "csi300_neutral",
           "csi500_neutral",
-          "erp_expensive"
+          "erp_cheap"
         ]
       },
       "earnings": {
@@ -487,9 +487,9 @@
       "valuation": {
         "state": "neutral",
         "ready": true,
-        "cheap_count": 0,
+        "cheap_count": 1,
         "neutral_count": 2,
-        "expensive_count": 1,
+        "expensive_count": 0,
         "disagreement": true,
         "participating_components": [
           "csi300",
@@ -536,13 +536,13 @@
           "erp": {
             "available": true,
             "rank": 87.5,
-            "state": "expensive"
+            "state": "cheap"
           }
         },
         "reason_codes": [
           "csi300_neutral",
           "csi500_neutral",
-          "erp_expensive"
+          "erp_cheap"
         ]
       },
       "earnings": {
@@ -633,9 +633,9 @@
       "valuation": {
         "state": "neutral",
         "ready": true,
-        "cheap_count": 0,
+        "cheap_count": 1,
         "neutral_count": 2,
-        "expensive_count": 1,
+        "expensive_count": 0,
         "disagreement": true,
         "participating_components": [
           "csi300",
@@ -682,13 +682,13 @@
           "erp": {
             "available": true,
             "rank": 90.0,
-            "state": "expensive"
+            "state": "cheap"
           }
         },
         "reason_codes": [
           "csi300_neutral",
           "csi500_neutral",
-          "erp_expensive"
+          "erp_cheap"
         ]
       },
       "earnings": {
@@ -777,12 +777,12 @@
       "basis_trade_date": "2010-06-30",
       "source_evidence_sha256": "d617e0226f9957a696f202800fb7034c665e541eabb632891904d12f6aed8d23",
       "valuation": {
-        "state": "neutral",
+        "state": "cheap",
         "ready": true,
-        "cheap_count": 0,
-        "neutral_count": 2,
-        "expensive_count": 1,
-        "disagreement": true,
+        "cheap_count": 3,
+        "neutral_count": 0,
+        "expensive_count": 0,
+        "disagreement": false,
         "participating_components": [
           "csi300",
           "csi500",
@@ -803,7 +803,7 @@
               "rank": 33.57,
               "state": "neutral"
             },
-            "state": "neutral",
+            "state": "cheap",
             "available": true
           },
           "csi500": {
@@ -817,7 +817,7 @@
               "rank": 32.74,
               "state": "neutral"
             },
-            "state": "neutral",
+            "state": "cheap",
             "available": true
           },
           "csi1000": {
@@ -828,13 +828,13 @@
           "erp": {
             "available": true,
             "rank": 91.666667,
-            "state": "expensive"
+            "state": "cheap"
           }
         },
         "reason_codes": [
-          "csi300_neutral",
-          "csi500_neutral",
-          "erp_expensive"
+          "csi300_cheap",
+          "csi500_cheap",
+          "erp_cheap"
         ]
       },
       "earnings": {
@@ -1069,11 +1069,11 @@
       "basis_trade_date": "2010-08-31",
       "source_evidence_sha256": "d617e0226f9957a696f202800fb7034c665e541eabb632891904d12f6aed8d23",
       "valuation": {
-        "state": "neutral",
+        "state": "cheap",
         "ready": true,
-        "cheap_count": 0,
-        "neutral_count": 2,
-        "expensive_count": 1,
+        "cheap_count": 2,
+        "neutral_count": 1,
+        "expensive_count": 0,
         "disagreement": true,
         "participating_components": [
           "csi300",
@@ -1095,7 +1095,7 @@
               "rank": 36.09,
               "state": "neutral"
             },
-            "state": "neutral",
+            "state": "cheap",
             "available": true
           },
           "csi500": {
@@ -1120,13 +1120,13 @@
           "erp": {
             "available": true,
             "rank": 93.75,
-            "state": "expensive"
+            "state": "cheap"
           }
         },
         "reason_codes": [
-          "csi300_neutral",
+          "csi300_cheap",
           "csi500_neutral",
-          "erp_expensive"
+          "erp_cheap"
         ]
       },
       "earnings": {
@@ -1215,11 +1215,11 @@
       "basis_trade_date": "2010-09-30",
       "source_evidence_sha256": "d617e0226f9957a696f202800fb7034c665e541eabb632891904d12f6aed8d23",
       "valuation": {
-        "state": "neutral",
+        "state": "cheap",
         "ready": true,
-        "cheap_count": 0,
-        "neutral_count": 2,
-        "expensive_count": 1,
+        "cheap_count": 2,
+        "neutral_count": 1,
+        "expensive_count": 0,
         "disagreement": true,
         "participating_components": [
           "csi300",
@@ -1241,7 +1241,7 @@
               "rank": 37.53,
               "state": "neutral"
             },
-            "state": "neutral",
+            "state": "cheap",
             "available": true
           },
           "csi500": {
@@ -1266,13 +1266,13 @@
           "erp": {
             "available": true,
             "rank": 72.222222,
-            "state": "expensive"
+            "state": "cheap"
           }
         },
         "reason_codes": [
-          "csi300_neutral",
+          "csi300_cheap",
           "csi500_neutral",
-          "erp_expensive"
+          "erp_cheap"
         ]
       },
       "earnings": {
@@ -1364,9 +1364,9 @@
         "state": "neutral",
         "ready": true,
         "cheap_count": 0,
-        "neutral_count": 2,
-        "expensive_count": 1,
-        "disagreement": true,
+        "neutral_count": 3,
+        "expensive_count": 0,
+        "disagreement": false,
         "participating_components": [
           "csi300",
           "csi500",
@@ -1401,7 +1401,7 @@
               "rank": 72.34,
               "state": "expensive"
             },
-            "state": "expensive",
+            "state": "neutral",
             "available": true
           },
           "csi1000": {
@@ -1417,7 +1417,7 @@
         },
         "reason_codes": [
           "csi300_neutral",
-          "csi500_expensive",
+          "csi500_neutral",
           "erp_neutral"
         ]
       },
@@ -1509,9 +1509,9 @@
       "valuation": {
         "state": "neutral",
         "ready": true,
-        "cheap_count": 0,
+        "cheap_count": 1,
         "neutral_count": 2,
-        "expensive_count": 1,
+        "expensive_count": 0,
         "disagreement": true,
         "participating_components": [
           "csi300",
@@ -1533,7 +1533,7 @@
               "rank": 34.89,
               "state": "neutral"
             },
-            "state": "neutral",
+            "state": "cheap",
             "available": true
           },
           "csi500": {
@@ -1547,7 +1547,7 @@
               "rank": 71.61,
               "state": "expensive"
             },
-            "state": "expensive",
+            "state": "neutral",
             "available": true
           },
           "csi1000": {
@@ -1562,8 +1562,8 @@
           }
         },
         "reason_codes": [
-          "csi300_neutral",
-          "csi500_expensive",
+          "csi300_cheap",
+          "csi500_neutral",
           "erp_neutral"
         ]
       },
@@ -1655,10 +1655,10 @@
       "valuation": {
         "state": "neutral",
         "ready": true,
-        "cheap_count": 0,
-        "neutral_count": 3,
+        "cheap_count": 1,
+        "neutral_count": 2,
         "expensive_count": 0,
-        "disagreement": false,
+        "disagreement": true,
         "participating_components": [
           "csi300",
           "csi500",
@@ -1679,7 +1679,7 @@
               "rank": 34.1,
               "state": "neutral"
             },
-            "state": "neutral",
+            "state": "cheap",
             "available": true
           },
           "csi500": {
@@ -1708,7 +1708,7 @@
           }
         },
         "reason_codes": [
-          "csi300_neutral",
+          "csi300_cheap",
           "csi500_neutral",
           "erp_neutral"
         ]
@@ -2237,11 +2237,11 @@
       "basis_trade_date": "2011-04-29",
       "source_evidence_sha256": "d617e0226f9957a696f202800fb7034c665e541eabb632891904d12f6aed8d23",
       "valuation": {
-        "state": "neutral",
+        "state": "cheap",
         "ready": true,
-        "cheap_count": 0,
-        "neutral_count": 2,
-        "expensive_count": 1,
+        "cheap_count": 2,
+        "neutral_count": 1,
+        "expensive_count": 0,
         "disagreement": true,
         "participating_components": [
           "csi300",
@@ -2263,7 +2263,7 @@
               "rank": 31.09,
               "state": "neutral"
             },
-            "state": "neutral",
+            "state": "cheap",
             "available": true
           },
           "csi500": {
@@ -2288,13 +2288,13 @@
           "erp": {
             "available": true,
             "rank": 78.125,
-            "state": "expensive"
+            "state": "cheap"
           }
         },
         "reason_codes": [
-          "csi300_neutral",
+          "csi300_cheap",
           "csi500_neutral",
-          "erp_expensive"
+          "erp_cheap"
         ]
       },
       "earnings": {
@@ -2383,12 +2383,12 @@
       "basis_trade_date": "2011-05-31",
       "source_evidence_sha256": "d617e0226f9957a696f202800fb7034c665e541eabb632891904d12f6aed8d23",
       "valuation": {
-        "state": "neutral",
+        "state": "cheap",
         "ready": true,
-        "cheap_count": 1,
-        "neutral_count": 1,
-        "expensive_count": 1,
-        "disagreement": true,
+        "cheap_count": 3,
+        "neutral_count": 0,
+        "expensive_count": 0,
+        "disagreement": false,
         "participating_components": [
           "csi300",
           "csi500",
@@ -2423,7 +2423,7 @@
               "rank": 32.49,
               "state": "neutral"
             },
-            "state": "neutral",
+            "state": "cheap",
             "available": true
           },
           "csi1000": {
@@ -2434,13 +2434,13 @@
           "erp": {
             "available": true,
             "rank": 97.058824,
-            "state": "expensive"
+            "state": "cheap"
           }
         },
         "reason_codes": [
           "csi300_cheap",
-          "csi500_neutral",
-          "erp_expensive"
+          "csi500_cheap",
+          "erp_cheap"
         ]
       },
       "earnings": {
@@ -2529,12 +2529,12 @@
       "basis_trade_date": "2011-06-30",
       "source_evidence_sha256": "d617e0226f9957a696f202800fb7034c665e541eabb632891904d12f6aed8d23",
       "valuation": {
-        "state": "neutral",
+        "state": "cheap",
         "ready": true,
-        "cheap_count": 0,
-        "neutral_count": 2,
-        "expensive_count": 1,
-        "disagreement": true,
+        "cheap_count": 3,
+        "neutral_count": 0,
+        "expensive_count": 0,
+        "disagreement": false,
         "participating_components": [
           "csi300",
           "csi500",
@@ -2555,7 +2555,7 @@
               "rank": 30.1,
               "state": "neutral"
             },
-            "state": "neutral",
+            "state": "cheap",
             "available": true
           },
           "csi500": {
@@ -2569,7 +2569,7 @@
               "rank": 37.57,
               "state": "neutral"
             },
-            "state": "neutral",
+            "state": "cheap",
             "available": true
           },
           "csi1000": {
@@ -2580,13 +2580,13 @@
           "erp": {
             "available": true,
             "rank": 91.666667,
-            "state": "expensive"
+            "state": "cheap"
           }
         },
         "reason_codes": [
-          "csi300_neutral",
-          "csi500_neutral",
-          "erp_expensive"
+          "csi300_cheap",
+          "csi500_cheap",
+          "erp_cheap"
         ]
       },
       "earnings": {
@@ -2675,12 +2675,12 @@
       "basis_trade_date": "2011-07-29",
       "source_evidence_sha256": "d617e0226f9957a696f202800fb7034c665e541eabb632891904d12f6aed8d23",
       "valuation": {
-        "state": "neutral",
+        "state": "cheap",
         "ready": true,
-        "cheap_count": 1,
-        "neutral_count": 1,
-        "expensive_count": 1,
-        "disagreement": true,
+        "cheap_count": 3,
+        "neutral_count": 0,
+        "expensive_count": 0,
+        "disagreement": false,
         "participating_components": [
           "csi300",
           "csi500",
@@ -2715,7 +2715,7 @@
               "rank": 33.6,
               "state": "neutral"
             },
-            "state": "neutral",
+            "state": "cheap",
             "available": true
           },
           "csi1000": {
@@ -2726,13 +2726,13 @@
           "erp": {
             "available": true,
             "rank": 86.842105,
-            "state": "expensive"
+            "state": "cheap"
           }
         },
         "reason_codes": [
           "csi300_cheap",
-          "csi500_neutral",
-          "erp_expensive"
+          "csi500_cheap",
+          "erp_cheap"
         ]
       },
       "earnings": {
@@ -2823,10 +2823,10 @@
       "valuation": {
         "state": "cheap",
         "ready": true,
-        "cheap_count": 2,
+        "cheap_count": 3,
         "neutral_count": 0,
-        "expensive_count": 1,
-        "disagreement": true,
+        "expensive_count": 0,
+        "disagreement": false,
         "participating_components": [
           "csi300",
           "csi500",
@@ -2872,13 +2872,13 @@
           "erp": {
             "available": true,
             "rank": 97.5,
-            "state": "expensive"
+            "state": "cheap"
           }
         },
         "reason_codes": [
           "csi300_cheap",
           "csi500_cheap",
-          "erp_expensive"
+          "erp_cheap"
         ]
       },
       "earnings": {
@@ -2969,10 +2969,10 @@
       "valuation": {
         "state": "cheap",
         "ready": true,
-        "cheap_count": 2,
+        "cheap_count": 3,
         "neutral_count": 0,
-        "expensive_count": 1,
-        "disagreement": true,
+        "expensive_count": 0,
+        "disagreement": false,
         "participating_components": [
           "csi300",
           "csi500",
@@ -3018,13 +3018,13 @@
           "erp": {
             "available": true,
             "rank": 97.619048,
-            "state": "expensive"
+            "state": "cheap"
           }
         },
         "reason_codes": [
           "csi300_cheap",
           "csi500_cheap",
-          "erp_expensive"
+          "erp_cheap"
         ]
       },
       "earnings": {
@@ -3115,10 +3115,10 @@
       "valuation": {
         "state": "cheap",
         "ready": true,
-        "cheap_count": 2,
+        "cheap_count": 3,
         "neutral_count": 0,
-        "expensive_count": 1,
-        "disagreement": true,
+        "expensive_count": 0,
+        "disagreement": false,
         "participating_components": [
           "csi300",
           "csi500",
@@ -3164,13 +3164,13 @@
           "erp": {
             "available": true,
             "rank": 93.181818,
-            "state": "expensive"
+            "state": "cheap"
           }
         },
         "reason_codes": [
           "csi300_cheap",
           "csi500_cheap",
-          "erp_expensive"
+          "erp_cheap"
         ]
       },
       "earnings": {
@@ -3261,10 +3261,10 @@
       "valuation": {
         "state": "cheap",
         "ready": true,
-        "cheap_count": 2,
+        "cheap_count": 3,
         "neutral_count": 0,
-        "expensive_count": 1,
-        "disagreement": true,
+        "expensive_count": 0,
+        "disagreement": false,
         "participating_components": [
           "csi300",
           "csi500",
@@ -3310,13 +3310,13 @@
           "erp": {
             "available": true,
             "rank": 97.826087,
-            "state": "expensive"
+            "state": "cheap"
           }
         },
         "reason_codes": [
           "csi300_cheap",
           "csi500_cheap",
-          "erp_expensive"
+          "erp_cheap"
         ]
       },
       "earnings": {
@@ -3407,10 +3407,10 @@
       "valuation": {
         "state": "cheap",
         "ready": true,
-        "cheap_count": 2,
+        "cheap_count": 3,
         "neutral_count": 0,
-        "expensive_count": 1,
-        "disagreement": true,
+        "expensive_count": 0,
+        "disagreement": false,
         "participating_components": [
           "csi300",
           "csi500",
@@ -3456,13 +3456,13 @@
           "erp": {
             "available": true,
             "rank": 97.916667,
-            "state": "expensive"
+            "state": "cheap"
           }
         },
         "reason_codes": [
           "csi300_cheap",
           "csi500_cheap",
-          "erp_expensive"
+          "erp_cheap"
         ]
       },
       "earnings": {
@@ -3553,10 +3553,10 @@
       "valuation": {
         "state": "cheap",
         "ready": true,
-        "cheap_count": 2,
+        "cheap_count": 3,
         "neutral_count": 0,
-        "expensive_count": 1,
-        "disagreement": true,
+        "expensive_count": 0,
+        "disagreement": false,
         "participating_components": [
           "csi300",
           "csi500",
@@ -3602,13 +3602,13 @@
           "erp": {
             "available": true,
             "rank": 94.0,
-            "state": "expensive"
+            "state": "cheap"
           }
         },
         "reason_codes": [
           "csi300_cheap",
           "csi500_cheap",
-          "erp_expensive"
+          "erp_cheap"
         ]
       },
       "earnings": {
@@ -3699,10 +3699,10 @@
       "valuation": {
         "state": "cheap",
         "ready": true,
-        "cheap_count": 2,
+        "cheap_count": 3,
         "neutral_count": 0,
-        "expensive_count": 1,
-        "disagreement": true,
+        "expensive_count": 0,
+        "disagreement": false,
         "participating_components": [
           "csi300",
           "csi500",
@@ -3748,13 +3748,13 @@
           "erp": {
             "available": true,
             "rank": 86.538462,
-            "state": "expensive"
+            "state": "cheap"
           }
         },
         "reason_codes": [
           "csi300_cheap",
           "csi500_cheap",
-          "erp_expensive"
+          "erp_cheap"
         ]
       },
       "earnings": {
@@ -3845,10 +3845,10 @@
       "valuation": {
         "state": "cheap",
         "ready": true,
-        "cheap_count": 2,
+        "cheap_count": 3,
         "neutral_count": 0,
-        "expensive_count": 1,
-        "disagreement": true,
+        "expensive_count": 0,
+        "disagreement": false,
         "participating_components": [
           "csi300",
           "csi500",
@@ -3894,13 +3894,13 @@
           "erp": {
             "available": true,
             "rank": 90.740741,
-            "state": "expensive"
+            "state": "cheap"
           }
         },
         "reason_codes": [
           "csi300_cheap",
           "csi500_cheap",
-          "erp_expensive"
+          "erp_cheap"
         ]
       },
       "earnings": {
@@ -3991,10 +3991,10 @@
       "valuation": {
         "state": "cheap",
         "ready": true,
-        "cheap_count": 2,
+        "cheap_count": 3,
         "neutral_count": 0,
-        "expensive_count": 1,
-        "disagreement": true,
+        "expensive_count": 0,
+        "disagreement": false,
         "participating_components": [
           "csi300",
           "csi500",
@@ -4040,13 +4040,13 @@
           "erp": {
             "available": true,
             "rank": 80.357143,
-            "state": "expensive"
+            "state": "cheap"
           }
         },
         "reason_codes": [
           "csi300_cheap",
           "csi500_cheap",
-          "erp_expensive"
+          "erp_cheap"
         ]
       },
       "earnings": {
@@ -4137,10 +4137,10 @@
       "valuation": {
         "state": "cheap",
         "ready": true,
-        "cheap_count": 2,
+        "cheap_count": 3,
         "neutral_count": 0,
-        "expensive_count": 1,
-        "disagreement": true,
+        "expensive_count": 0,
+        "disagreement": false,
         "participating_components": [
           "csi300",
           "csi500",
@@ -4186,13 +4186,13 @@
           "erp": {
             "available": true,
             "rank": 84.482759,
-            "state": "expensive"
+            "state": "cheap"
           }
         },
         "reason_codes": [
           "csi300_cheap",
           "csi500_cheap",
-          "erp_expensive"
+          "erp_cheap"
         ]
       },
       "earnings": {
@@ -4283,10 +4283,10 @@
       "valuation": {
         "state": "cheap",
         "ready": true,
-        "cheap_count": 2,
+        "cheap_count": 3,
         "neutral_count": 0,
-        "expensive_count": 1,
-        "disagreement": true,
+        "expensive_count": 0,
+        "disagreement": false,
         "participating_components": [
           "csi300",
           "csi500",
@@ -4332,13 +4332,13 @@
           "erp": {
             "available": true,
             "rank": 98.333333,
-            "state": "expensive"
+            "state": "cheap"
           }
         },
         "reason_codes": [
           "csi300_cheap",
           "csi500_cheap",
-          "erp_expensive"
+          "erp_cheap"
         ]
       },
       "earnings": {
@@ -4429,10 +4429,10 @@
       "valuation": {
         "state": "cheap",
         "ready": true,
-        "cheap_count": 2,
+        "cheap_count": 3,
         "neutral_count": 0,
-        "expensive_count": 1,
-        "disagreement": true,
+        "expensive_count": 0,
+        "disagreement": false,
         "participating_components": [
           "csi300",
           "csi500",
@@ -4478,13 +4478,13 @@
           "erp": {
             "available": true,
             "rank": 98.387097,
-            "state": "expensive"
+            "state": "cheap"
           }
         },
         "reason_codes": [
           "csi300_cheap",
           "csi500_cheap",
-          "erp_expensive"
+          "erp_cheap"
         ]
       },
       "earnings": {
@@ -4575,10 +4575,10 @@
       "valuation": {
         "state": "cheap",
         "ready": true,
-        "cheap_count": 2,
+        "cheap_count": 3,
         "neutral_count": 0,
-        "expensive_count": 1,
-        "disagreement": true,
+        "expensive_count": 0,
+        "disagreement": false,
         "participating_components": [
           "csi300",
           "csi500",
@@ -4624,13 +4624,13 @@
           "erp": {
             "available": true,
             "rank": 98.4375,
-            "state": "expensive"
+            "state": "cheap"
           }
         },
         "reason_codes": [
           "csi300_cheap",
           "csi500_cheap",
-          "erp_expensive"
+          "erp_cheap"
         ]
       },
       "earnings": {
@@ -4721,10 +4721,10 @@
       "valuation": {
         "state": "cheap",
         "ready": true,
-        "cheap_count": 2,
+        "cheap_count": 3,
         "neutral_count": 0,
-        "expensive_count": 1,
-        "disagreement": true,
+        "expensive_count": 0,
+        "disagreement": false,
         "participating_components": [
           "csi300",
           "csi500",
@@ -4770,13 +4770,13 @@
           "erp": {
             "available": true,
             "rank": 95.454545,
-            "state": "expensive"
+            "state": "cheap"
           }
         },
         "reason_codes": [
           "csi300_cheap",
           "csi500_cheap",
-          "erp_expensive"
+          "erp_cheap"
         ]
       },
       "earnings": {
@@ -4867,10 +4867,10 @@
       "valuation": {
         "state": "cheap",
         "ready": true,
-        "cheap_count": 2,
+        "cheap_count": 3,
         "neutral_count": 0,
-        "expensive_count": 1,
-        "disagreement": true,
+        "expensive_count": 0,
+        "disagreement": false,
         "participating_components": [
           "csi300",
           "csi500",
@@ -4916,13 +4916,13 @@
           "erp": {
             "available": true,
             "rank": 89.705882,
-            "state": "expensive"
+            "state": "cheap"
           }
         },
         "reason_codes": [
           "csi300_cheap",
           "csi500_cheap",
-          "erp_expensive"
+          "erp_cheap"
         ]
       },
       "earnings": {
@@ -5013,10 +5013,10 @@
       "valuation": {
         "state": "cheap",
         "ready": true,
-        "cheap_count": 2,
+        "cheap_count": 3,
         "neutral_count": 0,
-        "expensive_count": 1,
-        "disagreement": true,
+        "expensive_count": 0,
+        "disagreement": false,
         "participating_components": [
           "csi300",
           "csi500",
@@ -5062,13 +5062,13 @@
           "erp": {
             "available": true,
             "rank": 98.571429,
-            "state": "expensive"
+            "state": "cheap"
           }
         },
         "reason_codes": [
           "csi300_cheap",
           "csi500_cheap",
-          "erp_expensive"
+          "erp_cheap"
         ]
       },
       "earnings": {
@@ -5157,10 +5157,10 @@
       "basis_trade_date": "2012-12-31",
       "source_evidence_sha256": "d617e0226f9957a696f202800fb7034c665e541eabb632891904d12f6aed8d23",
       "valuation": {
-        "state": "neutral",
+        "state": "cheap",
         "ready": true,
-        "cheap_count": 1,
-        "neutral_count": 2,
+        "cheap_count": 2,
+        "neutral_count": 1,
         "expensive_count": 0,
         "disagreement": true,
         "participating_components": [
@@ -5197,7 +5197,7 @@
               "rank": 11.35,
               "state": "cheap"
             },
-            "state": "neutral",
+            "state": "cheap",
             "available": true
           },
           "csi1000": {
@@ -5213,7 +5213,7 @@
         },
         "reason_codes": [
           "csi300_cheap",
-          "csi500_neutral",
+          "csi500_cheap",
           "erp_neutral"
         ]
       },
@@ -5451,10 +5451,10 @@
       "basis_trade_date": "2013-02-28",
       "source_evidence_sha256": "d617e0226f9957a696f202800fb7034c665e541eabb632891904d12f6aed8d23",
       "valuation": {
-        "state": "neutral",
+        "state": "cheap",
         "ready": true,
-        "cheap_count": 1,
-        "neutral_count": 2,
+        "cheap_count": 2,
+        "neutral_count": 1,
         "expensive_count": 0,
         "disagreement": true,
         "participating_components": [
@@ -5491,7 +5491,7 @@
               "rank": 21.69,
               "state": "cheap"
             },
-            "state": "neutral",
+            "state": "cheap",
             "available": true
           },
           "csi1000": {
@@ -5507,7 +5507,7 @@
         },
         "reason_codes": [
           "csi300_cheap",
-          "csi500_neutral",
+          "csi500_cheap",
           "erp_neutral"
         ]
       },
@@ -5600,10 +5600,10 @@
       "valuation": {
         "state": "cheap",
         "ready": true,
-        "cheap_count": 2,
+        "cheap_count": 3,
         "neutral_count": 0,
-        "expensive_count": 1,
-        "disagreement": true,
+        "expensive_count": 0,
+        "disagreement": false,
         "participating_components": [
           "csi300",
           "csi500",
@@ -5649,13 +5649,13 @@
           "erp": {
             "available": true,
             "rank": 80.769231,
-            "state": "expensive"
+            "state": "cheap"
           }
         },
         "reason_codes": [
           "csi300_cheap",
           "csi500_cheap",
-          "erp_expensive"
+          "erp_cheap"
         ]
       },
       "earnings": {
@@ -5747,10 +5747,10 @@
       "valuation": {
         "state": "cheap",
         "ready": true,
-        "cheap_count": 2,
+        "cheap_count": 3,
         "neutral_count": 0,
-        "expensive_count": 1,
-        "disagreement": true,
+        "expensive_count": 0,
+        "disagreement": false,
         "participating_components": [
           "csi300",
           "csi500",
@@ -5796,13 +5796,13 @@
           "erp": {
             "available": true,
             "rank": 86.25,
-            "state": "expensive"
+            "state": "cheap"
           }
         },
         "reason_codes": [
           "csi300_cheap",
           "csi500_cheap",
-          "erp_expensive"
+          "erp_cheap"
         ]
       },
       "earnings": {
@@ -5892,11 +5892,11 @@
       "basis_trade_date": "2013-05-31",
       "source_evidence_sha256": "d617e0226f9957a696f202800fb7034c665e541eabb632891904d12f6aed8d23",
       "valuation": {
-        "state": "neutral",
+        "state": "cheap",
         "ready": true,
-        "cheap_count": 1,
+        "cheap_count": 2,
         "neutral_count": 1,
-        "expensive_count": 1,
+        "expensive_count": 0,
         "disagreement": true,
         "participating_components": [
           "csi300",
@@ -5943,13 +5943,13 @@
           "erp": {
             "available": true,
             "rank": 79.268293,
-            "state": "expensive"
+            "state": "cheap"
           }
         },
         "reason_codes": [
           "csi300_cheap",
           "csi500_neutral",
-          "erp_expensive"
+          "erp_cheap"
         ]
       },
       "earnings": {
@@ -6041,10 +6041,10 @@
       "valuation": {
         "state": "cheap",
         "ready": true,
-        "cheap_count": 2,
+        "cheap_count": 3,
         "neutral_count": 0,
-        "expensive_count": 1,
-        "disagreement": true,
+        "expensive_count": 0,
+        "disagreement": false,
         "participating_components": [
           "csi300",
           "csi500",
@@ -6090,13 +6090,13 @@
           "erp": {
             "available": true,
             "rank": 98.809524,
-            "state": "expensive"
+            "state": "cheap"
           }
         },
         "reason_codes": [
           "csi300_cheap",
           "csi500_cheap",
-          "erp_expensive"
+          "erp_cheap"
         ]
       },
       "earnings": {
@@ -6188,10 +6188,10 @@
       "valuation": {
         "state": "cheap",
         "ready": true,
-        "cheap_count": 2,
+        "cheap_count": 3,
         "neutral_count": 0,
-        "expensive_count": 1,
-        "disagreement": true,
+        "expensive_count": 0,
+        "disagreement": false,
         "participating_components": [
           "csi300",
           "csi500",
@@ -6237,13 +6237,13 @@
           "erp": {
             "available": true,
             "rank": 96.511628,
-            "state": "expensive"
+            "state": "cheap"
           }
         },
         "reason_codes": [
           "csi300_cheap",
           "csi500_cheap",
-          "erp_expensive"
+          "erp_cheap"
         ]
       },
       "earnings": {
@@ -6335,10 +6335,10 @@
       "valuation": {
         "state": "cheap",
         "ready": true,
-        "cheap_count": 2,
+        "cheap_count": 3,
         "neutral_count": 0,
-        "expensive_count": 1,
-        "disagreement": true,
+        "expensive_count": 0,
+        "disagreement": false,
         "participating_components": [
           "csi300",
           "csi500",
@@ -6384,13 +6384,13 @@
           "erp": {
             "available": true,
             "rank": 94.318182,
-            "state": "expensive"
+            "state": "cheap"
           }
         },
         "reason_codes": [
           "csi300_cheap",
           "csi500_cheap",
-          "erp_expensive"
+          "erp_cheap"
         ]
       },
       "earnings": {
@@ -6480,11 +6480,11 @@
       "basis_trade_date": "2013-09-30",
       "source_evidence_sha256": "d617e0226f9957a696f202800fb7034c665e541eabb632891904d12f6aed8d23",
       "valuation": {
-        "state": "neutral",
+        "state": "cheap",
         "ready": true,
-        "cheap_count": 1,
+        "cheap_count": 2,
         "neutral_count": 1,
-        "expensive_count": 1,
+        "expensive_count": 0,
         "disagreement": true,
         "participating_components": [
           "csi300",
@@ -6531,13 +6531,13 @@
           "erp": {
             "available": true,
             "rank": 87.777778,
-            "state": "expensive"
+            "state": "cheap"
           }
         },
         "reason_codes": [
           "csi300_cheap",
           "csi500_neutral",
-          "erp_expensive"
+          "erp_cheap"
         ]
       },
       "earnings": {
@@ -6629,10 +6629,10 @@
       "valuation": {
         "state": "cheap",
         "ready": true,
-        "cheap_count": 2,
+        "cheap_count": 3,
         "neutral_count": 0,
-        "expensive_count": 1,
-        "disagreement": true,
+        "expensive_count": 0,
+        "disagreement": false,
         "participating_components": [
           "csi300",
           "csi500",
@@ -6678,13 +6678,13 @@
           "erp": {
             "available": true,
             "rank": 94.565217,
-            "state": "expensive"
+            "state": "cheap"
           }
         },
         "reason_codes": [
           "csi300_cheap",
           "csi500_cheap",
-          "erp_expensive"
+          "erp_cheap"
         ]
       },
       "earnings": {
@@ -6774,11 +6774,11 @@
       "basis_trade_date": "2013-11-29",
       "source_evidence_sha256": "d617e0226f9957a696f202800fb7034c665e541eabb632891904d12f6aed8d23",
       "valuation": {
-        "state": "neutral",
+        "state": "cheap",
         "ready": true,
-        "cheap_count": 1,
+        "cheap_count": 2,
         "neutral_count": 1,
-        "expensive_count": 1,
+        "expensive_count": 0,
         "disagreement": true,
         "participating_components": [
           "csi300",
@@ -6825,13 +6825,13 @@
           "erp": {
             "available": true,
             "rank": 77.659574,
-            "state": "expensive"
+            "state": "cheap"
           }
         },
         "reason_codes": [
           "csi300_cheap",
           "csi500_neutral",
-          "erp_expensive"
+          "erp_cheap"
         ]
       },
       "earnings": {
@@ -6923,10 +6923,10 @@
       "valuation": {
         "state": "cheap",
         "ready": true,
-        "cheap_count": 2,
+        "cheap_count": 3,
         "neutral_count": 0,
-        "expensive_count": 1,
-        "disagreement": true,
+        "expensive_count": 0,
+        "disagreement": false,
         "participating_components": [
           "csi300",
           "csi500",
@@ -6972,13 +6972,13 @@
           "erp": {
             "available": true,
             "rank": 86.458333,
-            "state": "expensive"
+            "state": "cheap"
           }
         },
         "reason_codes": [
           "csi300_cheap",
           "csi500_cheap",
-          "erp_expensive"
+          "erp_cheap"
         ]
       },
       "earnings": {
@@ -7070,10 +7070,10 @@
       "valuation": {
         "state": "cheap",
         "ready": true,
-        "cheap_count": 2,
+        "cheap_count": 3,
         "neutral_count": 0,
-        "expensive_count": 1,
-        "disagreement": true,
+        "expensive_count": 0,
+        "disagreement": false,
         "participating_components": [
           "csi300",
           "csi500",
@@ -7119,13 +7119,13 @@
           "erp": {
             "available": true,
             "rank": 94.897959,
-            "state": "expensive"
+            "state": "cheap"
           }
         },
         "reason_codes": [
           "csi300_cheap",
           "csi500_cheap",
-          "erp_expensive"
+          "erp_cheap"
         ]
       },
       "earnings": {
@@ -7215,12 +7215,12 @@
       "basis_trade_date": "2014-02-28",
       "source_evidence_sha256": "d617e0226f9957a696f202800fb7034c665e541eabb632891904d12f6aed8d23",
       "valuation": {
-        "state": "neutral",
+        "state": "cheap",
         "ready": true,
-        "cheap_count": 1,
-        "neutral_count": 1,
-        "expensive_count": 1,
-        "disagreement": true,
+        "cheap_count": 3,
+        "neutral_count": 0,
+        "expensive_count": 0,
+        "disagreement": false,
         "participating_components": [
           "csi300",
           "csi500",
@@ -7255,7 +7255,7 @@
               "rank": 30.6,
               "state": "neutral"
             },
-            "state": "neutral",
+            "state": "cheap",
             "available": true
           },
           "csi1000": {
@@ -7266,13 +7266,13 @@
           "erp": {
             "available": true,
             "rank": 97.0,
-            "state": "expensive"
+            "state": "cheap"
           }
         },
         "reason_codes": [
           "csi300_cheap",
-          "csi500_neutral",
-          "erp_expensive"
+          "csi500_cheap",
+          "erp_cheap"
         ]
       },
       "earnings": {
@@ -7364,10 +7364,10 @@
       "valuation": {
         "state": "cheap",
         "ready": true,
-        "cheap_count": 2,
+        "cheap_count": 3,
         "neutral_count": 0,
-        "expensive_count": 1,
-        "disagreement": true,
+        "expensive_count": 0,
+        "disagreement": false,
         "participating_components": [
           "csi300",
           "csi500",
@@ -7413,13 +7413,13 @@
           "erp": {
             "available": true,
             "rank": 99.019608,
-            "state": "expensive"
+            "state": "cheap"
           }
         },
         "reason_codes": [
           "csi300_cheap",
           "csi500_cheap",
-          "erp_expensive"
+          "erp_cheap"
         ]
       },
       "earnings": {
@@ -7511,10 +7511,10 @@
       "valuation": {
         "state": "cheap",
         "ready": true,
-        "cheap_count": 2,
+        "cheap_count": 3,
         "neutral_count": 0,
-        "expensive_count": 1,
-        "disagreement": true,
+        "expensive_count": 0,
+        "disagreement": false,
         "participating_components": [
           "csi300",
           "csi500",
@@ -7560,13 +7560,13 @@
           "erp": {
             "available": true,
             "rank": 99.038462,
-            "state": "expensive"
+            "state": "cheap"
           }
         },
         "reason_codes": [
           "csi300_cheap",
           "csi500_cheap",
-          "erp_expensive"
+          "erp_cheap"
         ]
       },
       "earnings": {
@@ -7658,10 +7658,10 @@
       "valuation": {
         "state": "cheap",
         "ready": true,
-        "cheap_count": 2,
+        "cheap_count": 3,
         "neutral_count": 0,
-        "expensive_count": 1,
-        "disagreement": true,
+        "expensive_count": 0,
+        "disagreement": false,
         "participating_components": [
           "csi300",
           "csi500",
@@ -7707,13 +7707,13 @@
           "erp": {
             "available": true,
             "rank": 99.056604,
-            "state": "expensive"
+            "state": "cheap"
           }
         },
         "reason_codes": [
           "csi300_cheap",
           "csi500_cheap",
-          "erp_expensive"
+          "erp_cheap"
         ]
       },
       "earnings": {
@@ -7805,10 +7805,10 @@
       "valuation": {
         "state": "cheap",
         "ready": true,
-        "cheap_count": 2,
+        "cheap_count": 3,
         "neutral_count": 0,
-        "expensive_count": 1,
-        "disagreement": true,
+        "expensive_count": 0,
+        "disagreement": false,
         "participating_components": [
           "csi300",
           "csi500",
@@ -7854,13 +7854,13 @@
           "erp": {
             "available": true,
             "rank": 95.37037,
-            "state": "expensive"
+            "state": "cheap"
           }
         },
         "reason_codes": [
           "csi300_cheap",
           "csi500_cheap",
-          "erp_expensive"
+          "erp_cheap"
         ]
       },
       "earnings": {
@@ -7950,11 +7950,11 @@
       "basis_trade_date": "2014-07-31",
       "source_evidence_sha256": "d617e0226f9957a696f202800fb7034c665e541eabb632891904d12f6aed8d23",
       "valuation": {
-        "state": "neutral",
+        "state": "cheap",
         "ready": true,
-        "cheap_count": 1,
+        "cheap_count": 2,
         "neutral_count": 1,
-        "expensive_count": 1,
+        "expensive_count": 0,
         "disagreement": true,
         "participating_components": [
           "csi300",
@@ -8001,13 +8001,13 @@
           "erp": {
             "available": true,
             "rank": 84.545455,
-            "state": "expensive"
+            "state": "cheap"
           }
         },
         "reason_codes": [
           "csi300_cheap",
           "csi500_neutral",
-          "erp_expensive"
+          "erp_cheap"
         ]
       },
       "earnings": {
@@ -8097,11 +8097,11 @@
       "basis_trade_date": "2014-08-29",
       "source_evidence_sha256": "d617e0226f9957a696f202800fb7034c665e541eabb632891904d12f6aed8d23",
       "valuation": {
-        "state": "neutral",
+        "state": "cheap",
         "ready": true,
-        "cheap_count": 1,
+        "cheap_count": 2,
         "neutral_count": 1,
-        "expensive_count": 1,
+        "expensive_count": 0,
         "disagreement": true,
         "participating_components": [
           "csi300",
@@ -8148,13 +8148,13 @@
           "erp": {
             "available": true,
             "rank": 90.178571,
-            "state": "expensive"
+            "state": "cheap"
           }
         },
         "reason_codes": [
           "csi300_cheap",
           "csi500_neutral",
-          "erp_expensive"
+          "erp_cheap"
         ]
       },
       "earnings": {
@@ -8244,11 +8244,11 @@
       "basis_trade_date": "2014-09-30",
       "source_evidence_sha256": "d617e0226f9957a696f202800fb7034c665e541eabb632891904d12f6aed8d23",
       "valuation": {
-        "state": "neutral",
+        "state": "cheap",
         "ready": true,
-        "cheap_count": 1,
+        "cheap_count": 2,
         "neutral_count": 1,
-        "expensive_count": 1,
+        "expensive_count": 0,
         "disagreement": true,
         "participating_components": [
           "csi300",
@@ -8295,13 +8295,13 @@
           "erp": {
             "available": true,
             "rank": 83.333333,
-            "state": "expensive"
+            "state": "cheap"
           }
         },
         "reason_codes": [
           "csi300_cheap",
           "csi500_neutral",
-          "erp_expensive"
+          "erp_cheap"
         ]
       },
       "earnings": {
@@ -8391,11 +8391,11 @@
       "basis_trade_date": "2014-10-31",
       "source_evidence_sha256": "d617e0226f9957a696f202800fb7034c665e541eabb632891904d12f6aed8d23",
       "valuation": {
-        "state": "neutral",
+        "state": "cheap",
         "ready": true,
-        "cheap_count": 1,
+        "cheap_count": 2,
         "neutral_count": 1,
-        "expensive_count": 1,
+        "expensive_count": 0,
         "disagreement": true,
         "participating_components": [
           "csi300",
@@ -8442,13 +8442,13 @@
           "erp": {
             "available": true,
             "rank": 90.517241,
-            "state": "expensive"
+            "state": "cheap"
           }
         },
         "reason_codes": [
           "csi300_cheap",
           "csi500_neutral",
-          "erp_expensive"
+          "erp_cheap"
         ]
       },
       "earnings": {
@@ -9091,11 +9091,11 @@
       "basis_trade_date": "2015-03-31",
       "source_evidence_sha256": "d617e0226f9957a696f202800fb7034c665e541eabb632891904d12f6aed8d23",
       "valuation": {
-        "state": "neutral",
+        "state": "expensive",
         "ready": true,
-        "cheap_count": 1,
+        "cheap_count": 0,
         "neutral_count": 1,
-        "expensive_count": 1,
+        "expensive_count": 2,
         "disagreement": true,
         "participating_components": [
           "csi300",
@@ -9142,13 +9142,13 @@
           "erp": {
             "available": true,
             "rank": 21.428571,
-            "state": "cheap"
+            "state": "expensive"
           }
         },
         "reason_codes": [
           "csi300_neutral",
           "csi500_expensive",
-          "erp_cheap"
+          "erp_expensive"
         ]
       },
       "earnings": {
@@ -9231,11 +9231,11 @@
       "basis_trade_date": "2015-04-30",
       "source_evidence_sha256": "d617e0226f9957a696f202800fb7034c665e541eabb632891904d12f6aed8d23",
       "valuation": {
-        "state": "neutral",
+        "state": "expensive",
         "ready": true,
-        "cheap_count": 1,
+        "cheap_count": 0,
         "neutral_count": 1,
-        "expensive_count": 1,
+        "expensive_count": 2,
         "disagreement": true,
         "participating_components": [
           "csi300",
@@ -9282,13 +9282,13 @@
           "erp": {
             "available": true,
             "rank": 11.71875,
-            "state": "cheap"
+            "state": "expensive"
           }
         },
         "reason_codes": [
           "csi300_neutral",
           "csi500_expensive",
-          "erp_cheap"
+          "erp_expensive"
         ]
       },
       "earnings": {
@@ -9371,11 +9371,11 @@
       "basis_trade_date": "2015-05-29",
       "source_evidence_sha256": "d617e0226f9957a696f202800fb7034c665e541eabb632891904d12f6aed8d23",
       "valuation": {
-        "state": "neutral",
+        "state": "expensive",
         "ready": true,
-        "cheap_count": 1,
+        "cheap_count": 0,
         "neutral_count": 1,
-        "expensive_count": 1,
+        "expensive_count": 2,
         "disagreement": true,
         "participating_components": [
           "csi300",
@@ -9422,13 +9422,13 @@
           "erp": {
             "available": true,
             "rank": 6.923077,
-            "state": "cheap"
+            "state": "expensive"
           }
         },
         "reason_codes": [
           "csi300_neutral",
           "csi500_expensive",
-          "erp_cheap"
+          "erp_expensive"
         ]
       },
       "earnings": {
@@ -9511,11 +9511,11 @@
       "basis_trade_date": "2015-06-30",
       "source_evidence_sha256": "d617e0226f9957a696f202800fb7034c665e541eabb632891904d12f6aed8d23",
       "valuation": {
-        "state": "neutral",
+        "state": "expensive",
         "ready": true,
-        "cheap_count": 1,
+        "cheap_count": 0,
         "neutral_count": 1,
-        "expensive_count": 1,
+        "expensive_count": 2,
         "disagreement": true,
         "participating_components": [
           "csi300",
@@ -9562,13 +9562,13 @@
           "erp": {
             "available": true,
             "rank": 11.363636,
-            "state": "cheap"
+            "state": "expensive"
           }
         },
         "reason_codes": [
           "csi300_neutral",
           "csi500_expensive",
-          "erp_cheap"
+          "erp_expensive"
         ]
       },
       "earnings": {
@@ -9793,10 +9793,10 @@
       "valuation": {
         "state": "neutral",
         "ready": true,
-        "cheap_count": 0,
-        "neutral_count": 3,
+        "cheap_count": 1,
+        "neutral_count": 2,
         "expensive_count": 0,
-        "disagreement": false,
+        "disagreement": true,
         "participating_components": [
           "csi300",
           "csi500",
@@ -9817,7 +9817,7 @@
               "rank": 22.54,
               "state": "cheap"
             },
-            "state": "neutral",
+            "state": "cheap",
             "available": true
           },
           "csi500": {
@@ -9846,7 +9846,7 @@
           }
         },
         "reason_codes": [
-          "csi300_neutral",
+          "csi300_cheap",
           "csi500_neutral",
           "erp_neutral"
         ]
@@ -10074,9 +10074,9 @@
         "state": "neutral",
         "ready": true,
         "cheap_count": 0,
-        "neutral_count": 2,
-        "expensive_count": 1,
-        "disagreement": true,
+        "neutral_count": 3,
+        "expensive_count": 0,
+        "disagreement": false,
         "participating_components": [
           "csi300",
           "csi500",
@@ -10111,7 +10111,7 @@
               "rank": 66.45,
               "state": "neutral"
             },
-            "state": "expensive",
+            "state": "neutral",
             "available": true
           },
           "csi1000": {
@@ -10127,7 +10127,7 @@
         },
         "reason_codes": [
           "csi300_neutral",
-          "csi500_expensive",
+          "csi500_neutral",
           "erp_neutral"
         ]
       },
@@ -10773,10 +10773,10 @@
       "valuation": {
         "state": "neutral",
         "ready": true,
-        "cheap_count": 0,
-        "neutral_count": 3,
+        "cheap_count": 1,
+        "neutral_count": 2,
         "expensive_count": 0,
-        "disagreement": false,
+        "disagreement": true,
         "participating_components": [
           "csi300",
           "csi500",
@@ -10797,7 +10797,7 @@
               "rank": 16.82,
               "state": "cheap"
             },
-            "state": "neutral",
+            "state": "cheap",
             "available": true
           },
           "csi500": {
@@ -10826,7 +10826,7 @@
           }
         },
         "reason_codes": [
-          "csi300_neutral",
+          "csi300_cheap",
           "csi500_neutral",
           "erp_neutral"
         ]
@@ -10913,10 +10913,10 @@
       "valuation": {
         "state": "neutral",
         "ready": true,
-        "cheap_count": 0,
-        "neutral_count": 3,
+        "cheap_count": 1,
+        "neutral_count": 2,
         "expensive_count": 0,
-        "disagreement": false,
+        "disagreement": true,
         "participating_components": [
           "csi300",
           "csi500",
@@ -10937,7 +10937,7 @@
               "rank": 12.68,
               "state": "cheap"
             },
-            "state": "neutral",
+            "state": "cheap",
             "available": true
           },
           "csi500": {
@@ -10966,7 +10966,7 @@
           }
         },
         "reason_codes": [
-          "csi300_neutral",
+          "csi300_cheap",
           "csi500_neutral",
           "erp_neutral"
         ]
@@ -11053,10 +11053,10 @@
       "valuation": {
         "state": "neutral",
         "ready": true,
-        "cheap_count": 0,
-        "neutral_count": 3,
+        "cheap_count": 1,
+        "neutral_count": 2,
         "expensive_count": 0,
-        "disagreement": false,
+        "disagreement": true,
         "participating_components": [
           "csi300",
           "csi500",
@@ -11077,7 +11077,7 @@
               "rank": 13.91,
               "state": "cheap"
             },
-            "state": "neutral",
+            "state": "cheap",
             "available": true
           },
           "csi500": {
@@ -11106,7 +11106,7 @@
           }
         },
         "reason_codes": [
-          "csi300_neutral",
+          "csi300_cheap",
           "csi500_neutral",
           "erp_neutral"
         ]
@@ -11193,10 +11193,10 @@
       "valuation": {
         "state": "neutral",
         "ready": true,
-        "cheap_count": 0,
-        "neutral_count": 3,
+        "cheap_count": 1,
+        "neutral_count": 2,
         "expensive_count": 0,
-        "disagreement": false,
+        "disagreement": true,
         "participating_components": [
           "csi300",
           "csi500",
@@ -11217,7 +11217,7 @@
               "rank": 14.51,
               "state": "cheap"
             },
-            "state": "neutral",
+            "state": "cheap",
             "available": true
           },
           "csi500": {
@@ -11246,7 +11246,7 @@
           }
         },
         "reason_codes": [
-          "csi300_neutral",
+          "csi300_cheap",
           "csi500_neutral",
           "erp_neutral"
         ]
@@ -11333,10 +11333,10 @@
       "valuation": {
         "state": "neutral",
         "ready": true,
-        "cheap_count": 0,
-        "neutral_count": 3,
+        "cheap_count": 1,
+        "neutral_count": 2,
         "expensive_count": 0,
-        "disagreement": false,
+        "disagreement": true,
         "participating_components": [
           "csi300",
           "csi500",
@@ -11357,7 +11357,7 @@
               "rank": 17.78,
               "state": "cheap"
             },
-            "state": "neutral",
+            "state": "cheap",
             "available": true
           },
           "csi500": {
@@ -11386,7 +11386,7 @@
           }
         },
         "reason_codes": [
-          "csi300_neutral",
+          "csi300_cheap",
           "csi500_neutral",
           "erp_neutral"
         ]
@@ -11613,10 +11613,10 @@
       "valuation": {
         "state": "neutral",
         "ready": true,
-        "cheap_count": 0,
-        "neutral_count": 3,
+        "cheap_count": 1,
+        "neutral_count": 2,
         "expensive_count": 0,
-        "disagreement": false,
+        "disagreement": true,
         "participating_components": [
           "csi300",
           "csi500",
@@ -11637,7 +11637,7 @@
               "rank": 18.07,
               "state": "cheap"
             },
-            "state": "neutral",
+            "state": "cheap",
             "available": true
           },
           "csi500": {
@@ -11666,7 +11666,7 @@
           }
         },
         "reason_codes": [
-          "csi300_neutral",
+          "csi300_cheap",
           "csi500_neutral",
           "erp_neutral"
         ]
@@ -11753,10 +11753,10 @@
       "valuation": {
         "state": "neutral",
         "ready": true,
-        "cheap_count": 0,
-        "neutral_count": 3,
+        "cheap_count": 1,
+        "neutral_count": 2,
         "expensive_count": 0,
-        "disagreement": false,
+        "disagreement": true,
         "participating_components": [
           "csi300",
           "csi500",
@@ -11777,7 +11777,7 @@
               "rank": 15.52,
               "state": "cheap"
             },
-            "state": "neutral",
+            "state": "cheap",
             "available": true
           },
           "csi500": {
@@ -11806,7 +11806,7 @@
           }
         },
         "reason_codes": [
-          "csi300_neutral",
+          "csi300_cheap",
           "csi500_neutral",
           "erp_neutral"
         ]
@@ -12033,10 +12033,10 @@
       "valuation": {
         "state": "neutral",
         "ready": true,
-        "cheap_count": 0,
-        "neutral_count": 3,
+        "cheap_count": 1,
+        "neutral_count": 2,
         "expensive_count": 0,
-        "disagreement": false,
+        "disagreement": true,
         "participating_components": [
           "csi300",
           "csi500",
@@ -12057,7 +12057,7 @@
               "rank": 18.22,
               "state": "cheap"
             },
-            "state": "neutral",
+            "state": "cheap",
             "available": true
           },
           "csi500": {
@@ -12086,7 +12086,7 @@
           }
         },
         "reason_codes": [
-          "csi300_neutral",
+          "csi300_cheap",
           "csi500_neutral",
           "erp_neutral"
         ]
@@ -12173,9 +12173,9 @@
       "valuation": {
         "state": "neutral",
         "ready": true,
-        "cheap_count": 1,
+        "cheap_count": 0,
         "neutral_count": 2,
-        "expensive_count": 0,
+        "expensive_count": 1,
         "disagreement": true,
         "participating_components": [
           "csi300",
@@ -12222,13 +12222,13 @@
           "erp": {
             "available": true,
             "rank": 28.823529,
-            "state": "cheap"
+            "state": "expensive"
           }
         },
         "reason_codes": [
           "csi300_neutral",
           "csi500_neutral",
-          "erp_cheap"
+          "erp_expensive"
         ]
       },
       "earnings": {
@@ -12313,9 +12313,9 @@
       "valuation": {
         "state": "neutral",
         "ready": true,
-        "cheap_count": 1,
+        "cheap_count": 0,
         "neutral_count": 2,
-        "expensive_count": 0,
+        "expensive_count": 1,
         "disagreement": true,
         "participating_components": [
           "csi300",
@@ -12362,13 +12362,13 @@
           "erp": {
             "available": true,
             "rank": 28.488372,
-            "state": "cheap"
+            "state": "expensive"
           }
         },
         "reason_codes": [
           "csi300_neutral",
           "csi500_neutral",
-          "erp_cheap"
+          "erp_expensive"
         ]
       },
       "earnings": {
@@ -12733,9 +12733,9 @@
       "valuation": {
         "state": "neutral",
         "ready": true,
-        "cheap_count": 1,
+        "cheap_count": 0,
         "neutral_count": 2,
-        "expensive_count": 0,
+        "expensive_count": 1,
         "disagreement": true,
         "participating_components": [
           "csi300",
@@ -12782,13 +12782,13 @@
           "erp": {
             "available": true,
             "rank": 27.52809,
-            "state": "cheap"
+            "state": "expensive"
           }
         },
         "reason_codes": [
           "csi300_neutral",
           "csi500_neutral",
-          "erp_cheap"
+          "erp_expensive"
         ]
       },
       "earnings": {
@@ -12873,9 +12873,9 @@
       "valuation": {
         "state": "neutral",
         "ready": true,
-        "cheap_count": 1,
+        "cheap_count": 0,
         "neutral_count": 2,
-        "expensive_count": 0,
+        "expensive_count": 1,
         "disagreement": true,
         "participating_components": [
           "csi300",
@@ -12922,13 +12922,13 @@
           "erp": {
             "available": true,
             "rank": 27.222222,
-            "state": "cheap"
+            "state": "expensive"
           }
         },
         "reason_codes": [
           "csi300_neutral",
           "csi500_neutral",
-          "erp_cheap"
+          "erp_expensive"
         ]
       },
       "earnings": {
@@ -13013,9 +13013,9 @@
       "valuation": {
         "state": "neutral",
         "ready": true,
-        "cheap_count": 1,
+        "cheap_count": 0,
         "neutral_count": 2,
-        "expensive_count": 0,
+        "expensive_count": 1,
         "disagreement": true,
         "participating_components": [
           "csi300",
@@ -13062,13 +13062,13 @@
           "erp": {
             "available": true,
             "rank": 22.527473,
-            "state": "cheap"
+            "state": "expensive"
           }
         },
         "reason_codes": [
           "csi300_neutral",
           "csi500_neutral",
-          "erp_cheap"
+          "erp_expensive"
         ]
       },
       "earnings": {
@@ -13153,9 +13153,9 @@
       "valuation": {
         "state": "neutral",
         "ready": true,
-        "cheap_count": 1,
+        "cheap_count": 0,
         "neutral_count": 2,
-        "expensive_count": 0,
+        "expensive_count": 1,
         "disagreement": true,
         "participating_components": [
           "csi300",
@@ -13202,13 +13202,13 @@
           "erp": {
             "available": true,
             "rank": 22.282609,
-            "state": "cheap"
+            "state": "expensive"
           }
         },
         "reason_codes": [
           "csi300_neutral",
           "csi500_neutral",
-          "erp_cheap"
+          "erp_expensive"
         ]
       },
       "earnings": {
@@ -13293,9 +13293,9 @@
       "valuation": {
         "state": "neutral",
         "ready": true,
-        "cheap_count": 1,
+        "cheap_count": 0,
         "neutral_count": 2,
-        "expensive_count": 0,
+        "expensive_count": 1,
         "disagreement": true,
         "participating_components": [
           "csi300",
@@ -13342,13 +13342,13 @@
           "erp": {
             "available": true,
             "rank": 23.11828,
-            "state": "cheap"
+            "state": "expensive"
           }
         },
         "reason_codes": [
           "csi300_neutral",
           "csi500_neutral",
-          "erp_cheap"
+          "erp_expensive"
         ]
       },
       "earnings": {
@@ -13432,9 +13432,9 @@
       "valuation": {
         "state": "neutral",
         "ready": true,
-        "cheap_count": 1,
+        "cheap_count": 0,
         "neutral_count": 2,
-        "expensive_count": 0,
+        "expensive_count": 1,
         "disagreement": true,
         "participating_components": [
           "csi300",
@@ -13481,13 +13481,13 @@
           "erp": {
             "available": true,
             "rank": 18.617021,
-            "state": "cheap"
+            "state": "expensive"
           }
         },
         "reason_codes": [
           "csi300_neutral",
           "csi500_neutral",
-          "erp_cheap"
+          "erp_expensive"
         ]
       },
       "earnings": {
@@ -13572,8 +13572,8 @@
         "state": "neutral",
         "ready": true,
         "cheap_count": 1,
-        "neutral_count": 2,
-        "expensive_count": 0,
+        "neutral_count": 1,
+        "expensive_count": 1,
         "disagreement": true,
         "participating_components": [
           "csi300",
@@ -13609,7 +13609,7 @@
               "rank": 31.31,
               "state": "neutral"
             },
-            "state": "neutral",
+            "state": "cheap",
             "available": true
           },
           "csi1000": {
@@ -13620,13 +13620,13 @@
           "erp": {
             "available": true,
             "rank": 19.473684,
-            "state": "cheap"
+            "state": "expensive"
           }
         },
         "reason_codes": [
           "csi300_neutral",
-          "csi500_neutral",
-          "erp_cheap"
+          "csi500_cheap",
+          "erp_expensive"
         ]
       },
       "earnings": {
@@ -13708,11 +13708,11 @@
       "basis_trade_date": "2017-12-29",
       "source_evidence_sha256": "d617e0226f9957a696f202800fb7034c665e541eabb632891904d12f6aed8d23",
       "valuation": {
-        "state": "cheap",
+        "state": "neutral",
         "ready": true,
-        "cheap_count": 2,
+        "cheap_count": 1,
         "neutral_count": 1,
-        "expensive_count": 0,
+        "expensive_count": 1,
         "disagreement": true,
         "participating_components": [
           "csi300",
@@ -13759,13 +13759,13 @@
           "erp": {
             "available": true,
             "rank": 17.1875,
-            "state": "cheap"
+            "state": "expensive"
           }
         },
         "reason_codes": [
           "csi300_neutral",
           "csi500_cheap",
-          "erp_cheap"
+          "erp_expensive"
         ]
       },
       "earnings": {
@@ -13847,11 +13847,11 @@
       "basis_trade_date": "2018-01-31",
       "source_evidence_sha256": "d617e0226f9957a696f202800fb7034c665e541eabb632891904d12f6aed8d23",
       "valuation": {
-        "state": "cheap",
+        "state": "neutral",
         "ready": true,
-        "cheap_count": 2,
+        "cheap_count": 1,
         "neutral_count": 1,
-        "expensive_count": 0,
+        "expensive_count": 1,
         "disagreement": true,
         "participating_components": [
           "csi300",
@@ -13898,13 +13898,13 @@
           "erp": {
             "available": true,
             "rank": 10.824742,
-            "state": "cheap"
+            "state": "expensive"
           }
         },
         "reason_codes": [
           "csi300_neutral",
           "csi500_cheap",
-          "erp_cheap"
+          "erp_expensive"
         ]
       },
       "earnings": {
@@ -13986,11 +13986,11 @@
       "basis_trade_date": "2018-02-28",
       "source_evidence_sha256": "d617e0226f9957a696f202800fb7034c665e541eabb632891904d12f6aed8d23",
       "valuation": {
-        "state": "cheap",
+        "state": "neutral",
         "ready": true,
-        "cheap_count": 2,
+        "cheap_count": 1,
         "neutral_count": 1,
-        "expensive_count": 0,
+        "expensive_count": 1,
         "disagreement": true,
         "participating_components": [
           "csi300",
@@ -14037,13 +14037,13 @@
           "erp": {
             "available": true,
             "rank": 19.897959,
-            "state": "cheap"
+            "state": "expensive"
           }
         },
         "reason_codes": [
           "csi300_neutral",
           "csi500_cheap",
-          "erp_cheap"
+          "erp_expensive"
         ]
       },
       "earnings": {
@@ -14264,10 +14264,10 @@
       "basis_trade_date": "2018-04-27",
       "source_evidence_sha256": "d617e0226f9957a696f202800fb7034c665e541eabb632891904d12f6aed8d23",
       "valuation": {
-        "state": "neutral",
+        "state": "cheap",
         "ready": true,
-        "cheap_count": 1,
-        "neutral_count": 2,
+        "cheap_count": 2,
+        "neutral_count": 1,
         "expensive_count": 0,
         "disagreement": true,
         "participating_components": [
@@ -14290,7 +14290,7 @@
               "rank": 23.97,
               "state": "cheap"
             },
-            "state": "neutral",
+            "state": "cheap",
             "available": true
           },
           "csi500": {
@@ -14319,7 +14319,7 @@
           }
         },
         "reason_codes": [
-          "csi300_neutral",
+          "csi300_cheap",
           "csi500_cheap",
           "erp_neutral"
         ]
@@ -14403,10 +14403,10 @@
       "basis_trade_date": "2018-05-31",
       "source_evidence_sha256": "d617e0226f9957a696f202800fb7034c665e541eabb632891904d12f6aed8d23",
       "valuation": {
-        "state": "neutral",
+        "state": "cheap",
         "ready": true,
-        "cheap_count": 1,
-        "neutral_count": 2,
+        "cheap_count": 2,
+        "neutral_count": 1,
         "expensive_count": 0,
         "disagreement": true,
         "participating_components": [
@@ -14429,7 +14429,7 @@
               "rank": 23.15,
               "state": "cheap"
             },
-            "state": "neutral",
+            "state": "cheap",
             "available": true
           },
           "csi500": {
@@ -14458,7 +14458,7 @@
           }
         },
         "reason_codes": [
-          "csi300_neutral",
+          "csi300_cheap",
           "csi500_cheap",
           "erp_neutral"
         ]
@@ -15100,10 +15100,10 @@
       "valuation": {
         "state": "cheap",
         "ready": true,
-        "cheap_count": 2,
+        "cheap_count": 3,
         "neutral_count": 0,
-        "expensive_count": 1,
-        "disagreement": true,
+        "expensive_count": 0,
+        "disagreement": false,
         "participating_components": [
           "csi300",
           "csi500",
@@ -15149,13 +15149,13 @@
           "erp": {
             "available": true,
             "rank": 71.226415,
-            "state": "expensive"
+            "state": "cheap"
           }
         },
         "reason_codes": [
           "csi300_cheap",
           "csi500_cheap",
-          "erp_expensive"
+          "erp_cheap"
         ]
       },
       "earnings": {
@@ -15239,10 +15239,10 @@
       "valuation": {
         "state": "cheap",
         "ready": true,
-        "cheap_count": 2,
+        "cheap_count": 3,
         "neutral_count": 0,
-        "expensive_count": 1,
-        "disagreement": true,
+        "expensive_count": 0,
+        "disagreement": false,
         "participating_components": [
           "csi300",
           "csi500",
@@ -15288,13 +15288,13 @@
           "erp": {
             "available": true,
             "rank": 73.364486,
-            "state": "expensive"
+            "state": "cheap"
           }
         },
         "reason_codes": [
           "csi300_cheap",
           "csi500_cheap",
-          "erp_expensive"
+          "erp_cheap"
         ]
       },
       "earnings": {
@@ -15378,10 +15378,10 @@
       "valuation": {
         "state": "cheap",
         "ready": true,
-        "cheap_count": 2,
+        "cheap_count": 3,
         "neutral_count": 0,
-        "expensive_count": 1,
-        "disagreement": true,
+        "expensive_count": 0,
+        "disagreement": false,
         "participating_components": [
           "csi300",
           "csi500",
@@ -15427,13 +15427,13 @@
           "erp": {
             "available": true,
             "rank": 82.87037,
-            "state": "expensive"
+            "state": "cheap"
           }
         },
         "reason_codes": [
           "csi300_cheap",
           "csi500_cheap",
-          "erp_expensive"
+          "erp_cheap"
         ]
       },
       "earnings": {
@@ -15517,10 +15517,10 @@
       "valuation": {
         "state": "cheap",
         "ready": true,
-        "cheap_count": 2,
+        "cheap_count": 3,
         "neutral_count": 0,
-        "expensive_count": 1,
-        "disagreement": true,
+        "expensive_count": 0,
+        "disagreement": false,
         "participating_components": [
           "csi300",
           "csi500",
@@ -15566,13 +15566,13 @@
           "erp": {
             "available": true,
             "rank": 71.100917,
-            "state": "expensive"
+            "state": "cheap"
           }
         },
         "reason_codes": [
           "csi300_cheap",
           "csi500_cheap",
-          "erp_expensive"
+          "erp_cheap"
         ]
       },
       "earnings": {
@@ -15654,10 +15654,10 @@
       "basis_trade_date": "2019-02-28",
       "source_evidence_sha256": "d617e0226f9957a696f202800fb7034c665e541eabb632891904d12f6aed8d23",
       "valuation": {
-        "state": "neutral",
+        "state": "cheap",
         "ready": true,
-        "cheap_count": 1,
-        "neutral_count": 2,
+        "cheap_count": 2,
+        "neutral_count": 1,
         "expensive_count": 0,
         "disagreement": true,
         "participating_components": [
@@ -15680,7 +15680,7 @@
               "rank": 23.12,
               "state": "cheap"
             },
-            "state": "neutral",
+            "state": "cheap",
             "available": true
           },
           "csi500": {
@@ -15709,7 +15709,7 @@
           }
         },
         "reason_codes": [
-          "csi300_neutral",
+          "csi300_cheap",
           "csi500_cheap",
           "erp_neutral"
         ]
@@ -15932,10 +15932,10 @@
       "basis_trade_date": "2019-04-30",
       "source_evidence_sha256": "d617e0226f9957a696f202800fb7034c665e541eabb632891904d12f6aed8d23",
       "valuation": {
-        "state": "neutral",
+        "state": "cheap",
         "ready": true,
-        "cheap_count": 1,
-        "neutral_count": 2,
+        "cheap_count": 2,
+        "neutral_count": 1,
         "expensive_count": 0,
         "disagreement": true,
         "participating_components": [
@@ -15958,7 +15958,7 @@
               "rank": 21.73,
               "state": "cheap"
             },
-            "state": "neutral",
+            "state": "cheap",
             "available": true
           },
           "csi500": {
@@ -15987,7 +15987,7 @@
           }
         },
         "reason_codes": [
-          "csi300_neutral",
+          "csi300_cheap",
           "csi500_cheap",
           "erp_neutral"
         ]
@@ -16210,10 +16210,10 @@
       "basis_trade_date": "2019-06-28",
       "source_evidence_sha256": "d617e0226f9957a696f202800fb7034c665e541eabb632891904d12f6aed8d23",
       "valuation": {
-        "state": "neutral",
+        "state": "cheap",
         "ready": true,
-        "cheap_count": 1,
-        "neutral_count": 2,
+        "cheap_count": 2,
+        "neutral_count": 1,
         "expensive_count": 0,
         "disagreement": true,
         "participating_components": [
@@ -16236,7 +16236,7 @@
               "rank": 23.88,
               "state": "cheap"
             },
-            "state": "neutral",
+            "state": "cheap",
             "available": true
           },
           "csi500": {
@@ -16265,7 +16265,7 @@
           }
         },
         "reason_codes": [
-          "csi300_neutral",
+          "csi300_cheap",
           "csi500_cheap",
           "erp_neutral"
         ]
@@ -16488,10 +16488,10 @@
       "basis_trade_date": "2019-08-30",
       "source_evidence_sha256": "d617e0226f9957a696f202800fb7034c665e541eabb632891904d12f6aed8d23",
       "valuation": {
-        "state": "neutral",
+        "state": "cheap",
         "ready": true,
-        "cheap_count": 1,
-        "neutral_count": 2,
+        "cheap_count": 2,
+        "neutral_count": 1,
         "expensive_count": 0,
         "disagreement": true,
         "participating_components": [
@@ -16514,7 +16514,7 @@
               "rank": 19.58,
               "state": "cheap"
             },
-            "state": "neutral",
+            "state": "cheap",
             "available": true
           },
           "csi500": {
@@ -16543,7 +16543,7 @@
           }
         },
         "reason_codes": [
-          "csi300_neutral",
+          "csi300_cheap",
           "csi500_cheap",
           "erp_neutral"
         ]
@@ -16627,10 +16627,10 @@
       "basis_trade_date": "2019-09-30",
       "source_evidence_sha256": "d617e0226f9957a696f202800fb7034c665e541eabb632891904d12f6aed8d23",
       "valuation": {
-        "state": "neutral",
+        "state": "cheap",
         "ready": true,
-        "cheap_count": 1,
-        "neutral_count": 2,
+        "cheap_count": 2,
+        "neutral_count": 1,
         "expensive_count": 0,
         "disagreement": true,
         "participating_components": [
@@ -16653,7 +16653,7 @@
               "rank": 19.49,
               "state": "cheap"
             },
-            "state": "neutral",
+            "state": "cheap",
             "available": true
           },
           "csi500": {
@@ -16682,7 +16682,7 @@
           }
         },
         "reason_codes": [
-          "csi300_neutral",
+          "csi300_cheap",
           "csi500_cheap",
           "erp_neutral"
         ]
@@ -17183,10 +17183,10 @@
       "basis_trade_date": "2020-01-23",
       "source_evidence_sha256": "d617e0226f9957a696f202800fb7034c665e541eabb632891904d12f6aed8d23",
       "valuation": {
-        "state": "neutral",
+        "state": "cheap",
         "ready": true,
-        "cheap_count": 1,
-        "neutral_count": 2,
+        "cheap_count": 2,
+        "neutral_count": 1,
         "expensive_count": 0,
         "disagreement": true,
         "participating_components": [
@@ -17209,7 +17209,7 @@
               "rank": 21.69,
               "state": "cheap"
             },
-            "state": "neutral",
+            "state": "cheap",
             "available": true
           },
           "csi500": {
@@ -17238,7 +17238,7 @@
           }
         },
         "reason_codes": [
-          "csi300_neutral",
+          "csi300_cheap",
           "csi500_cheap",
           "erp_neutral"
         ]
@@ -17324,10 +17324,10 @@
       "valuation": {
         "state": "cheap",
         "ready": true,
-        "cheap_count": 2,
+        "cheap_count": 3,
         "neutral_count": 0,
-        "expensive_count": 1,
-        "disagreement": true,
+        "expensive_count": 0,
+        "disagreement": false,
         "participating_components": [
           "csi300",
           "csi500",
@@ -17373,13 +17373,13 @@
           "erp": {
             "available": true,
             "rank": 71.721311,
-            "state": "expensive"
+            "state": "cheap"
           }
         },
         "reason_codes": [
           "csi300_cheap",
           "csi500_cheap",
-          "erp_expensive"
+          "erp_cheap"
         ]
       },
       "earnings": {
@@ -17463,10 +17463,10 @@
       "valuation": {
         "state": "cheap",
         "ready": true,
-        "cheap_count": 2,
+        "cheap_count": 3,
         "neutral_count": 0,
-        "expensive_count": 1,
-        "disagreement": true,
+        "expensive_count": 0,
+        "disagreement": false,
         "participating_components": [
           "csi300",
           "csi500",
@@ -17512,13 +17512,13 @@
           "erp": {
             "available": true,
             "rank": 82.520325,
-            "state": "expensive"
+            "state": "cheap"
           }
         },
         "reason_codes": [
           "csi300_cheap",
           "csi500_cheap",
-          "erp_expensive"
+          "erp_cheap"
         ]
       },
       "earnings": {
@@ -17600,12 +17600,12 @@
       "basis_trade_date": "2020-04-30",
       "source_evidence_sha256": "d617e0226f9957a696f202800fb7034c665e541eabb632891904d12f6aed8d23",
       "valuation": {
-        "state": "neutral",
+        "state": "cheap",
         "ready": true,
-        "cheap_count": 0,
-        "neutral_count": 2,
-        "expensive_count": 1,
-        "disagreement": true,
+        "cheap_count": 3,
+        "neutral_count": 0,
+        "expensive_count": 0,
+        "disagreement": false,
         "participating_components": [
           "csi300",
           "csi500",
@@ -17626,7 +17626,7 @@
               "rank": 8.79,
               "state": "cheap"
             },
-            "state": "neutral",
+            "state": "cheap",
             "available": true
           },
           "csi500": {
@@ -17640,7 +17640,7 @@
               "rank": 9.8,
               "state": "cheap"
             },
-            "state": "neutral",
+            "state": "cheap",
             "available": true
           },
           "csi1000": {
@@ -17651,13 +17651,13 @@
           "erp": {
             "available": true,
             "rank": 70.564516,
-            "state": "expensive"
+            "state": "cheap"
           }
         },
         "reason_codes": [
-          "csi300_neutral",
-          "csi500_neutral",
-          "erp_expensive"
+          "csi300_cheap",
+          "csi500_cheap",
+          "erp_cheap"
         ]
       },
       "earnings": {
@@ -17739,12 +17739,12 @@
       "basis_trade_date": "2020-05-29",
       "source_evidence_sha256": "d617e0226f9957a696f202800fb7034c665e541eabb632891904d12f6aed8d23",
       "valuation": {
-        "state": "neutral",
+        "state": "cheap",
         "ready": true,
-        "cheap_count": 0,
-        "neutral_count": 3,
+        "cheap_count": 2,
+        "neutral_count": 1,
         "expensive_count": 0,
-        "disagreement": false,
+        "disagreement": true,
         "participating_components": [
           "csi300",
           "csi500",
@@ -17765,7 +17765,7 @@
               "rank": 7.03,
               "state": "cheap"
             },
-            "state": "neutral",
+            "state": "cheap",
             "available": true
           },
           "csi500": {
@@ -17779,7 +17779,7 @@
               "rank": 11.44,
               "state": "cheap"
             },
-            "state": "neutral",
+            "state": "cheap",
             "available": true
           },
           "csi1000": {
@@ -17794,8 +17794,8 @@
           }
         },
         "reason_codes": [
-          "csi300_neutral",
-          "csi500_neutral",
+          "csi300_cheap",
+          "csi500_cheap",
           "erp_neutral"
         ]
       },
@@ -18158,9 +18158,9 @@
       "valuation": {
         "state": "neutral",
         "ready": true,
-        "cheap_count": 1,
+        "cheap_count": 0,
         "neutral_count": 2,
-        "expensive_count": 0,
+        "expensive_count": 1,
         "disagreement": true,
         "participating_components": [
           "csi300",
@@ -18207,13 +18207,13 @@
           "erp": {
             "available": true,
             "rank": 23.828125,
-            "state": "cheap"
+            "state": "expensive"
           }
         },
         "reason_codes": [
           "csi300_neutral",
           "csi500_neutral",
-          "erp_cheap"
+          "erp_expensive"
         ]
       },
       "earnings": {
@@ -18297,9 +18297,9 @@
       "valuation": {
         "state": "neutral",
         "ready": true,
-        "cheap_count": 1,
+        "cheap_count": 0,
         "neutral_count": 2,
-        "expensive_count": 0,
+        "expensive_count": 1,
         "disagreement": true,
         "participating_components": [
           "csi300",
@@ -18346,13 +18346,13 @@
           "erp": {
             "available": true,
             "rank": 26.744186,
-            "state": "cheap"
+            "state": "expensive"
           }
         },
         "reason_codes": [
           "csi300_neutral",
           "csi500_neutral",
-          "erp_cheap"
+          "erp_expensive"
         ]
       },
       "earnings": {
@@ -18437,8 +18437,8 @@
         "state": "neutral",
         "ready": true,
         "cheap_count": 1,
-        "neutral_count": 2,
-        "expensive_count": 0,
+        "neutral_count": 1,
+        "expensive_count": 1,
         "disagreement": true,
         "participating_components": [
           "csi300",
@@ -18474,7 +18474,7 @@
               "rank": 17.23,
               "state": "cheap"
             },
-            "state": "neutral",
+            "state": "cheap",
             "available": true
           },
           "csi1000": {
@@ -18485,13 +18485,13 @@
           "erp": {
             "available": true,
             "rank": 28.076923,
-            "state": "cheap"
+            "state": "expensive"
           }
         },
         "reason_codes": [
           "csi300_neutral",
-          "csi500_neutral",
-          "erp_cheap"
+          "csi500_cheap",
+          "erp_expensive"
         ]
       },
       "earnings": {
@@ -18576,8 +18576,8 @@
         "state": "neutral",
         "ready": true,
         "cheap_count": 1,
-        "neutral_count": 2,
-        "expensive_count": 0,
+        "neutral_count": 1,
+        "expensive_count": 1,
         "disagreement": true,
         "participating_components": [
           "csi300",
@@ -18613,7 +18613,7 @@
               "rank": 18.51,
               "state": "cheap"
             },
-            "state": "neutral",
+            "state": "cheap",
             "available": true
           },
           "csi1000": {
@@ -18624,13 +18624,13 @@
           "erp": {
             "available": true,
             "rank": 17.175573,
-            "state": "cheap"
+            "state": "expensive"
           }
         },
         "reason_codes": [
           "csi300_neutral",
-          "csi500_neutral",
-          "erp_cheap"
+          "csi500_cheap",
+          "erp_expensive"
         ]
       },
       "earnings": {
@@ -18712,10 +18712,10 @@
       "basis_trade_date": "2020-12-31",
       "source_evidence_sha256": "d617e0226f9957a696f202800fb7034c665e541eabb632891904d12f6aed8d23",
       "valuation": {
-        "state": "cheap",
+        "state": "neutral",
         "ready": true,
-        "cheap_count": 2,
-        "neutral_count": 0,
+        "cheap_count": 1,
+        "neutral_count": 1,
         "expensive_count": 1,
         "disagreement": true,
         "participating_components": [
@@ -18738,7 +18738,7 @@
               "rank": 53.37,
               "state": "neutral"
             },
-            "state": "expensive",
+            "state": "neutral",
             "available": true
           },
           "csi500": {
@@ -18763,13 +18763,13 @@
           "erp": {
             "available": true,
             "rank": 12.5,
-            "state": "cheap"
+            "state": "expensive"
           }
         },
         "reason_codes": [
-          "csi300_expensive",
+          "csi300_neutral",
           "csi500_cheap",
-          "erp_cheap"
+          "erp_expensive"
         ]
       },
       "earnings": {
@@ -18851,10 +18851,10 @@
       "basis_trade_date": "2021-01-29",
       "source_evidence_sha256": "d617e0226f9957a696f202800fb7034c665e541eabb632891904d12f6aed8d23",
       "valuation": {
-        "state": "cheap",
+        "state": "neutral",
         "ready": true,
-        "cheap_count": 2,
-        "neutral_count": 0,
+        "cheap_count": 1,
+        "neutral_count": 1,
         "expensive_count": 1,
         "disagreement": true,
         "participating_components": [
@@ -18877,7 +18877,7 @@
               "rank": 54.6,
               "state": "neutral"
             },
-            "state": "expensive",
+            "state": "neutral",
             "available": true
           },
           "csi500": {
@@ -18902,13 +18902,13 @@
           "erp": {
             "available": true,
             "rank": 11.654135,
-            "state": "cheap"
+            "state": "expensive"
           }
         },
         "reason_codes": [
-          "csi300_expensive",
+          "csi300_neutral",
           "csi500_cheap",
-          "erp_cheap"
+          "erp_expensive"
         ]
       },
       "earnings": {
@@ -18990,10 +18990,10 @@
       "basis_trade_date": "2021-02-26",
       "source_evidence_sha256": "d617e0226f9957a696f202800fb7034c665e541eabb632891904d12f6aed8d23",
       "valuation": {
-        "state": "cheap",
+        "state": "neutral",
         "ready": true,
-        "cheap_count": 2,
-        "neutral_count": 0,
+        "cheap_count": 1,
+        "neutral_count": 1,
         "expensive_count": 1,
         "disagreement": true,
         "participating_components": [
@@ -19016,7 +19016,7 @@
               "rank": 54.41,
               "state": "neutral"
             },
-            "state": "expensive",
+            "state": "neutral",
             "available": true
           },
           "csi500": {
@@ -19041,13 +19041,13 @@
           "erp": {
             "available": true,
             "rank": 11.567164,
-            "state": "cheap"
+            "state": "expensive"
           }
         },
         "reason_codes": [
-          "csi300_expensive",
+          "csi300_neutral",
           "csi500_cheap",
-          "erp_cheap"
+          "erp_expensive"
         ]
       },
       "earnings": {
@@ -19129,11 +19129,11 @@
       "basis_trade_date": "2021-03-31",
       "source_evidence_sha256": "d617e0226f9957a696f202800fb7034c665e541eabb632891904d12f6aed8d23",
       "valuation": {
-        "state": "cheap",
+        "state": "neutral",
         "ready": true,
-        "cheap_count": 2,
+        "cheap_count": 1,
         "neutral_count": 1,
-        "expensive_count": 0,
+        "expensive_count": 1,
         "disagreement": true,
         "participating_components": [
           "csi300",
@@ -19180,13 +19180,13 @@
           "erp": {
             "available": true,
             "rank": 21.851852,
-            "state": "cheap"
+            "state": "expensive"
           }
         },
         "reason_codes": [
           "csi300_neutral",
           "csi500_cheap",
-          "erp_cheap"
+          "erp_expensive"
         ]
       },
       "earnings": {
@@ -19546,11 +19546,11 @@
       "basis_trade_date": "2021-06-30",
       "source_evidence_sha256": "d617e0226f9957a696f202800fb7034c665e541eabb632891904d12f6aed8d23",
       "valuation": {
-        "state": "cheap",
+        "state": "neutral",
         "ready": true,
-        "cheap_count": 2,
+        "cheap_count": 1,
         "neutral_count": 1,
-        "expensive_count": 0,
+        "expensive_count": 1,
         "disagreement": true,
         "participating_components": [
           "csi300",
@@ -19597,13 +19597,13 @@
           "erp": {
             "available": true,
             "rank": 29.347826,
-            "state": "cheap"
+            "state": "expensive"
           }
         },
         "reason_codes": [
           "csi300_neutral",
           "csi500_cheap",
-          "erp_cheap"
+          "erp_expensive"
         ]
       },
       "earnings": {
@@ -20797,10 +20797,10 @@
       "basis_trade_date": "2022-03-31",
       "source_evidence_sha256": "d617e0226f9957a696f202800fb7034c665e541eabb632891904d12f6aed8d23",
       "valuation": {
-        "state": "neutral",
+        "state": "cheap",
         "ready": true,
-        "cheap_count": 1,
-        "neutral_count": 2,
+        "cheap_count": 2,
+        "neutral_count": 1,
         "expensive_count": 0,
         "disagreement": true,
         "participating_components": [
@@ -20823,7 +20823,7 @@
               "rank": 23.15,
               "state": "cheap"
             },
-            "state": "neutral",
+            "state": "cheap",
             "available": true
           },
           "csi500": {
@@ -20852,7 +20852,7 @@
           }
         },
         "reason_codes": [
-          "csi300_neutral",
+          "csi300_cheap",
           "csi500_cheap",
           "erp_neutral"
         ]
@@ -20938,10 +20938,10 @@
       "valuation": {
         "state": "cheap",
         "ready": true,
-        "cheap_count": 2,
+        "cheap_count": 3,
         "neutral_count": 0,
-        "expensive_count": 1,
-        "disagreement": true,
+        "expensive_count": 0,
+        "disagreement": false,
         "participating_components": [
           "csi300",
           "csi500",
@@ -20987,13 +20987,13 @@
           "erp": {
             "available": true,
             "rank": 71.959459,
-            "state": "expensive"
+            "state": "cheap"
           }
         },
         "reason_codes": [
           "csi300_cheap",
           "csi500_cheap",
-          "erp_expensive"
+          "erp_cheap"
         ]
       },
       "earnings": {
@@ -21075,10 +21075,10 @@
       "basis_trade_date": "2022-05-31",
       "source_evidence_sha256": "d617e0226f9957a696f202800fb7034c665e541eabb632891904d12f6aed8d23",
       "valuation": {
-        "state": "neutral",
+        "state": "cheap",
         "ready": true,
-        "cheap_count": 1,
-        "neutral_count": 2,
+        "cheap_count": 2,
+        "neutral_count": 1,
         "expensive_count": 0,
         "disagreement": true,
         "participating_components": [
@@ -21101,7 +21101,7 @@
               "rank": 14.69,
               "state": "cheap"
             },
-            "state": "neutral",
+            "state": "cheap",
             "available": true
           },
           "csi500": {
@@ -21130,7 +21130,7 @@
           }
         },
         "reason_codes": [
-          "csi300_neutral",
+          "csi300_cheap",
           "csi500_cheap",
           "erp_neutral"
         ]
@@ -21353,10 +21353,10 @@
       "basis_trade_date": "2022-07-29",
       "source_evidence_sha256": "d617e0226f9957a696f202800fb7034c665e541eabb632891904d12f6aed8d23",
       "valuation": {
-        "state": "neutral",
+        "state": "cheap",
         "ready": true,
-        "cheap_count": 1,
-        "neutral_count": 2,
+        "cheap_count": 2,
+        "neutral_count": 1,
         "expensive_count": 0,
         "disagreement": true,
         "participating_components": [
@@ -21379,7 +21379,7 @@
               "rank": 21.88,
               "state": "cheap"
             },
-            "state": "neutral",
+            "state": "cheap",
             "available": true
           },
           "csi500": {
@@ -21408,7 +21408,7 @@
           }
         },
         "reason_codes": [
-          "csi300_neutral",
+          "csi300_cheap",
           "csi500_cheap",
           "erp_neutral"
         ]
@@ -21494,10 +21494,10 @@
       "valuation": {
         "state": "cheap",
         "ready": true,
-        "cheap_count": 2,
+        "cheap_count": 3,
         "neutral_count": 0,
-        "expensive_count": 1,
-        "disagreement": true,
+        "expensive_count": 0,
+        "disagreement": false,
         "participating_components": [
           "csi300",
           "csi500",
@@ -21543,13 +21543,13 @@
           "erp": {
             "available": true,
             "rank": 77.302632,
-            "state": "expensive"
+            "state": "cheap"
           }
         },
         "reason_codes": [
           "csi300_cheap",
           "csi500_cheap",
-          "erp_expensive"
+          "erp_cheap"
         ]
       },
       "earnings": {
@@ -21633,10 +21633,10 @@
       "valuation": {
         "state": "cheap",
         "ready": true,
-        "cheap_count": 2,
+        "cheap_count": 3,
         "neutral_count": 0,
-        "expensive_count": 1,
-        "disagreement": true,
+        "expensive_count": 0,
+        "disagreement": false,
         "participating_components": [
           "csi300",
           "csi500",
@@ -21682,13 +21682,13 @@
           "erp": {
             "available": true,
             "rank": 81.372549,
-            "state": "expensive"
+            "state": "cheap"
           }
         },
         "reason_codes": [
           "csi300_cheap",
           "csi500_cheap",
-          "erp_expensive"
+          "erp_cheap"
         ]
       },
       "earnings": {
@@ -21772,10 +21772,10 @@
       "valuation": {
         "state": "cheap",
         "ready": true,
-        "cheap_count": 2,
+        "cheap_count": 3,
         "neutral_count": 0,
-        "expensive_count": 1,
-        "disagreement": true,
+        "expensive_count": 0,
+        "disagreement": false,
         "participating_components": [
           "csi300",
           "csi500",
@@ -21821,13 +21821,13 @@
           "erp": {
             "available": true,
             "rank": 92.532468,
-            "state": "expensive"
+            "state": "cheap"
           }
         },
         "reason_codes": [
           "csi300_cheap",
           "csi500_cheap",
-          "erp_expensive"
+          "erp_cheap"
         ]
       },
       "earnings": {
@@ -21911,10 +21911,10 @@
       "valuation": {
         "state": "cheap",
         "ready": true,
-        "cheap_count": 2,
+        "cheap_count": 3,
         "neutral_count": 0,
-        "expensive_count": 1,
-        "disagreement": true,
+        "expensive_count": 0,
+        "disagreement": false,
         "participating_components": [
           "csi300",
           "csi500",
@@ -21960,13 +21960,13 @@
           "erp": {
             "available": true,
             "rank": 76.451613,
-            "state": "expensive"
+            "state": "cheap"
           }
         },
         "reason_codes": [
           "csi300_cheap",
           "csi500_cheap",
-          "erp_expensive"
+          "erp_cheap"
         ]
       },
       "earnings": {
@@ -22050,10 +22050,10 @@
       "valuation": {
         "state": "cheap",
         "ready": true,
-        "cheap_count": 2,
+        "cheap_count": 3,
         "neutral_count": 0,
-        "expensive_count": 1,
-        "disagreement": true,
+        "expensive_count": 0,
+        "disagreement": false,
         "participating_components": [
           "csi300",
           "csi500",
@@ -22099,13 +22099,13 @@
           "erp": {
             "available": true,
             "rank": 77.24359,
-            "state": "expensive"
+            "state": "cheap"
           }
         },
         "reason_codes": [
           "csi300_cheap",
           "csi500_cheap",
-          "erp_expensive"
+          "erp_cheap"
         ]
       },
       "earnings": {
@@ -22187,10 +22187,10 @@
       "basis_trade_date": "2023-01-31",
       "source_evidence_sha256": "d617e0226f9957a696f202800fb7034c665e541eabb632891904d12f6aed8d23",
       "valuation": {
-        "state": "neutral",
+        "state": "cheap",
         "ready": true,
-        "cheap_count": 1,
-        "neutral_count": 2,
+        "cheap_count": 2,
+        "neutral_count": 1,
         "expensive_count": 0,
         "disagreement": true,
         "participating_components": [
@@ -22213,7 +22213,7 @@
               "rank": 18.71,
               "state": "cheap"
             },
-            "state": "neutral",
+            "state": "cheap",
             "available": true
           },
           "csi500": {
@@ -22242,7 +22242,7 @@
           }
         },
         "reason_codes": [
-          "csi300_neutral",
+          "csi300_cheap",
           "csi500_cheap",
           "erp_neutral"
         ]
@@ -22465,10 +22465,10 @@
       "basis_trade_date": "2023-03-31",
       "source_evidence_sha256": "d617e0226f9957a696f202800fb7034c665e541eabb632891904d12f6aed8d23",
       "valuation": {
-        "state": "neutral",
+        "state": "cheap",
         "ready": true,
-        "cheap_count": 1,
-        "neutral_count": 2,
+        "cheap_count": 2,
+        "neutral_count": 1,
         "expensive_count": 0,
         "disagreement": true,
         "participating_components": [
@@ -22491,7 +22491,7 @@
               "rank": 14.87,
               "state": "cheap"
             },
-            "state": "neutral",
+            "state": "cheap",
             "available": true
           },
           "csi500": {
@@ -22520,7 +22520,7 @@
           }
         },
         "reason_codes": [
-          "csi300_neutral",
+          "csi300_cheap",
           "csi500_cheap",
           "erp_neutral"
         ]
@@ -22604,10 +22604,10 @@
       "basis_trade_date": "2023-04-28",
       "source_evidence_sha256": "d617e0226f9957a696f202800fb7034c665e541eabb632891904d12f6aed8d23",
       "valuation": {
-        "state": "neutral",
+        "state": "cheap",
         "ready": true,
-        "cheap_count": 1,
-        "neutral_count": 2,
+        "cheap_count": 2,
+        "neutral_count": 1,
         "expensive_count": 0,
         "disagreement": true,
         "participating_components": [
@@ -22630,7 +22630,7 @@
               "rank": 16.69,
               "state": "cheap"
             },
-            "state": "neutral",
+            "state": "cheap",
             "available": true
           },
           "csi500": {
@@ -22659,7 +22659,7 @@
           }
         },
         "reason_codes": [
-          "csi300_neutral",
+          "csi300_cheap",
           "csi500_cheap",
           "erp_neutral"
         ]
@@ -22745,10 +22745,10 @@
       "valuation": {
         "state": "cheap",
         "ready": true,
-        "cheap_count": 2,
+        "cheap_count": 3,
         "neutral_count": 0,
-        "expensive_count": 1,
-        "disagreement": true,
+        "expensive_count": 0,
+        "disagreement": false,
         "participating_components": [
           "csi300",
           "csi500",
@@ -22794,13 +22794,13 @@
           "erp": {
             "available": true,
             "rank": 76.086957,
-            "state": "expensive"
+            "state": "cheap"
           }
         },
         "reason_codes": [
           "csi300_cheap",
           "csi500_cheap",
-          "erp_expensive"
+          "erp_cheap"
         ]
       },
       "earnings": {
@@ -22884,10 +22884,10 @@
       "valuation": {
         "state": "cheap",
         "ready": true,
-        "cheap_count": 2,
+        "cheap_count": 3,
         "neutral_count": 0,
-        "expensive_count": 1,
-        "disagreement": true,
+        "expensive_count": 0,
+        "disagreement": false,
         "participating_components": [
           "csi300",
           "csi500",
@@ -22933,13 +22933,13 @@
           "erp": {
             "available": true,
             "rank": 76.234568,
-            "state": "expensive"
+            "state": "cheap"
           }
         },
         "reason_codes": [
           "csi300_cheap",
           "csi500_cheap",
-          "erp_expensive"
+          "erp_cheap"
         ]
       },
       "earnings": {
@@ -23021,12 +23021,12 @@
       "basis_trade_date": "2023-07-31",
       "source_evidence_sha256": "d617e0226f9957a696f202800fb7034c665e541eabb632891904d12f6aed8d23",
       "valuation": {
-        "state": "neutral",
+        "state": "cheap",
         "ready": true,
-        "cheap_count": 1,
-        "neutral_count": 1,
-        "expensive_count": 1,
-        "disagreement": true,
+        "cheap_count": 3,
+        "neutral_count": 0,
+        "expensive_count": 0,
+        "disagreement": false,
         "participating_components": [
           "csi300",
           "csi500",
@@ -23047,7 +23047,7 @@
               "rank": 19.25,
               "state": "cheap"
             },
-            "state": "neutral",
+            "state": "cheap",
             "available": true
           },
           "csi500": {
@@ -23072,13 +23072,13 @@
           "erp": {
             "available": true,
             "rank": 70.245399,
-            "state": "expensive"
+            "state": "cheap"
           }
         },
         "reason_codes": [
-          "csi300_neutral",
+          "csi300_cheap",
           "csi500_cheap",
-          "erp_expensive"
+          "erp_cheap"
         ]
       },
       "earnings": {
@@ -23162,10 +23162,10 @@
       "valuation": {
         "state": "cheap",
         "ready": true,
-        "cheap_count": 2,
+        "cheap_count": 3,
         "neutral_count": 0,
-        "expensive_count": 1,
-        "disagreement": true,
+        "expensive_count": 0,
+        "disagreement": false,
         "participating_components": [
           "csi300",
           "csi500",
@@ -23211,13 +23211,13 @@
           "erp": {
             "available": true,
             "rank": 78.353659,
-            "state": "expensive"
+            "state": "cheap"
           }
         },
         "reason_codes": [
           "csi300_cheap",
           "csi500_cheap",
-          "erp_expensive"
+          "erp_cheap"
         ]
       },
       "earnings": {
@@ -23301,10 +23301,10 @@
       "valuation": {
         "state": "cheap",
         "ready": true,
-        "cheap_count": 2,
+        "cheap_count": 3,
         "neutral_count": 0,
-        "expensive_count": 1,
-        "disagreement": true,
+        "expensive_count": 0,
+        "disagreement": false,
         "participating_components": [
           "csi300",
           "csi500",
@@ -23350,13 +23350,13 @@
           "erp": {
             "available": true,
             "rank": 77.878788,
-            "state": "expensive"
+            "state": "cheap"
           }
         },
         "reason_codes": [
           "csi300_cheap",
           "csi500_cheap",
-          "erp_expensive"
+          "erp_cheap"
         ]
       },
       "earnings": {
@@ -23440,10 +23440,10 @@
       "valuation": {
         "state": "cheap",
         "ready": true,
-        "cheap_count": 2,
+        "cheap_count": 3,
         "neutral_count": 0,
-        "expensive_count": 1,
-        "disagreement": true,
+        "expensive_count": 0,
+        "disagreement": false,
         "participating_components": [
           "csi300",
           "csi500",
@@ -23489,13 +23489,13 @@
           "erp": {
             "available": true,
             "rank": 82.831325,
-            "state": "expensive"
+            "state": "cheap"
           }
         },
         "reason_codes": [
           "csi300_cheap",
           "csi500_cheap",
-          "erp_expensive"
+          "erp_cheap"
         ]
       },
       "earnings": {
@@ -23579,10 +23579,10 @@
       "valuation": {
         "state": "cheap",
         "ready": true,
-        "cheap_count": 2,
+        "cheap_count": 3,
         "neutral_count": 0,
-        "expensive_count": 1,
-        "disagreement": true,
+        "expensive_count": 0,
+        "disagreement": false,
         "participating_components": [
           "csi300",
           "csi500",
@@ -23628,13 +23628,13 @@
           "erp": {
             "available": true,
             "rank": 84.131737,
-            "state": "expensive"
+            "state": "cheap"
           }
         },
         "reason_codes": [
           "csi300_cheap",
           "csi500_cheap",
-          "erp_expensive"
+          "erp_cheap"
         ]
       },
       "earnings": {
@@ -23718,10 +23718,10 @@
       "valuation": {
         "state": "cheap",
         "ready": true,
-        "cheap_count": 2,
+        "cheap_count": 3,
         "neutral_count": 0,
-        "expensive_count": 1,
-        "disagreement": true,
+        "expensive_count": 0,
+        "disagreement": false,
         "participating_components": [
           "csi300",
           "csi500",
@@ -23767,13 +23767,13 @@
           "erp": {
             "available": true,
             "rank": 89.583333,
-            "state": "expensive"
+            "state": "cheap"
           }
         },
         "reason_codes": [
           "csi300_cheap",
           "csi500_cheap",
-          "erp_expensive"
+          "erp_cheap"
         ]
       },
       "earnings": {
@@ -23857,10 +23857,10 @@
       "valuation": {
         "state": "cheap",
         "ready": true,
-        "cheap_count": 2,
+        "cheap_count": 3,
         "neutral_count": 0,
-        "expensive_count": 1,
-        "disagreement": true,
+        "expensive_count": 0,
+        "disagreement": false,
         "participating_components": [
           "csi300",
           "csi500",
@@ -23906,13 +23906,13 @@
           "erp": {
             "available": true,
             "rank": 92.011834,
-            "state": "expensive"
+            "state": "cheap"
           }
         },
         "reason_codes": [
           "csi300_cheap",
           "csi500_cheap",
-          "erp_expensive"
+          "erp_cheap"
         ]
       },
       "earnings": {
@@ -23996,10 +23996,10 @@
       "valuation": {
         "state": "cheap",
         "ready": true,
-        "cheap_count": 2,
+        "cheap_count": 3,
         "neutral_count": 0,
-        "expensive_count": 1,
-        "disagreement": true,
+        "expensive_count": 0,
+        "disagreement": false,
         "participating_components": [
           "csi300",
           "csi500",
@@ -24045,13 +24045,13 @@
           "erp": {
             "available": true,
             "rank": 82.058824,
-            "state": "expensive"
+            "state": "cheap"
           }
         },
         "reason_codes": [
           "csi300_cheap",
           "csi500_cheap",
-          "erp_expensive"
+          "erp_cheap"
         ]
       },
       "earnings": {
@@ -24135,10 +24135,10 @@
       "valuation": {
         "state": "cheap",
         "ready": true,
-        "cheap_count": 2,
+        "cheap_count": 3,
         "neutral_count": 0,
-        "expensive_count": 1,
-        "disagreement": true,
+        "expensive_count": 0,
+        "disagreement": false,
         "participating_components": [
           "csi300",
           "csi500",
@@ -24184,13 +24184,13 @@
           "erp": {
             "available": true,
             "rank": 80.994152,
-            "state": "expensive"
+            "state": "cheap"
           }
         },
         "reason_codes": [
           "csi300_cheap",
           "csi500_cheap",
-          "erp_expensive"
+          "erp_cheap"
         ]
       },
       "earnings": {
@@ -24272,12 +24272,12 @@
       "basis_trade_date": "2024-04-30",
       "source_evidence_sha256": "d617e0226f9957a696f202800fb7034c665e541eabb632891904d12f6aed8d23",
       "valuation": {
-        "state": "neutral",
+        "state": "cheap",
         "ready": true,
-        "cheap_count": 1,
-        "neutral_count": 1,
-        "expensive_count": 1,
-        "disagreement": true,
+        "cheap_count": 3,
+        "neutral_count": 0,
+        "expensive_count": 0,
+        "disagreement": false,
         "participating_components": [
           "csi300",
           "csi500",
@@ -24298,7 +24298,7 @@
               "rank": 3.71,
               "state": "cheap"
             },
-            "state": "neutral",
+            "state": "cheap",
             "available": true
           },
           "csi500": {
@@ -24323,13 +24323,13 @@
           "erp": {
             "available": true,
             "rank": 74.127907,
-            "state": "expensive"
+            "state": "cheap"
           }
         },
         "reason_codes": [
-          "csi300_neutral",
+          "csi300_cheap",
           "csi500_cheap",
-          "erp_expensive"
+          "erp_cheap"
         ]
       },
       "earnings": {
@@ -24411,12 +24411,12 @@
       "basis_trade_date": "2024-05-31",
       "source_evidence_sha256": "d617e0226f9957a696f202800fb7034c665e541eabb632891904d12f6aed8d23",
       "valuation": {
-        "state": "neutral",
+        "state": "cheap",
         "ready": true,
-        "cheap_count": 1,
-        "neutral_count": 1,
-        "expensive_count": 1,
-        "disagreement": true,
+        "cheap_count": 3,
+        "neutral_count": 0,
+        "expensive_count": 0,
+        "disagreement": false,
         "participating_components": [
           "csi300",
           "csi500",
@@ -24437,7 +24437,7 @@
               "rank": 3.29,
               "state": "cheap"
             },
-            "state": "neutral",
+            "state": "cheap",
             "available": true
           },
           "csi500": {
@@ -24462,13 +24462,13 @@
           "erp": {
             "available": true,
             "rank": 76.011561,
-            "state": "expensive"
+            "state": "cheap"
           }
         },
         "reason_codes": [
-          "csi300_neutral",
+          "csi300_cheap",
           "csi500_cheap",
-          "erp_expensive"
+          "erp_cheap"
         ]
       },
       "earnings": {
@@ -24550,12 +24550,12 @@
       "basis_trade_date": "2024-06-28",
       "source_evidence_sha256": "d617e0226f9957a696f202800fb7034c665e541eabb632891904d12f6aed8d23",
       "valuation": {
-        "state": "neutral",
+        "state": "cheap",
         "ready": true,
-        "cheap_count": 1,
-        "neutral_count": 1,
-        "expensive_count": 1,
-        "disagreement": true,
+        "cheap_count": 3,
+        "neutral_count": 0,
+        "expensive_count": 0,
+        "disagreement": false,
         "participating_components": [
           "csi300",
           "csi500",
@@ -24576,7 +24576,7 @@
               "rank": 5.27,
               "state": "cheap"
             },
-            "state": "neutral",
+            "state": "cheap",
             "available": true
           },
           "csi500": {
@@ -24601,13 +24601,13 @@
           "erp": {
             "available": true,
             "rank": 79.597701,
-            "state": "expensive"
+            "state": "cheap"
           }
         },
         "reason_codes": [
-          "csi300_neutral",
+          "csi300_cheap",
           "csi500_cheap",
-          "erp_expensive"
+          "erp_cheap"
         ]
       },
       "earnings": {
@@ -24691,10 +24691,10 @@
       "valuation": {
         "state": "cheap",
         "ready": true,
-        "cheap_count": 2,
+        "cheap_count": 3,
         "neutral_count": 0,
-        "expensive_count": 1,
-        "disagreement": true,
+        "expensive_count": 0,
+        "disagreement": false,
         "participating_components": [
           "csi300",
           "csi500",
@@ -24740,13 +24740,13 @@
           "erp": {
             "available": true,
             "rank": 81.428571,
-            "state": "expensive"
+            "state": "cheap"
           }
         },
         "reason_codes": [
           "csi300_cheap",
           "csi500_cheap",
-          "erp_expensive"
+          "erp_cheap"
         ]
       },
       "earnings": {
@@ -24830,10 +24830,10 @@
       "valuation": {
         "state": "cheap",
         "ready": true,
-        "cheap_count": 2,
+        "cheap_count": 3,
         "neutral_count": 0,
-        "expensive_count": 1,
-        "disagreement": true,
+        "expensive_count": 0,
+        "disagreement": false,
         "participating_components": [
           "csi300",
           "csi500",
@@ -24879,13 +24879,13 @@
           "erp": {
             "available": true,
             "rank": 89.488636,
-            "state": "expensive"
+            "state": "cheap"
           }
         },
         "reason_codes": [
           "csi300_cheap",
           "csi500_cheap",
-          "erp_expensive"
+          "erp_cheap"
         ]
       },
       "earnings": {
@@ -25106,12 +25106,12 @@
       "basis_trade_date": "2024-10-31",
       "source_evidence_sha256": "d617e0226f9957a696f202800fb7034c665e541eabb632891904d12f6aed8d23",
       "valuation": {
-        "state": "neutral",
+        "state": "cheap",
         "ready": true,
-        "cheap_count": 0,
-        "neutral_count": 2,
-        "expensive_count": 1,
-        "disagreement": true,
+        "cheap_count": 3,
+        "neutral_count": 0,
+        "expensive_count": 0,
+        "disagreement": false,
         "participating_components": [
           "csi300",
           "csi500",
@@ -25132,7 +25132,7 @@
               "rank": 12.01,
               "state": "cheap"
             },
-            "state": "neutral",
+            "state": "cheap",
             "available": true
           },
           "csi500": {
@@ -25146,7 +25146,7 @@
               "rank": 15.95,
               "state": "cheap"
             },
-            "state": "neutral",
+            "state": "cheap",
             "available": true
           },
           "csi1000": {
@@ -25157,13 +25157,13 @@
           "erp": {
             "available": true,
             "rank": 70.505618,
-            "state": "expensive"
+            "state": "cheap"
           }
         },
         "reason_codes": [
-          "csi300_neutral",
-          "csi500_neutral",
-          "erp_expensive"
+          "csi300_cheap",
+          "csi500_cheap",
+          "erp_cheap"
         ]
       },
       "earnings": {
@@ -25245,12 +25245,12 @@
       "basis_trade_date": "2024-11-29",
       "source_evidence_sha256": "d617e0226f9957a696f202800fb7034c665e541eabb632891904d12f6aed8d23",
       "valuation": {
-        "state": "neutral",
+        "state": "cheap",
         "ready": true,
-        "cheap_count": 0,
-        "neutral_count": 2,
-        "expensive_count": 1,
-        "disagreement": true,
+        "cheap_count": 3,
+        "neutral_count": 0,
+        "expensive_count": 0,
+        "disagreement": false,
         "participating_components": [
           "csi300",
           "csi500",
@@ -25271,7 +25271,7 @@
               "rank": 13.3,
               "state": "cheap"
             },
-            "state": "neutral",
+            "state": "cheap",
             "available": true
           },
           "csi500": {
@@ -25285,7 +25285,7 @@
               "rank": 15.23,
               "state": "cheap"
             },
-            "state": "neutral",
+            "state": "cheap",
             "available": true
           },
           "csi1000": {
@@ -25296,13 +25296,13 @@
           "erp": {
             "available": true,
             "rank": 72.346369,
-            "state": "expensive"
+            "state": "cheap"
           }
         },
         "reason_codes": [
-          "csi300_neutral",
-          "csi500_neutral",
-          "erp_expensive"
+          "csi300_cheap",
+          "csi500_cheap",
+          "erp_cheap"
         ]
       },
       "earnings": {
@@ -25386,9 +25386,9 @@
       "valuation": {
         "state": "neutral",
         "ready": true,
-        "cheap_count": 0,
+        "cheap_count": 1,
         "neutral_count": 2,
-        "expensive_count": 1,
+        "expensive_count": 0,
         "disagreement": true,
         "participating_components": [
           "csi300",
@@ -25435,13 +25435,13 @@
           "erp": {
             "available": true,
             "rank": 75.277778,
-            "state": "expensive"
+            "state": "cheap"
           }
         },
         "reason_codes": [
           "csi300_neutral",
           "csi500_neutral",
-          "erp_expensive"
+          "erp_cheap"
         ]
       },
       "earnings": {
@@ -25523,12 +25523,12 @@
       "basis_trade_date": "2025-01-27",
       "source_evidence_sha256": "d617e0226f9957a696f202800fb7034c665e541eabb632891904d12f6aed8d23",
       "valuation": {
-        "state": "neutral",
+        "state": "cheap",
         "ready": true,
-        "cheap_count": 0,
-        "neutral_count": 2,
-        "expensive_count": 1,
-        "disagreement": true,
+        "cheap_count": 3,
+        "neutral_count": 0,
+        "expensive_count": 0,
+        "disagreement": false,
         "participating_components": [
           "csi300",
           "csi500",
@@ -25549,7 +25549,7 @@
               "rank": 15.08,
               "state": "cheap"
             },
-            "state": "neutral",
+            "state": "cheap",
             "available": true
           },
           "csi500": {
@@ -25563,7 +25563,7 @@
               "rank": 16.32,
               "state": "cheap"
             },
-            "state": "neutral",
+            "state": "cheap",
             "available": true
           },
           "csi1000": {
@@ -25574,13 +25574,13 @@
           "erp": {
             "available": true,
             "rank": 82.596685,
-            "state": "expensive"
+            "state": "cheap"
           }
         },
         "reason_codes": [
-          "csi300_neutral",
-          "csi500_neutral",
-          "erp_expensive"
+          "csi300_cheap",
+          "csi500_cheap",
+          "erp_cheap"
         ]
       },
       "earnings": {
@@ -25662,11 +25662,11 @@
       "basis_trade_date": "2025-02-28",
       "source_evidence_sha256": "d617e0226f9957a696f202800fb7034c665e541eabb632891904d12f6aed8d23",
       "valuation": {
-        "state": "neutral",
+        "state": "cheap",
         "ready": true,
-        "cheap_count": 0,
-        "neutral_count": 2,
-        "expensive_count": 1,
+        "cheap_count": 2,
+        "neutral_count": 1,
+        "expensive_count": 0,
         "disagreement": true,
         "participating_components": [
           "csi300",
@@ -25688,7 +25688,7 @@
               "rank": 16.39,
               "state": "cheap"
             },
-            "state": "neutral",
+            "state": "cheap",
             "available": true
           },
           "csi500": {
@@ -25713,13 +25713,13 @@
           "erp": {
             "available": true,
             "rank": 78.846154,
-            "state": "expensive"
+            "state": "cheap"
           }
         },
         "reason_codes": [
-          "csi300_neutral",
+          "csi300_cheap",
           "csi500_neutral",
-          "erp_expensive"
+          "erp_cheap"
         ]
       },
       "earnings": {
@@ -25801,11 +25801,11 @@
       "basis_trade_date": "2025-03-31",
       "source_evidence_sha256": "d617e0226f9957a696f202800fb7034c665e541eabb632891904d12f6aed8d23",
       "valuation": {
-        "state": "neutral",
+        "state": "cheap",
         "ready": true,
-        "cheap_count": 0,
-        "neutral_count": 2,
-        "expensive_count": 1,
+        "cheap_count": 2,
+        "neutral_count": 1,
+        "expensive_count": 0,
         "disagreement": true,
         "participating_components": [
           "csi300",
@@ -25827,7 +25827,7 @@
               "rank": 13.41,
               "state": "cheap"
             },
-            "state": "neutral",
+            "state": "cheap",
             "available": true
           },
           "csi500": {
@@ -25852,13 +25852,13 @@
           "erp": {
             "available": true,
             "rank": 79.508197,
-            "state": "expensive"
+            "state": "cheap"
           }
         },
         "reason_codes": [
-          "csi300_neutral",
+          "csi300_cheap",
           "csi500_neutral",
-          "erp_expensive"
+          "erp_cheap"
         ]
       },
       "earnings": {
@@ -25940,12 +25940,12 @@
       "basis_trade_date": "2025-04-30",
       "source_evidence_sha256": "d617e0226f9957a696f202800fb7034c665e541eabb632891904d12f6aed8d23",
       "valuation": {
-        "state": "neutral",
+        "state": "cheap",
         "ready": true,
-        "cheap_count": 0,
-        "neutral_count": 2,
-        "expensive_count": 1,
-        "disagreement": true,
+        "cheap_count": 3,
+        "neutral_count": 0,
+        "expensive_count": 0,
+        "disagreement": false,
         "participating_components": [
           "csi300",
           "csi500",
@@ -25966,7 +25966,7 @@
               "rank": 7.14,
               "state": "cheap"
             },
-            "state": "neutral",
+            "state": "cheap",
             "available": true
           },
           "csi500": {
@@ -25980,7 +25980,7 @@
               "rank": 13.7,
               "state": "cheap"
             },
-            "state": "neutral",
+            "state": "cheap",
             "available": true
           },
           "csi1000": {
@@ -25991,13 +25991,13 @@
           "erp": {
             "available": true,
             "rank": 87.771739,
-            "state": "expensive"
+            "state": "cheap"
           }
         },
         "reason_codes": [
-          "csi300_neutral",
-          "csi500_neutral",
-          "erp_expensive"
+          "csi300_cheap",
+          "csi500_cheap",
+          "erp_cheap"
         ]
       },
       "earnings": {
@@ -26079,11 +26079,11 @@
       "basis_trade_date": "2025-05-30",
       "source_evidence_sha256": "d617e0226f9957a696f202800fb7034c665e541eabb632891904d12f6aed8d23",
       "valuation": {
-        "state": "neutral",
+        "state": "cheap",
         "ready": true,
-        "cheap_count": 0,
-        "neutral_count": 2,
-        "expensive_count": 1,
+        "cheap_count": 2,
+        "neutral_count": 1,
+        "expensive_count": 0,
         "disagreement": true,
         "participating_components": [
           "csi300",
@@ -26105,7 +26105,7 @@
               "rank": 10.05,
               "state": "cheap"
             },
-            "state": "neutral",
+            "state": "cheap",
             "available": true
           },
           "csi500": {
@@ -26130,13 +26130,13 @@
           "erp": {
             "available": true,
             "rank": 80.27027,
-            "state": "expensive"
+            "state": "cheap"
           }
         },
         "reason_codes": [
-          "csi300_neutral",
+          "csi300_cheap",
           "csi500_neutral",
-          "erp_expensive"
+          "erp_cheap"
         ]
       },
       "earnings": {
@@ -26220,9 +26220,9 @@
       "valuation": {
         "state": "neutral",
         "ready": true,
-        "cheap_count": 0,
+        "cheap_count": 1,
         "neutral_count": 2,
-        "expensive_count": 1,
+        "expensive_count": 0,
         "disagreement": true,
         "participating_components": [
           "csi300",
@@ -26269,13 +26269,13 @@
           "erp": {
             "available": true,
             "rank": 71.236559,
-            "state": "expensive"
+            "state": "cheap"
           }
         },
         "reason_codes": [
           "csi300_neutral",
           "csi500_neutral",
-          "erp_expensive"
+          "erp_cheap"
         ]
       },
       "earnings": {
@@ -27333,9 +27333,9 @@
         "state": "neutral",
         "ready": true,
         "cheap_count": 0,
-        "neutral_count": 2,
-        "expensive_count": 1,
-        "disagreement": true,
+        "neutral_count": 3,
+        "expensive_count": 0,
+        "disagreement": false,
         "participating_components": [
           "csi300",
           "csi500",
@@ -27370,7 +27370,7 @@
               "rank": 63.14,
               "state": "neutral"
             },
-            "state": "expensive",
+            "state": "neutral",
             "available": true
           },
           "csi1000": {
@@ -27386,7 +27386,7 @@
         },
         "reason_codes": [
           "csi300_neutral",
-          "csi500_expensive",
+          "csi500_neutral",
           "erp_neutral"
         ]
       },
@@ -27611,9 +27611,9 @@
         "state": "neutral",
         "ready": true,
         "cheap_count": 0,
-        "neutral_count": 2,
-        "expensive_count": 1,
-        "disagreement": true,
+        "neutral_count": 3,
+        "expensive_count": 0,
+        "disagreement": false,
         "participating_components": [
           "csi300",
           "csi500",
@@ -27634,7 +27634,7 @@
               "rank": 33.36,
               "state": "neutral"
             },
-            "state": "expensive",
+            "state": "neutral",
             "available": true
           },
           "csi500": {
@@ -27663,7 +27663,7 @@
           }
         },
         "reason_codes": [
-          "csi300_expensive",
+          "csi300_neutral",
           "csi500_neutral",
           "erp_neutral"
         ]
