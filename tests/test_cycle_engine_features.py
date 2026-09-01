@@ -71,6 +71,24 @@ class CycleEngineFeaturesTests(unittest.TestCase):
         self.assertEqual(feature["normalization_history_observations"], 0)
         self.assertTrue(feature["expected_missing"])
 
+    def test_normalization_history_readiness_turns_true_at_36(self) -> None:
+        evidence = json.loads((ROOT / "data/cycle_engine_features_v1.json").read_text(encoding="utf-8"))
+        path = "valuation.csi300_erp_pct.value"
+        early = next(row for row in evidence["records"] if row["month"] == "2010-01")["features"][path]
+        boundary = next(row for row in evidence["records"] if row["month"] == "2012-12")["features"][path]
+        self.assertFalse(early["normalization_history_ready"])
+        self.assertEqual(early["normalization_history_observations"], 1)
+        self.assertTrue(boundary["normalization_history_ready"])
+        self.assertGreaterEqual(boundary["normalization_history_observations"], 36)
+
+    def test_normalization_audit_detects_rank_tampering(self) -> None:
+        rows = engine.build_features(freeze.records_for_hash(self.payload), self.contract, self.manifest)
+        path = "valuation.csi300_erp_pct.value"
+        rows[-1]["features"][path]["expanding_rank_pct"] += 0.000001
+        audit = engine.build_audit(rows, freeze.records_for_hash(self.payload), self.contract, self.manifest)
+        self.assertGreater(audit["normalization_future_leakage_count"], 0)
+        self.assertFalse(audit["passed"])
+
     def test_future_extreme_value_does_not_change_prior_rank(self) -> None:
         records = freeze.records_for_hash(self.payload)
         baseline = engine.build_features(records, self.contract, self.manifest)

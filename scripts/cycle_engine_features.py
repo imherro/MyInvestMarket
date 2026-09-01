@@ -105,6 +105,7 @@ def build_features(records: list[dict[str, Any]], contract: dict[str, Any], mani
     registry = contract["model_input_registry"]
     policy = contract["expected_missing_policy"]
     history: dict[str, list[float]] = defaultdict(list)
+    available_counts: dict[str, int] = defaultdict(int)
     output: list[dict[str, Any]] = []
     for record in records:
         month = record["month"]
@@ -151,14 +152,21 @@ def build_features(records: list[dict[str, Any]], contract: dict[str, Any], mani
                 elif is_native_percentile(path):
                     feature["expanding_rank_pct"] = raw
                     feature["normalization_source"] = "dataset_native_percentile"
+                    available_counts[path] += 1
+                    feature["normalization_history_observations"] = available_counts[path]
+                    feature["normalization_history_ready"] = available_counts[path] >= MIN_NORMALIZATION_HISTORY
                 elif is_native_fear(path):
                     feature["expanding_rank_pct"] = raw
                     feature["normalization_source"] = "native_a_fear_score"
+                    available_counts[path] += 1
+                    feature["normalization_history_observations"] = available_counts[path]
+                    feature["normalization_history_ready"] = available_counts[path] >= MIN_NORMALIZATION_HISTORY
                 elif isinstance(raw, (int, float)) and not isinstance(raw, bool):
                     values = history[path] + [float(raw)]
                     feature["expanding_rank_pct"] = rank_pct(values, float(raw))
                     feature["normalization_source"] = "pit_expanding_rank_pct"
                     feature["normalization_history_observations"] = len(values)
+                    feature["normalization_history_ready"] = len(values) >= MIN_NORMALIZATION_HISTORY
                     history[path].append(float(raw))
                 else:
                     feature["normalization_source"] = "unsupported_value_type"
@@ -179,23 +187,32 @@ def build_audit(rows: list[dict[str, Any]], records: list[dict[str, Any]], contr
     family_missing = 0
     candidate_missing = 0
     unexpected = 0
+    normalization_errors = 0
+    rank_history: dict[str, list[float]] = defaultdict(list)
     for row in rows:
         for path, feature in row["features"].items():
             if path not in registry_paths:
                 unauthorized.append(path)
-            if feature["available"] and not feature["pit_safe"]:
+            if feature.get("available") and not feature.get("pit_safe"):
                 future_pit += 1
-            if not feature["feature_family"]:
+            if not feature.get("feature_family"):
                 family_missing += 1
-            if not isinstance(feature["model_candidate"], bool):
+            if not isinstance(feature.get("model_candidate"), bool):
                 candidate_missing += 1
-            raw = feature["raw_value"]
-            if raw is not None and (not isinstance(raw, (bool, int, float)) or (feature["unit"] == "boolean" and not isinstance(raw, bool)) or (feature["unit"] != "boolean" and (isinstance(raw, bool) or not isinstance(raw, (int, float))))):
+            raw = feature.get("raw_value")
+            unit = feature.get("unit")
+            if raw is not None and (not isinstance(raw, (bool, int, float)) or (unit == "boolean" and not isinstance(raw, bool)) or (unit != "boolean" and (isinstance(raw, bool) or not isinstance(raw, (int, float))))):
                 type_violations += 1
-            if not feature["available"] and not feature["expected_missing"]:
+            if not feature.get("available") and not feature.get("expected_missing"):
                 unexpected += 1
+            if feature.get("available") and feature.get("normalization_source") == "pit_expanding_rank_pct":
+                values = rank_history[path] + [float(feature["raw_value"])]
+                expected_rank = rank_pct(values, float(feature["raw_value"]))
+                if feature["expanding_rank_pct"] != expected_rank:
+                    normalization_errors += 1
+                rank_history[path].append(float(feature["raw_value"]))
         missing_registry += sum(path not in row["features"] for path in registry_paths)
-    audit = {"record_count": len(records), "start_month": records[0]["month"], "end_month": records[-1]["month"], "source_contract_version": contract["contract_version"], "source_frozen_records_sha256": manifest["frozen_records_sha256"], "unauthorized_input_count": len(set(unauthorized)), "unauthorized_inputs": sorted(set(unauthorized)), "future_pit_date_count": future_pit, "missing_registry_path_count": missing_registry, "feature_type_violation_count": type_violations, "normalization_future_leakage_count": 0, "feature_family_missing_count": family_missing, "candidate_flag_missing_count": candidate_missing, "unexpected_input_missing_count": unexpected, "passed": False}
+    audit = {"record_count": len(records), "start_month": records[0]["month"], "end_month": records[-1]["month"], "source_contract_version": contract["contract_version"], "source_frozen_records_sha256": manifest["frozen_records_sha256"], "unauthorized_input_count": len(set(unauthorized)), "unauthorized_inputs": sorted(set(unauthorized)), "future_pit_date_count": future_pit, "missing_registry_path_count": missing_registry, "feature_type_violation_count": type_violations, "normalization_future_leakage_count": normalization_errors, "feature_family_missing_count": family_missing, "candidate_flag_missing_count": candidate_missing, "unexpected_input_missing_count": unexpected, "passed": False}
     audit["passed"] = all(value == 0 for key, value in audit.items() if key.endswith("_count") and key != "record_count")
     return audit
 
