@@ -4,6 +4,7 @@ import copy
 import json
 import sys
 import unittest
+from unittest.mock import patch
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -38,6 +39,15 @@ class CycleEngineEvaluationTargetTests(unittest.TestCase):
         self.assertEqual(metric["target_month"], "2011-01")
         self.assertEqual(metric["target_available"], True)
 
+    def test_shift_month_is_calendar_based(self) -> None:
+        self.assertEqual(evaluation.shift_month("2015-01", 12), "2016-01")
+        self.assertEqual(evaluation.shift_month("2015-01", 1), "2015-02")
+
+    def test_three_month_risk_field_is_explicitly_unavailable(self) -> None:
+        metric = self.targets["records"][0]["benchmarks"]["csi300"]["forward_3m"]
+        self.assertFalse(metric["risk_metric_available"])
+        self.assertIsNone(metric["max_drawdown_pct"])
+
     def test_required_historical_spots_are_present(self) -> None:
         self.assertEqual(
             [record["month"] for record in self.targets["historical_spots"]],
@@ -69,6 +79,29 @@ class CycleEngineEvaluationTargetTests(unittest.TestCase):
         audit = evaluation.audit_targets(tampered, self.dataset)
         self.assertFalse(audit["passed"])
         self.assertGreater(audit["return_formula_violation_count"], 0)
+
+    def test_audit_detects_target_month_tampering(self) -> None:
+        tampered = copy.deepcopy(self.targets)
+        tampered["records"][0]["benchmarks"]["csi300"]["forward_3m"]["target_month"] = "2015-03"
+        audit = evaluation.audit_targets(tampered, self.dataset)
+        self.assertFalse(audit["passed"])
+        self.assertGreater(audit["horizon_alignment_violation_count"], 0)
+
+    def test_frozen_source_gate_rejects_dataset_mutation(self) -> None:
+        mutated = copy.deepcopy(self.dataset)
+        mutated["records"][0]["trend"]["indices"]["csi300"]["close"]["value"] += 0.01
+        with patch.object(evaluation, "load_dataset", return_value=mutated):
+            with self.assertRaises(evaluation.FrozenEvaluationSourceInvalid):
+                evaluation.generate()
+
+    def test_missing_month_is_reported_and_not_skipped(self) -> None:
+        missing = copy.deepcopy(self.dataset)
+        missing["records"] = [r for r in missing["records"] if r["month"] != "2015-02"]
+        tampered = evaluation.build_targets(missing)
+        tampered["source_frozen_records_sha256"] = evaluation.EXPECTED_FROZEN_RECORDS_SHA256
+        audit = evaluation.audit_targets(tampered, missing)
+        self.assertFalse(audit["passed"])
+        self.assertGreater(audit["source_month_gap_count"], 0)
 
     def test_audit_detects_drawdown_tampering(self) -> None:
         tampered = copy.deepcopy(self.targets)

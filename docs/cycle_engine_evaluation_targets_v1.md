@@ -12,6 +12,7 @@ input.
 - It does not calculate a score, regime, label, threshold, weight, position, or trading signal.
 - It must not be imported by `scripts/cycle_engine_features.py`.
 - No `forward_*`, `months_to_*`, `broad_proxy_index`, or other target field may enter `ENGINE_FEATURE_POLICY`.
+- Generation is gated by the approved Final Freeze hashes; a changed dataset or manifest is rejected rather than assigned a new hash.
 
 ## Benchmark and proxy
 
