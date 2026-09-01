@@ -1,0 +1,14 @@
+{
+  "schema": "cycle_engine_walk_forward_diagnostics_audit_v1",
+  "snapshot_count": 153,
+  "candidate_feature_count": 34,
+  "source_evidence_hash_match": true,
+  "source_evaluation_hash_match": true,
+  "source_diagnostics_hash_match": true,
+  "source_mutation_count": 0,
+  "as_of_future_leakage_count": 0,
+  "target_cutoff_violation_count": 0,
+  "sample_alignment_violation_count": 0,
+  "candidate_scope_violation_count": 0,
+  "passed": true
+}
