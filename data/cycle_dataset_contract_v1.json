@@ -473,6 +473,167 @@
       "description": "A-FEAR extreme-fear overlay"
     }
   ],
+  "expected_missing_policy": [
+    {
+      "path": "valuation.indices.csi1000.pe_ttm.value",
+      "rule_type": "all_frozen_window",
+      "from_month": "2010-01",
+      "through_month": "2026-08",
+      "future_behavior": "continue_until_source_restored",
+      "reason": "CSI1000 valuation source is unavailable; no proxy is permitted",
+      "accepted_limitation_id": "csi1000_valuation_unavailable"
+    },
+    {
+      "path": "valuation.indices.csi1000.pe_ttm.percentile_expanding",
+      "rule_type": "all_frozen_window",
+      "from_month": "2010-01",
+      "through_month": "2026-08",
+      "future_behavior": "continue_until_source_restored",
+      "reason": "CSI1000 valuation source is unavailable; no proxy is permitted",
+      "accepted_limitation_id": "csi1000_valuation_unavailable"
+    },
+    {
+      "path": "valuation.indices.csi1000.pb.value",
+      "rule_type": "all_frozen_window",
+      "from_month": "2010-01",
+      "through_month": "2026-08",
+      "future_behavior": "continue_until_source_restored",
+      "reason": "CSI1000 valuation source is unavailable; no proxy is permitted",
+      "accepted_limitation_id": "csi1000_valuation_unavailable"
+    },
+    {
+      "path": "valuation.indices.csi1000.pb.percentile_expanding",
+      "rule_type": "all_frozen_window",
+      "from_month": "2010-01",
+      "through_month": "2026-08",
+      "future_behavior": "continue_until_source_restored",
+      "reason": "CSI1000 valuation source is unavailable; no proxy is permitted",
+      "accepted_limitation_id": "csi1000_valuation_unavailable"
+    },
+    {
+      "path": "trend.indices.csi1000.ma250_deviation_pct.value",
+      "rule_type": "before_month",
+      "from_month": "2010-01",
+      "through_month": "2014-09",
+      "reason": "CSI1000 was not officially published before 2014-10",
+      "accepted_limitation_id": "index_backfilled_histories"
+    },
+    {
+      "path": "trend.indices.csi1000.above_ma250.value",
+      "rule_type": "before_month",
+      "from_month": "2010-01",
+      "through_month": "2014-09",
+      "reason": "CSI1000 was not officially published before 2014-10",
+      "accepted_limitation_id": "index_backfilled_histories"
+    },
+    {
+      "path": "trend.indices.csi1000.ma250_slope_3m_pct.value",
+      "rule_type": "before_month",
+      "from_month": "2010-01",
+      "through_month": "2014-09",
+      "reason": "CSI1000 was not officially published before 2014-10",
+      "accepted_limitation_id": "index_backfilled_histories"
+    },
+    {
+      "path": "trend.indices.csi1000.return_6m_pct.value",
+      "rule_type": "before_month",
+      "from_month": "2010-01",
+      "through_month": "2014-09",
+      "reason": "CSI1000 was not officially published before 2014-10",
+      "accepted_limitation_id": "index_backfilled_histories"
+    },
+    {
+      "path": "trend.indices.csi1000.return_12m_pct.value",
+      "rule_type": "before_month",
+      "from_month": "2010-01",
+      "through_month": "2014-09",
+      "reason": "CSI1000 was not officially published before 2014-10",
+      "accepted_limitation_id": "index_backfilled_histories"
+    },
+    {
+      "path": "trend.indices.csi1000.drawdown_12m_high_pct.value",
+      "rule_type": "before_month",
+      "from_month": "2010-01",
+      "through_month": "2014-09",
+      "reason": "CSI1000 was not officially published before 2014-10",
+      "accepted_limitation_id": "index_backfilled_histories"
+    },
+    {
+      "path": "sentiment.a_fear.fear_score",
+      "rule_type": "before_month",
+      "from_month": "2010-01",
+      "through_month": "2024-07",
+      "reason": "A-FEAR local history begins at 2024-08",
+      "accepted_limitation_id": "a_fear_begins_2024"
+    },
+    {
+      "path": "earnings.all_a_net_profit_yoy_pct.value",
+      "rule_type": "explicit_months",
+      "months": [
+        "2010-01",
+        "2010-02",
+        "2010-03"
+      ],
+      "reason": "the frozen financial history has no eligible PIT observation in the initial three months",
+      "accepted_limitation_id": "financial_revision_vintage_limitation"
+    },
+    {
+      "path": "earnings.nonfinancial_a_net_profit_yoy_pct.value",
+      "rule_type": "explicit_months",
+      "months": [
+        "2010-01",
+        "2010-02",
+        "2010-03"
+      ],
+      "reason": "the frozen financial history has no eligible PIT observation in the initial three months",
+      "accepted_limitation_id": "financial_revision_vintage_limitation"
+    },
+    {
+      "path": "earnings.all_a_roe_ttm_pct.value",
+      "rule_type": "explicit_months",
+      "months": [
+        "2010-01",
+        "2010-02",
+        "2010-03"
+      ],
+      "reason": "the frozen financial history has no eligible PIT observation in the initial three months",
+      "accepted_limitation_id": "financial_revision_vintage_limitation"
+    },
+    {
+      "path": "earnings.nonfinancial_a_roe_ttm_pct.value",
+      "rule_type": "explicit_months",
+      "months": [
+        "2010-01",
+        "2010-02",
+        "2010-03"
+      ],
+      "reason": "the frozen financial history has no eligible PIT observation in the initial three months",
+      "accepted_limitation_id": "financial_revision_vintage_limitation"
+    },
+    {
+      "path": "earnings.pmi.change_1m",
+      "rule_type": "explicit_months",
+      "months": [
+        "2026-02",
+        "2026-03",
+        "2026-04",
+        "2026-05"
+      ],
+      "reason": "the natural prior PMI data month is unavailable in the frozen release-date history",
+      "accepted_limitation_id": "pmi_revision_vintage_unavailable"
+    },
+    {
+      "path": "earnings.pmi.change_3m",
+      "rule_type": "explicit_months",
+      "months": [
+        "2026-02",
+        "2026-03",
+        "2026-06"
+      ],
+      "reason": "the natural three-month prior PMI data month is unavailable in the frozen release-date history",
+      "accepted_limitation_id": "pmi_revision_vintage_unavailable"
+    }
+  ],
   "excluded_from_cycle_engine_v1": [
     "industrial_profit_yoy_pct",
     "ppi_yoy_pct",

@@ -71,6 +71,56 @@ class CycleDatasetFreezeTests(unittest.TestCase):
         self.assertFalse(result["valid"])
         self.assertTrue(any("field type mismatch" in error for error in result["errors"]))
 
+    def test_full_core_field_disappearance_is_unexpected(self) -> None:
+        paths = [
+            "valuation.indices.csi300.pe_ttm.value",
+            "valuation.indices.csi500.pe_ttm.value",
+            "valuation.china_10y_government_bond_yield_pct.value",
+            "valuation.csi300_erp_pct.value",
+            "earnings.all_a_net_profit_yoy_pct.value",
+            "earnings.nonfinancial_a_net_profit_yoy_pct.value",
+            "earnings.all_a_roe_ttm_pct.value",
+            "earnings.nonfinancial_a_roe_ttm_pct.value",
+            "earnings.pmi.value",
+            "trend.indices.csi300.ma250_deviation_pct.value",
+        ]
+        for path in paths:
+            payload = copy.deepcopy(self.payload)
+            for record in payload["records"]:
+                target = record
+                parts = path.split(".")
+                for part in parts[:-1]:
+                    target = target[part]
+                target[parts[-1]] = None
+            result = freeze.validate(payload, self.contract, self.matrix)
+            self.assertFalse(result["valid"], path)
+            self.assertGreater(result["unexpected_required_input_missing_count"], 0, path)
+
+    def test_leading_truncation_is_unexpected(self) -> None:
+        payload = copy.deepcopy(self.payload)
+        for record in payload["records"]:
+            if record["month"] < "2015-01":
+                record["valuation"]["indices"]["csi300"]["pe_ttm"]["value"] = None
+        result = freeze.validate(payload, self.contract, self.matrix)
+        self.assertFalse(result["valid"])
+        self.assertGreater(result["unexpected_required_input_missing_count"], 0)
+
+    def test_future_append_passes_full_validation_and_preserves_frozen_hash(self) -> None:
+        payload = copy.deepcopy(self.payload)
+        future = copy.deepcopy(payload["records"][-1])
+        future["month"] = "2026-09"
+        future["basis_trade_date"] = "2026-09-30"
+        payload["records"].append(future)
+        matrix = freeze.build_matrix(payload["records"], self.contract["model_input_registry"], self.contract["expected_missing_policy"])
+        manifest = copy.deepcopy(self.manifest)
+        manifest["record_count"] = len(payload["records"])
+        manifest["end_month"] = "2026-09"
+        manifest["current_records_sha256"] = freeze.sha256(freeze.records_for_hash(payload))
+        manifest["feature_availability_sha256"] = freeze.sha256(matrix)
+        result = freeze.validate(payload, self.contract, matrix, manifest, self.golden)
+        self.assertTrue(result["valid"], result["errors"])
+        self.assertEqual(manifest["frozen_records_sha256"], self.manifest["frozen_records_sha256"])
+
     def test_excluded_registry_entry_fails(self) -> None:
         contract = copy.deepcopy(self.contract)
         contract["model_input_registry"][0]["path"] = "current_v3.4_market_score"

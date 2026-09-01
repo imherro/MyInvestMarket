@@ -98,32 +98,51 @@ def build_contract(records: list[dict[str, Any]]) -> dict[str, Any]:
         "contract_version": "cycle_dataset_contract_v1",
         "dataset": {"contract_version": "cycle_dataset_contract_v1", "dataset_version": cycle.DATASET_VERSION, "frequency": "monthly", "start_month": records[0]["month"], "frozen_through_month": FROZEN_THROUGH, "basis_rule": "last open SSE trading day of natural month", "timezone": "Asia/Shanghai"},
         "model_input_registry": build_registry(),
+        "expected_missing_policy": build_expected_missing_policy(),
         "excluded_from_cycle_engine_v1": EXCLUDED,
         "missing_policy": {"default": None, "rules": ["unavailable remains null", "never impute 0, 50, historical mean, current value, or proxy", "pre-launch index history is expected missing", "CSI1000 valuation source absence is an accepted limitation", "A-FEAR pre-history is expected missing", "PMI release conflicts are not resolved randomly", "financial fields use only PIT-visible announced periods"]},
         "accepted_limitations": ACCEPTED_LIMITATIONS,
     }
 
 
-def is_expected_missing(path: str, record: dict[str, Any], first_available: str | None) -> bool:
-    month = record["month"]
-    if "trend.indices.csi1000." in path and month < "2014-10":
-        return True
-    if "valuation.indices.csi1000." in path:
-        return True
-    if path == "sentiment.a_fear.fear_score" and (first_available is None or month < first_available):
-        return True
-    if path in ("earnings.pmi.change_1m", "earnings.pmi.change_3m"):
-        return True
-    return first_available is None or (first_available is not None and month < first_available)
+def build_expected_missing_policy() -> list[dict[str, Any]]:
+    policy: list[dict[str, Any]] = []
+    for field in ("pe_ttm.value", "pe_ttm.percentile_expanding", "pb.value", "pb.percentile_expanding"):
+        policy.append({"path": f"valuation.indices.csi1000.{field}", "rule_type": "all_frozen_window", "from_month": "2010-01", "through_month": FROZEN_THROUGH, "future_behavior": "continue_until_source_restored", "reason": "CSI1000 valuation source is unavailable; no proxy is permitted", "accepted_limitation_id": "csi1000_valuation_unavailable"})
+    for field in ("ma250_deviation_pct.value", "above_ma250.value", "ma250_slope_3m_pct.value", "return_6m_pct.value", "return_12m_pct.value", "drawdown_12m_high_pct.value"):
+        policy.append({"path": f"trend.indices.csi1000.{field}", "rule_type": "before_month", "from_month": "2010-01", "through_month": "2014-09", "reason": "CSI1000 was not officially published before 2014-10", "accepted_limitation_id": "index_backfilled_histories"})
+    policy.append({"path": "sentiment.a_fear.fear_score", "rule_type": "before_month", "from_month": "2010-01", "through_month": "2024-07", "reason": "A-FEAR local history begins at 2024-08", "accepted_limitation_id": "a_fear_begins_2024"})
+    for field in ("all_a_net_profit_yoy_pct", "nonfinancial_a_net_profit_yoy_pct", "all_a_roe_ttm_pct", "nonfinancial_a_roe_ttm_pct"):
+        policy.append({"path": f"earnings.{field}.value", "rule_type": "explicit_months", "months": ["2010-01", "2010-02", "2010-03"], "reason": "the frozen financial history has no eligible PIT observation in the initial three months", "accepted_limitation_id": "financial_revision_vintage_limitation"})
+    policy.extend([
+        {"path": "earnings.pmi.change_1m", "rule_type": "explicit_months", "months": ["2026-02", "2026-03", "2026-04", "2026-05"], "reason": "the natural prior PMI data month is unavailable in the frozen release-date history", "accepted_limitation_id": "pmi_revision_vintage_unavailable"},
+        {"path": "earnings.pmi.change_3m", "rule_type": "explicit_months", "months": ["2026-02", "2026-03", "2026-06"], "reason": "the natural three-month prior PMI data month is unavailable in the frozen release-date history", "accepted_limitation_id": "pmi_revision_vintage_unavailable"},
+    ])
+    return policy
 
 
-def build_matrix(records: list[dict[str, Any]], registry: list[dict[str, str]]) -> dict[str, Any]:
+def is_expected_missing(path: str, month: str, policy: list[dict[str, Any]]) -> bool:
+    for item in policy:
+        if item.get("path") != path:
+            continue
+        rule_type = item.get("rule_type")
+        if rule_type == "all_frozen_window":
+            return item.get("from_month") <= month <= item.get("through_month") or (month > item.get("through_month") and item.get("future_behavior") == "continue_until_source_restored")
+        if rule_type == "before_month":
+            return item.get("from_month") <= month <= item.get("through_month")
+        if rule_type == "explicit_months":
+            return month in item.get("months", [])
+    return False
+
+
+def build_matrix(records: list[dict[str, Any]], registry: list[dict[str, str]], policy: list[dict[str, Any]] | None = None) -> dict[str, Any]:
+    policy = policy or []
     fields: dict[str, Any] = {}
     for item in registry:
         path = item["path"]
         available_months = [r["month"] for r in records if resolve(r, path) is not None]
         first = min(available_months) if available_months else None
-        expected = [r["month"] for r in records if resolve(r, path) is None and is_expected_missing(path, r, first)]
+        expected = [r["month"] for r in records if resolve(r, path) is None and is_expected_missing(path, r["month"], policy)]
         unexpected = [r["month"] for r in records if resolve(r, path) is None and r["month"] not in expected]
         fields[path] = {"domain": item["domain"], "available_month_count": len(available_months), "unavailable_month_count": len(records) - len(available_months), "availability_pct": round(len(available_months) / len(records) * 100, 2) if records else 0.0, "first_available_month": first, "last_available_month": max(available_months) if available_months else None, "expected_missing_count": len(expected), "unexpected_missing_count": len(unexpected), "expected_missing_months": expected, "unexpected_missing_months": unexpected}
     return {"contract_version": "cycle_dataset_contract_v1", "record_count": len(records), "fields": fields, "unexpected_required_input_missing_count": sum(v["unexpected_missing_count"] for v in fields.values())}
@@ -148,9 +167,15 @@ def records_for_hash(payload: dict[str, Any], through: str | None = None) -> lis
 
 def validate(payload: dict[str, Any], contract: dict[str, Any], matrix: dict[str, Any], manifest: dict[str, Any] | None = None, golden: dict[str, Any] | None = None) -> dict[str, Any]:
     records = payload.get("records", [])
-    audit = cycle.audit_dataset(payload)
     errors: list[str] = []
-    if len(records) != 200 or records[0].get("month") != "2010-01" or records[-1].get("month") != FROZEN_THROUGH:
+    try:
+        audit = cycle.audit_dataset(payload)
+    except (TypeError, ValueError, KeyError) as exc:
+        audit = {"structural_passed": False, "validator_exception": f"{type(exc).__name__}: {exc}"}
+        errors.append("dataset audit could not be completed")
+    frozen_records = [record for record in records if record.get("month", "") <= FROZEN_THROUGH]
+    expected_frozen_months = [f"{year:04d}-{month:02d}" for year in range(2010, 2027) for month in range(1, 13) if f"{year:04d}-{month:02d}" <= FROZEN_THROUGH]
+    if len(frozen_records) != 200 or [record.get("month") for record in frozen_records] != expected_frozen_months:
         errors.append("record range/count mismatch")
     dataset = contract.get("dataset", {})
     expected_dataset = {
@@ -166,6 +191,15 @@ def validate(payload: dict[str, Any], contract: dict[str, Any], matrix: dict[str
         if dataset.get(key) != expected:
             errors.append(f"dataset metadata mismatch: {key}")
     registry = contract.get("model_input_registry", [])
+    policy = contract.get("expected_missing_policy", [])
+    policy_keys = {"path", "rule_type", "reason", "accepted_limitation_id"}
+    for item in policy:
+        if not policy_keys.issubset(item):
+            errors.append(f"expected missing policy entry missing keys: {item.get('path', '<unknown>')}")
+        if item.get("rule_type") in ("all_frozen_window", "before_month") and not {"from_month", "through_month"}.issubset(item):
+            errors.append(f"expected missing policy range missing: {item.get('path', '<unknown>')}")
+        if item.get("rule_type") == "explicit_months" and not isinstance(item.get("months"), list):
+            errors.append(f"expected missing policy months missing: {item.get('path', '<unknown>')}")
     required_keys = {"path", "domain", "role", "unit", "direction_hint", "availability_rule", "pit_date_field", "missing_policy", "description"}
     for item in registry:
         if not required_keys.issubset(item):
@@ -186,6 +220,11 @@ def validate(payload: dict[str, Any], contract: dict[str, Any], matrix: dict[str
         errors.append("structural audit failed")
     if matrix.get("unexpected_required_input_missing_count", 0) != 0:
         errors.append("unexpected required input missing")
+    actual_matrix = build_matrix(records, registry, policy)
+    if actual_matrix != matrix:
+        errors.append("feature availability matrix mismatch")
+    if actual_matrix.get("unexpected_required_input_missing_count", 0) != 0:
+        errors.append("actual unexpected required input missing")
     if manifest:
         frozen_hash = sha256(records_for_hash(payload, FROZEN_THROUGH))
         current_hash = sha256(records_for_hash(payload))
@@ -212,7 +251,7 @@ def validate(payload: dict[str, Any], contract: dict[str, Any], matrix: dict[str
                         errors.append(f"golden drift: {month} {path}")
                 elif actual != expected_value:
                     errors.append(f"golden drift: {month} {path}")
-    return {"valid": not errors, "errors": errors, "audit": audit, "unexpected_required_input_missing_count": matrix.get("unexpected_required_input_missing_count", 0)}
+    return {"valid": not errors, "errors": errors, "audit": audit, "unexpected_required_input_missing_count": actual_matrix.get("unexpected_required_input_missing_count", 0)}
 
 
 def write_json(path: Path, value: Any) -> None:
@@ -223,7 +262,7 @@ def generate() -> dict[str, Any]:
     payload = json.loads((DATA / "cycle_dataset_v1.json").read_text(encoding="utf-8-sig"))
     records = records_for_hash(payload)
     contract = build_contract(records)
-    matrix = build_matrix(records, contract["model_input_registry"])
+    matrix = build_matrix(records, contract["model_input_registry"], contract["expected_missing_policy"])
     golden = build_golden(records, contract["model_input_registry"])
     audit = cycle.audit_dataset(payload)
     baseline = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip()
