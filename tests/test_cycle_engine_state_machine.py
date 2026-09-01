@@ -58,6 +58,17 @@ class StateMachineTests(unittest.TestCase):
         self.assertEqual(rows[2]["stable_reason_codes"], ["pending_cancelled_by_current_state"])
         self.assertIsNone(rows[2]["pending_target"])
 
+    def test_pending_cancelled_diagnostic_counts_only_real_cancellations(self) -> None:
+        rows = machine._step(self.records(["bull", "bull", "late_bull", "bull"]))
+        diagnostics = machine._diagnostics(rows)
+        self.assertEqual(diagnostics["pending"]["pending_cancelled_by_current_state_count"], 1)
+        self.assertEqual(sum("pending_cancelled_by_current_state" in row["stable_reason_codes"] for row in rows), 1)
+        mutated = copy.deepcopy(self.output)
+        mutated["diagnostics"]["pending"]["pending_cancelled_by_current_state_count"] += 46
+        result = machine.audit(mutated, self.candidate, self.candidate_audit)
+        self.assertGreater(result["transition_diagnostics_violation_count"], 0)
+        self.assertFalse(result["passed"])
+
     def test_initialization_and_ambiguous_hold(self) -> None:
         rows = machine._step(self.records(["insufficient_history", "ambiguous", "bull", "ambiguous", "ambiguous"]))
         self.assertEqual(rows[0]["stable_state"], "insufficient_history")

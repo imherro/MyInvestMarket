@@ -6383,7 +6383,7 @@
       "pending_confirmed_count": 22,
       "pending_replaced_count": 8,
       "pending_expired_count": 3,
-      "pending_cancelled_by_current_state_count": 46,
+      "pending_cancelled_by_current_state_count": 5,
       "status_counts": {
         "held_ambiguous": 49,
         "held_same": 46,

@@ -200,7 +200,7 @@ def _diagnostics(rows: list[dict[str, Any]]) -> dict[str, Any]:
     pending_started = sum(row["transition_status"] == "pending_started" for row in rows)
     pending_replaced = sum(row["transition_status"] == "pending_replaced" for row in rows)
     pending_expired = sum(row["transition_status"] == "pending_expired" for row in rows)
-    pending_cancelled = sum(row["transition_status"] == "held_same" and row["raw_candidate_state"] == row["stable_state"] for row in rows)
+    pending_cancelled = sum("pending_cancelled_by_current_state" in row.get("stable_reason_codes", []) for row in rows)
     windows = {name: [{key: row[key] for key in ("month", "raw_candidate_state", "stable_state", "pending_target", "transition_status")} for row in rows if start <= row["month"] <= end] for name, (start, end) in WINDOWS.items()}
     return {"raw_vs_stable": {"raw_monthly_state_change_rate": round(raw_rate, 6) if raw_rate is not None else None, "stable_monthly_state_change_rate": round(stable_rate, 6) if stable_rate is not None else None, "absolute_reduction": round(raw_rate - stable_rate, 6) if raw_rate is not None and stable_rate is not None else None, "relative_reduction_pct": round((raw_rate - stable_rate) / raw_rate * 100, 6) if raw_rate else None}, "ambiguous": {"raw_month_count": raw_values.count("ambiguous"), "raw_pct": round(raw_values.count("ambiguous") / len(raw_values) * 100, 6) if raw_values else 0.0, "stable_month_count": stable_values.count("ambiguous"), "stable_after_initialization_count": sum(row["stable_state"] == "ambiguous" and row["initialized"] for row in ready)}, "stable_state_distribution": dist, "transitions": {"confirmed_transition_count": len(events), "transition_matrix": {key: {"transition_count": value} for key, value in sorted(transitions.items())}, "transition_events": events}, "pending": {"pending_started_count": pending_started, "pending_confirmed_count": pending_confirmed, "pending_replaced_count": pending_replaced, "pending_expired_count": pending_expired, "pending_cancelled_by_current_state_count": pending_cancelled, "status_counts": dict(sorted(status_counts.items()))}, "raw_to_stable_matrix": {key: value for key, value in sorted(raw_stable.items())}, "window_extracts": windows}
 
@@ -312,7 +312,10 @@ def audit(data: dict[str, Any], candidate: dict[str, Any], candidate_audit: dict
         errors["stability_improvement_violation_count"] += 1
     if diagnostics.get("ambiguous") != expected_diag["ambiguous"] or diagnostics.get("stable_state_distribution") != expected_diag["stable_state_distribution"] or diagnostics.get("raw_to_stable_matrix") != expected_diag["raw_to_stable_matrix"]:
         errors["stable_diagnostics_violation_count"] += 1
+    independent_cancelled = sum("pending_cancelled_by_current_state" in row.get("stable_reason_codes", []) for row in expected)
     if diagnostics.get("transitions") != expected_diag["transitions"] or diagnostics.get("pending") != expected_diag["pending"]:
+        errors["transition_diagnostics_violation_count"] += 1
+    elif diagnostics.get("pending", {}).get("pending_cancelled_by_current_state_count") != independent_cancelled:
         errors["transition_diagnostics_violation_count"] += 1
     errors["stability_improvement_violation_count"] += int((expected_diag["raw_vs_stable"]["stable_monthly_state_change_rate"] or 0) >= (expected_diag["raw_vs_stable"]["raw_monthly_state_change_rate"] or 0))
     errors["forbidden_output_violation_count"] = int(_contains_forbidden(data))
