@@ -111,7 +111,51 @@ def build(evidence:dict[str,Any],targets:dict[str,Any])->dict[str,Any]:
         fs=[x for x in features.values() if x['feature_family']==f]; rs=[x['spearman_rho'] for x in redundancy if x['family_a']==f and x['family_b']==f and x['spearman_rho'] is not None]
         family[f]={'candidate_count':len(fs),'available_history_range':{x['path']:[x['all_available_sample_count'],x['ready_sample_count']] for x in fs},'median_pairwise_absolute_correlation':quantile([abs(x) for x in rs],.5),'maximum_pairwise_absolute_correlation':max([abs(x) for x in rs],default=None),'high_redundancy_pair_count':sum(abs(x)>=.8 for x in rs)}
     return {'schema':'cycle_engine_feature_diagnostics_v1','source_evidence_sha':canonical_sha(evidence),'source_evaluation_sha':canonical_sha(targets),'feature_diagnostics':features,'family_diagnostics':family,'redundancy_matrix':redundancy,'era_diagnostics':ERAS}
+def audit_v2(d:dict[str,Any])->dict[str,Any]:
+    e,t=load(); expected=build(e,t)
+    ea=json.loads(EVIDENCE_AUDIT.read_text(encoding='utf-8')); ta=json.loads(TARGET_AUDIT.read_text(encoding='utf-8'))
+    names=('unauthorized_feature_count','future_target_used_as_feature_count','non_candidate_feature_analyzed_count','sample_alignment_violation_count','readiness_rule_violation_count','bucket_assignment_violation_count','correlation_formula_violation_count','boolean_group_violation_count','redundancy_formula_violation_count','family_diagnostics_violation_count','era_boundary_violation_count','monotonicity_formula_violation_count','source_mutation_count')
+    errors={name:0 for name in names}
+    formal={p for p,f in e['records'][-1]['features'].items() if f.get('model_candidate')}; all_paths=set(e['records'][-1]['features']); actual=set(d.get('feature_diagnostics',{}))
+    errors['unauthorized_feature_count'] += len(actual-all_paths)
+    errors['non_candidate_feature_analyzed_count'] += len((actual&all_paths)-formal)
+    errors['future_target_used_as_feature_count'] += sum(any(token in path for token in FORBIDDEN) for path in actual)
+    if d.get('source_evidence_sha')!=canonical_sha(e) or d.get('source_evaluation_sha')!=canonical_sha(t): errors['source_mutation_count']+=1
+    evidence_months=[r['month'] for r in e['records']]; target_months=[r['month'] for r in t['records']]
+    if evidence_months!=target_months or len(target_months)!=len(set(target_months)): errors['sample_alignment_violation_count']+=1
+    if d.get('era_diagnostics')!=ERAS: errors['era_boundary_violation_count']+=1
+    for path in sorted(actual&formal):
+        got=d['feature_diagnostics'][path]; exp=expected['feature_diagnostics'][path]
+        expected_ready=sum(r['features'].get(path,{}).get('available') is True and r['features'].get(path,{}).get('normalization_history_ready') is True for r in e['records'])
+        if got.get('ready_sample_count')!=expected_ready: errors['readiness_rule_violation_count']+=1
+        for key, value in exp['target_diagnostics'].items():
+            if '_boolean_groups' not in key and got.get('target_diagnostics',{}).get(key)!=value: errors['correlation_formula_violation_count']+=1
+            if '_boolean_groups' in key and got.get('target_diagnostics',{}).get(key)!=value: errors['boolean_group_violation_count']+=1
+        if got.get('bucket_diagnostics')!=exp.get('bucket_diagnostics'): errors['bucket_assignment_violation_count']+=1
+        for key in ('increasing_step_count','decreasing_step_count','monotonic_step_count'):
+            if got.get(key)!=exp.get(key): errors['monotonicity_formula_violation_count']+=1
+        for era in ('A','B','C'):
+            ge=got.get('era_diagnostics',{}).get(era,{}); ee=exp.get('era_diagnostics',{}).get(era,{})
+            for key,value in ee.get('target_diagnostics',{}).items():
+                if ge.get('target_diagnostics',{}).get(key)!=value: errors['correlation_formula_violation_count']+=1
+            if ge.get('bucket_diagnostics')!=ee.get('bucket_diagnostics'): errors['bucket_assignment_violation_count']+=1
+            if ge.get('boolean_diagnostics')!=ee.get('boolean_diagnostics'): errors['boolean_group_violation_count']+=1
+    expected_pairs={(x['feature_a'],x['feature_b']):x for x in expected['redundancy_matrix']}; actual_pairs={(x.get('feature_a'),x.get('feature_b')):x for x in d.get('redundancy_matrix',[])}
+    for pair,value in expected_pairs.items():
+        got=actual_pairs.get(pair)
+        if got is None or any(got.get(k)!=value.get(k) for k in ('overlap_count','spearman_rho','high_redundancy')): errors['redundancy_formula_violation_count']+=1
+    errors['redundancy_formula_violation_count']+=len(set(actual_pairs)-set(expected_pairs))
+    for family,value in expected['family_diagnostics'].items():
+        got=d.get('family_diagnostics',{}).get(family,{})
+        for key in ('candidate_count','available_history_range','median_pairwise_absolute_correlation','maximum_pairwise_absolute_correlation','high_redundancy_pair_count'):
+            if got.get(key)!=value.get(key): errors['family_diagnostics_violation_count']+=1
+    source_ok=d.get('source_evidence_sha')==canonical_sha(e) and d.get('source_evaluation_sha')==canonical_sha(t)
+    passed=source_ok and ea.get('passed') is True and ta.get('passed') is True and sum(errors.values())==0
+    return {'schema':'cycle_engine_feature_diagnostics_audit_v1','feature_count':len(e['records'][-1]['features']),'candidate_feature_count':len(expected['feature_diagnostics']),'source_evidence_hash_match':source_ok and d.get('source_evidence_sha')==canonical_sha(e),'source_evaluation_hash_match':source_ok and d.get('source_evaluation_sha')==canonical_sha(t),'evidence_audit_passed':ea.get('passed') is True,'evaluation_audit_passed':ta.get('passed') is True,**errors,'passed':passed}
+
 def audit(d:dict[str,Any])->dict[str,Any]:
+    return audit_v2(d)
+    # Kept below in history for compatibility with the original audit shape.
     e,t=load(); expected=build(e,t); ea=json.loads(EVIDENCE_AUDIT.read_text()); ta=json.loads(TARGET_AUDIT.read_text()); errors={'unauthorized_feature_count':0,'future_target_used_as_feature_count':0,'non_candidate_feature_analyzed_count':0,'sample_alignment_violation_count':0,'readiness_rule_violation_count':0,'bucket_assignment_violation_count':0,'correlation_formula_violation_count':0,'boolean_group_violation_count':0,'redundancy_formula_violation_count':0,'family_diagnostics_violation_count':0,'era_boundary_violation_count':0,'monotonicity_formula_violation_count':0,'source_mutation_count':0}
     if d.get('source_evidence_sha')!=canonical_sha(e) or d.get('source_evaluation_sha')!=canonical_sha(t): errors['source_mutation_count']+=1
     formal={p for p,f in e['records'][-1]['features'].items() if f.get('model_candidate')}; actual_paths=set(d.get('feature_diagnostics',{})); all_paths=set(e['records'][-1]['features'])

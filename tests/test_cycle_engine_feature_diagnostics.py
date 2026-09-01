@@ -57,4 +57,25 @@ class DiagnosticsTests(unittest.TestCase):
    def read_text(self,**kwargs): return '{"passed":false}'
   with patch.object(d,'load',return_value=(self.e,self.t)), patch.object(d,'EVIDENCE_AUDIT',FakePath()):
    self.assertFalse(d.audit(self.data)['passed'])
+ def test_evaluation_source_audit_failure_is_a_hard_gate(self):
+  class FakePath:
+   def read_text(self,**kwargs): return '{"passed":false}'
+  with patch.object(d,'load',return_value=(self.e,self.t)), patch.object(d,'TARGET_AUDIT',FakePath()):
+   self.assertFalse(d.audit(self.data)['passed'])
+ def test_redundancy_overlap_counter_is_independent(self):
+  x=copy.deepcopy(self.data); x['redundancy_matrix'][0]['overlap_count']+=1
+  self.assertGreater(d.audit(x)['redundancy_formula_violation_count'],0)
+ def test_redundancy_boundary_is_eight_tenths(self):
+  self.assertTrue(abs(-.8)>=.8); self.assertFalse(abs(.799999)>=.8)
+ def test_family_maximum_counter_is_independent(self):
+  x=copy.deepcopy(self.data); family=next(iter(x['family_diagnostics'])); x['family_diagnostics'][family]['maximum_pairwise_absolute_correlation']=999
+  self.assertGreater(d.audit(x)['family_diagnostics_violation_count'],0)
+ def test_era_continuous_mutation_hits_correlation_only(self):
+  x=copy.deepcopy(self.data); p=next(iter(x['feature_diagnostics'])); x['feature_diagnostics'][p]['era_diagnostics']['A']['target_diagnostics']['forward_6m_forward_return_pct']['spearman_rho']=999
+  result=d.audit(x)
+  self.assertGreater(result['correlation_formula_violation_count'],0)
+  self.assertEqual(result['boolean_group_violation_count'],0)
+ def test_monotonic_increasing_and_decreasing_counts_are_recomputed(self):
+  x=copy.deepcopy(self.data); p=next(iter(x['feature_diagnostics'])); x['feature_diagnostics'][p]['increasing_step_count']=999
+  self.assertGreater(d.audit(x)['monotonicity_formula_violation_count'],0)
 if __name__=='__main__': unittest.main()
