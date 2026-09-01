@@ -46,6 +46,13 @@ class DomainDiagnosticsTests(unittest.TestCase):
         self.assertEqual(result["transition_matrix"]["cheap->cheap"]["transition_count"], 1)
         self.assertEqual(result["transition_matrix"]["cheap->neutral"]["transition_count"], 1)
         self.assertEqual(result["median_state_duration_months"], 2.0)
+        self.assertEqual(diagnostics.target_run_lengths(["cheap", "neutral", "neutral", "cheap"], "cheap"), [1, 1])
+
+    def test_conflict_duration_uses_only_hit_runs(self) -> None:
+        records = []
+        for month, valuation, trend in (("2020-01", "cheap", "damaged"), ("2020-02", "neutral", "damaged"), ("2020-03", "neutral", "damaged"), ("2020-04", "cheap", "damaged")):
+            records.append({"month": month, "valuation": {"state": valuation, "ready": True}, "earnings": {"state": "mixed", "ready": True}, "macro_confirmation": {"state": "mixed", "ready": True}, "trend": {"state": trend, "ready": True}})
+        self.assertEqual(diagnostics.conflicts(records)["valuation_cheap_damaged"]["longest_duration"], 1)
 
     def test_nonoverlap_origins_are_spaced(self) -> None:
         for benchmark in self.output["evaluation"]["benchmarks"].values():
@@ -86,6 +93,9 @@ class DomainDiagnosticsTests(unittest.TestCase):
         text = json.dumps(self.output, ensure_ascii=False).lower()
         for token in ("cycle_score", "bull_bear_score", "market_score", "cycle_state", "regime", "recommended_position", "equity_position", "allocation", "buy_signal", "sell_signal", "state_machine"):
             self.assertNotIn(token, text)
+        self.assertTrue(self.output["phase3_design_evidence"]["state_forward_return_summary"])
+        self.assertTrue(self.output["phase3_design_evidence"]["state_sample_sizes"])
+        self.assertTrue(self.output["phase3_design_evidence"]["insufficient_sample_flags"])
 
 
 if __name__ == "__main__":

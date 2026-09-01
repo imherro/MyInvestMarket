@@ -91,7 +91,17 @@ def run_lengths(values: list[str]) -> list[int]:
 
 
 def target_run_lengths(values: list[str], target: str) -> list[int]:
-    return run_lengths([value if value == target else "__other__" for value in values])
+    result: list[int] = []
+    length = 0
+    for value in values:
+        if value == target:
+            length += 1
+        elif length:
+            result.append(length)
+            length = 0
+    if length:
+        result.append(length)
+    return result
 
 
 def state_distribution(records: list[dict[str, Any]], domain: str) -> dict[str, Any]:
@@ -169,7 +179,12 @@ def evaluation(records: list[dict[str, Any]], targets: dict[str, Any]) -> dict[s
                     cohort_means = [statistics.mean(float(target["forward_return_pct"]) for _, target in cohort_points if target.get("forward_return_pct") is not None) for cohort_points in cohorts.values() if any(target.get("forward_return_pct") is not None for _, target in cohort_points)]
                     cohort_medians = [median([float(target["forward_return_pct"]) for _, target in cohort_points if target.get("forward_return_pct") is not None]) for cohort_points in cohorts.values()]
                     cohort_win_rates = [sum(float(target["forward_return_pct"]) > 0 for _, target in cohort_points if target.get("forward_return_pct") is not None) / len([target for _, target in cohort_points if target.get("forward_return_pct") is not None]) * 100 for cohort_points in cohorts.values() if any(target.get("forward_return_pct") is not None for _, target in cohort_points)]
-                    state_out[value] = {"sample_count": len(returns), "cohort_count": len(cohorts), "mean_forward_return": round(statistics.mean(cohort_means), 6) if cohort_means else None, "median_forward_return": median([value for value in cohort_medians if value is not None]), "win_rate": round(statistics.mean(cohort_win_rates), 6) if cohort_win_rates else None, "q25": percentile([value for value in cohort_medians if value is not None], .25), "q75": percentile([value for value in cohort_medians if value is not None], .75), "median_future_max_drawdown": median(drawdowns), "worst_future_max_drawdown": min(drawdowns) if drawdowns else None, "small_sample": len(returns) < 12, "origin_months": [month for month, _ in points], "cohort_summaries": {str(cohort): {"sample_count": len(cohort_points), "origin_months": [month for month, _ in cohort_points]} for cohort, cohort_points in sorted(cohorts.items())}}
+                    cohort_summaries = {}
+                    for cohort, cohort_points in sorted(cohorts.items()):
+                        cohort_returns = [float(target["forward_return_pct"]) for _, target in cohort_points if target.get("forward_return_pct") is not None]
+                        cohort_drawdowns = [float(target["max_drawdown_pct"]) for _, target in cohort_points if target.get("max_drawdown_pct") is not None]
+                        cohort_summaries[str(cohort)] = {"sample_count": len(cohort_returns), "mean_forward_return": round(statistics.mean(cohort_returns), 6) if cohort_returns else None, "median_forward_return": median(cohort_returns), "win_rate": round(sum(value > 0 for value in cohort_returns) / len(cohort_returns) * 100, 6) if cohort_returns else None, "median_future_max_drawdown": median(cohort_drawdowns), "origin_months": [month for month, _ in cohort_points]}
+                    state_out[value] = {"sample_count": len(returns), "cohort_count": len(cohorts), "mean_forward_return": round(statistics.mean(cohort_means), 6) if cohort_means else None, "median_forward_return": median([value for value in cohort_medians if value is not None]), "win_rate": round(statistics.mean(cohort_win_rates), 6) if cohort_win_rates else None, "q25": percentile([value for value in cohort_medians if value is not None], .25), "q75": percentile([value for value in cohort_medians if value is not None], .75), "median_future_max_drawdown": median(drawdowns), "worst_future_max_drawdown": min(drawdowns) if drawdowns else None, "small_sample": len(cohorts) < 12, "origin_months": [month for month, _ in points], "cohort_summaries": cohort_summaries}
                 domains_out[domain] = state_out
             output["benchmarks"][benchmark][f"forward_{horizon}m"] = domains_out
     return output
@@ -183,8 +198,14 @@ def build(phase2: dict[str, Any], targets: dict[str, Any]) -> dict[str, Any]:
     timeline = [{"month": r["month"], "valuation": state(r, "valuation"), "earnings": state(r, "earnings"), "macro_confirmation": state(r, "macro_confirmation"), "trend": state(r, "trend"), "a_fear_state": state(r, "sentiment_overlay"), "a_fear_model_ready": r["sentiment_overlay"].get("model_ready") is True} for r in records]
     window_extracts = {name: [item for item in timeline if start <= item["month"] <= end] for name, (start, end) in WINDOWS.items()}
     distribution_summary = {domain: domain_distributions[domain]["states"] for domain in DOMAINS}
-    phase3_evidence = {"valuation_state_distribution": distribution_summary["valuation"], "earnings_state_distribution": distribution_summary["earnings"], "trend_state_distribution": distribution_summary["trend"], "macro_state_distribution": distribution_summary["macro_confirmation"], "domain_change_rates": {domain: domain_transitions[domain]["monthly_state_change_rate"] for domain in CORE}, "median_state_durations": {domain: domain_transitions[domain]["median_state_duration_months"] for domain in CORE}, "most_common_combinations": combinations(records), "major_conflicts": conflicts(records), "state_forward_return_summary": {}, "state_sample_sizes": {}, "insufficient_sample_flags": {}}
-    return {"schema": "cycle_engine_domain_diagnostics_v1", "description": "Research-only historical diagnostics for frozen Phase 2 Domain Signals; no model rule changes.", "research_only": True, "uses_future_information": True, "source_phase2_sha256": sha256_bytes(PHASE2_PATH.read_bytes()), "source_phase2_audit_sha256": canonical_sha(json.loads(PHASE2_AUDIT_PATH.read_text(encoding="utf-8"))), "source_evaluation_sha256": canonical_sha(targets), "record_count": len(records), "start_month": records[0]["month"], "end_month": records[-1]["month"], "coverage": domain_coverage, "state_distribution": domain_distributions, "transitions": domain_transitions, "combinations": combinations(records), "conflicts": conflicts(records), "timeline": timeline, "window_extracts": window_extracts, "evaluation": evaluation(records, targets), "phase3_design_evidence": phase3_evidence}
+    combinations_out = combinations(records)
+    conflicts_out = conflicts(records)
+    evaluation_out = evaluation(records, targets)
+    state_forward = {benchmark: benchmark_data for benchmark, benchmark_data in evaluation_out["benchmarks"].items()}
+    state_sizes = {benchmark: {horizon: {domain: {value: item["sample_count"] for value, item in domain_values.items()} for domain, domain_values in horizon_data.items()} for horizon, horizon_data in benchmark_data.items()} for benchmark, benchmark_data in state_forward.items()}
+    insufficient = {benchmark: {horizon: {domain: {value: item["small_sample"] for value, item in domain_values.items()} for domain, domain_values in horizon_data.items()} for horizon, horizon_data in benchmark_data.items()} for benchmark, benchmark_data in state_forward.items()}
+    phase3_evidence = {"valuation_state_distribution": distribution_summary["valuation"], "earnings_state_distribution": distribution_summary["earnings"], "trend_state_distribution": distribution_summary["trend"], "macro_state_distribution": distribution_summary["macro_confirmation"], "domain_change_rates": {domain: domain_transitions[domain]["monthly_state_change_rate"] for domain in CORE}, "median_state_durations": {domain: domain_transitions[domain]["median_state_duration_months"] for domain in CORE}, "most_common_combinations": combinations_out, "major_conflicts": conflicts_out, "state_forward_return_summary": state_forward, "state_sample_sizes": state_sizes, "insufficient_sample_flags": insufficient}
+    return {"schema": "cycle_engine_domain_diagnostics_v1", "description": "Research-only historical diagnostics for frozen Phase 2 Domain Signals; no model rule changes.", "research_only": True, "uses_future_information": True, "source_phase2_sha256": sha256_bytes(PHASE2_PATH.read_bytes()), "source_phase2_audit_sha256": canonical_sha(json.loads(PHASE2_AUDIT_PATH.read_text(encoding="utf-8"))), "source_evaluation_sha256": canonical_sha(targets), "record_count": len(records), "start_month": records[0]["month"], "end_month": records[-1]["month"], "coverage": domain_coverage, "state_distribution": domain_distributions, "transitions": domain_transitions, "combinations": combinations_out, "conflicts": conflicts_out, "timeline": timeline, "window_extracts": window_extracts, "evaluation": evaluation_out, "phase3_design_evidence": phase3_evidence}
 
 
 def forbidden(value: Any) -> int:
