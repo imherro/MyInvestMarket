@@ -53,6 +53,10 @@ Phase 1 只把冻结数据转换为可追溯的月频 Evidence Vector，不计�
 
 运行 `python scripts/cycle_engine_evaluation_targets.py --generate` 可生成评价目标与审计文件：`data/cycle_engine_evaluation_targets_v1.json`、`data/cycle_engine_evaluation_targets_audit_v1.json`。不完整的未来窗口保留为 `target_available=false` 和空值；宽基代理从 100 起按 CSI300/CSI500 月收益各 50% 复利，不平均指数点位。说明见 [docs/cycle_engine_evaluation_targets_v1.md](docs/cycle_engine_evaluation_targets_v1.md)。
 
+### Cycle Engine v1 Feature Diagnostics
+
+Phase 3 诊断层只把已通过 readiness 的 model candidate 与 Evaluation target 按月份连接，输出描述性 Spearman、固定 rank bucket、三个固定历史阶段和同月冗余矩阵。它不产生 score、feature ranking、recommendation、状态、权重或仓位；12/24 个月结果因高度重叠，仅作描述性诊断。运行 `python scripts/cycle_engine_feature_diagnostics.py --generate`，说明见 [docs/cycle_engine_feature_diagnostics_v1.md](docs/cycle_engine_feature_diagnostics_v1.md)。
+
 ## 核心输出
 
 - `market_opportunity_score`：市场机会分，衡量趋势、宽度、流动性、资金、主线、估值和宏观环境。

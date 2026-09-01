@@ -1,0 +1,20 @@
+{
+  "schema": "cycle_engine_feature_diagnostics_audit_v1",
+  "feature_count": 42,
+  "candidate_feature_count": 34,
+  "source_evidence_hash_match": true,
+  "source_evaluation_hash_match": true,
+  "evidence_audit_passed": true,
+  "evaluation_audit_passed": true,
+  "unauthorized_feature_count": 0,
+  "future_target_used_as_feature_count": 0,
+  "non_candidate_feature_analyzed_count": 0,
+  "sample_alignment_violation_count": 0,
+  "readiness_rule_violation_count": 0,
+  "bucket_assignment_violation_count": 0,
+  "correlation_formula_violation_count": 0,
+  "redundancy_formula_violation_count": 0,
+  "era_boundary_violation_count": 0,
+  "source_mutation_count": 0,
+  "passed": true
+}
