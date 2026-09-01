@@ -22,6 +22,7 @@ AUDIT_PATH = DATA / "cycle_engine_domain_signals_audit_v1.json"
 MIN_HISTORY = 36
 HORIZONS = (6, 12, 24)
 INDEXES = ("csi300", "csi500", "csi1000")
+FROZEN_EVIDENCE_SHA256 = "d617e0226f9957a696f202800fb7034c665e541eabb632891904d12f6aed8d23"
 
 FORBIDDEN_OUTPUT_KEYS = {
     "cycle_score", "market_score", "bull_bear_score", "regime", "cycle_regime",
@@ -86,7 +87,7 @@ def erp_band(value: float | None) -> str:
 
 def component(path: str, row: dict[str, Any]) -> dict[str, Any]:
     value = rank(row, path)
-    return {"available": value is not None, "rank": value, "state": band(value)}
+    return {"available": value is not None, "rank": value, "ready": ready(row, path), "state": band(value)}
 
 
 def valuation(row: dict[str, Any]) -> dict[str, Any]:
@@ -102,15 +103,18 @@ def valuation(row: dict[str, Any]) -> dict[str, Any]:
         state = band(sum(values) / 2 if len(values) == 2 else None)
         components[name]["state"] = state
         components[name]["available"] = len(values) == 2
+        components[name]["ready"] = components[name]["available"] and all(components[name][field]["ready"] for field in ("pe", "pb"))
         states.append(state)
     components["erp"]["state"] = erp_band(components["erp"]["rank"])
+    components["erp"]["ready"] = components["erp"]["available"] and ready(row, "valuation.csi300_erp_pct.value")
     states.append(components["erp"]["state"])
     participating = [name for name, state in zip(("csi300", "csi500", "erp"), states) if state != "unavailable"]
     unavailable = ["csi1000"] + [name for name, state in zip(("csi300", "csi500", "erp"), states) if state == "unavailable"]
     cheap = states.count("cheap")
     expensive = states.count("expensive")
-    state = "cheap" if cheap >= 2 else ("expensive" if expensive >= 2 else "neutral")
-    return {"state": state, "ready": len(participating) == 3, "cheap_count": cheap, "neutral_count": states.count("neutral"), "expensive_count": expensive, "disagreement": len(set(states)) > 1, "participating_components": participating, "unavailable_components": unavailable, "components": components, "reason_codes": [f"{name}_{value}" for name, value in zip(("csi300", "csi500", "erp"), states)]}
+    model_ready = all(components[name]["ready"] for name in ("csi300", "csi500", "erp"))
+    state = "insufficient_history" if not model_ready else ("cheap" if cheap >= 2 else ("expensive" if expensive >= 2 else "neutral"))
+    return {"state": state, "ready": model_ready, "cheap_count": cheap, "neutral_count": states.count("neutral"), "expensive_count": expensive, "disagreement": len(set(states)) > 1, "participating_components": participating, "unavailable_components": unavailable, "components": components, "reason_codes": [f"{name}_{value}" for name, value in zip(("csi300", "csi500", "erp"), states)] + (["valuation_inputs_ready"] if model_ready else ["insufficient_history"])}
 
 
 def earnings(row: dict[str, Any], rows: dict[str, dict[str, Any]]) -> dict[str, Any]:
@@ -200,7 +204,7 @@ def trend(row: dict[str, Any]) -> dict[str, Any]:
             state = "bottoming"
         else:
             state = "mixed"
-    return {"state": state, "ready": state != "insufficient_history", "participating_indices": participating, "index_states": {index: item["state"] for index, item in indexes.items()}, "dispersion": len(set(item["state"] for item in indexes.values())), "unavailable_indices": [index for index, item in indexes.items() if not item["ready"]], "csi300": indexes["csi300"], "csi500": indexes["csi500"], "csi1000": indexes["csi1000"], "reason_codes": ["six_features_to_index_state", "index_states_to_broad_state"]}
+    return {"state": state, "ready": state != "insufficient_history", "participating_indices": participating, "index_states": {index: item["state"] for index, item in indexes.items()}, "dispersion": len({indexes[index]["state"] for index in participating}), "unavailable_indices": [index for index, item in indexes.items() if not item["ready"]], "csi300": indexes["csi300"], "csi500": indexes["csi500"], "csi1000": indexes["csi1000"], "reason_codes": ["six_features_to_index_state", "index_states_to_broad_state"]}
 
 
 def sentiment(row: dict[str, Any]) -> dict[str, Any]:
@@ -218,7 +222,8 @@ def sentiment(row: dict[str, Any]) -> dict[str, Any]:
         state = "high_fear"
     else:
         state = "extreme_fear"
-    return {"state": state, "score": value, "available": value is not None, "observations": feature(row, path).get("normalization_history_observations"), "model_ready": ready(row, path), "role": "overlay_only"}
+    observations = feature(row, path).get("normalization_history_observations")
+    return {"state": state, "score": value, "available": value is not None, "observations": observations, "normalization_history_observations": observations, "model_ready": ready(row, path), "role": "overlay_only"}
 
 
 def reduction_policy(paths: set[str]) -> dict[str, str]:
@@ -256,6 +261,19 @@ def keys(value: Any) -> list[str]:
     return []
 
 
+def contains_sentiment_core_input(value: Any) -> bool:
+    if isinstance(value, dict):
+        for key, child in value.items():
+            token = str(key).lower()
+            if any(part in token for part in ("a_fear", "fear_score", "sentiment_overlay")):
+                return True
+            if contains_sentiment_core_input(child):
+                return True
+    elif isinstance(value, list):
+        return any(contains_sentiment_core_input(child) for child in value)
+    return False
+
+
 def reduce_record(row: dict[str, Any], rows: dict[str, dict[str, Any]]) -> dict[str, Any]:
     return {"month": row["month"], "basis_trade_date": row["basis_trade_date"], "source_evidence_sha256": rows["__meta__"]["source_sha"], "valuation": valuation(row), "earnings": earnings(row, rows), "macro_confirmation": macro_confirmation(row), "trend": trend(row), "sentiment_overlay": sentiment(row)}
 
@@ -290,6 +308,14 @@ def audit(data: dict[str, Any], evidence: dict[str, Any], evidence_audit: dict[s
                 errors[{"valuation": "valuation_reduction_violation_count", "earnings": "earnings_reduction_violation_count", "macro_confirmation": "macro_confirmation_violation_count", "trend": "trend_domain_reduction_violation_count", "sentiment_overlay": "sentiment_overlay_violation_count"}[section]] += 1
         if actual.get("sentiment_overlay", {}).get("state") != "unavailable" and actual.get("sentiment_overlay", {}).get("role") != "overlay_only":
             errors["sentiment_core_leakage_count"] += 1
+        if any(contains_sentiment_core_input(actual.get(section, {})) for section in ("valuation", "earnings", "macro_confirmation", "trend")):
+            errors["sentiment_core_leakage_count"] += 1
+        for section in ("valuation", "earnings", "macro_confirmation", "trend", "sentiment_overlay"):
+            if actual.get(section, {}).get("ready", actual.get(section, {}).get("model_ready")) != wanted.get(section, {}).get("ready", wanted.get(section, {}).get("model_ready")):
+                errors["readiness_violation_count"] += 1
+        for index in INDEXES:
+            if actual.get("trend", {}).get(index, {}).get("ready") != wanted.get("trend", {}).get(index, {}).get("ready"):
+                errors["readiness_violation_count"] += 1
         if actual.get("earnings", {}).get("growth_rank_change_3m") is not None:
             prior = shift_month(actual["month"], -3)
             if prior not in {item["month"] for item in evidence["records"]}:
@@ -310,6 +336,9 @@ def generate() -> tuple[dict[str, Any], dict[str, Any]]:
     evidence, evidence_audit = load_sources()
     if evidence_audit.get("passed") is not True:
         raise RuntimeError("Phase 1 Evidence audit did not pass")
+    source_sha = canonical_sha(evidence)
+    if source_sha != FROZEN_EVIDENCE_SHA256:
+        raise RuntimeError(f"Phase 1 Evidence source gate failed: {source_sha}")
     output = build(evidence)
     result = audit(output, evidence, evidence_audit)
     if not result["passed"]:

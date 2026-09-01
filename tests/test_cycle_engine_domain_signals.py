@@ -105,6 +105,9 @@ class DomainSignalsTests(unittest.TestCase):
         self.assertFalse(by_month["2026-08"]["sentiment_overlay"]["model_ready"])
         self.assertFalse(by_month["2012-11"]["earnings"]["ready"])
         self.assertEqual(by_month["2012-11"]["earnings"]["state"], "insufficient_history")
+        self.assertFalse(by_month["2012-11"]["valuation"]["ready"])
+        self.assertEqual(by_month["2012-11"]["valuation"]["state"], "insufficient_history")
+        self.assertIn("normalization_history_observations", by_month["2026-08"]["sentiment_overlay"])
 
     def test_csi1000_prelaunch_and_readiness_boundary(self) -> None:
         by_month = {row["month"]: row for row in self.output["records"]}
@@ -113,6 +116,8 @@ class DomainSignalsTests(unittest.TestCase):
         self.assertFalse(by_month["2017-08"]["trend"]["csi1000"]["ready"])
         self.assertTrue(by_month["2017-09"]["trend"]["csi1000"]["ready"])
         self.assertEqual(by_month["2017-08"]["trend"]["csi1000"]["state"], "insufficient_history")
+        self.assertEqual(by_month["2017-08"]["trend"]["participating_indices"], ["csi300", "csi500"])
+        self.assertEqual(by_month["2017-08"]["trend"]["dispersion"], 2)
 
     def test_audit_mutations_fail(self) -> None:
         mutations = (("source_evidence_sha256", "source_evidence_hash_violation_count"), ("forbidden", "forbidden_output_violation_count"))
@@ -132,6 +137,38 @@ class DomainSignalsTests(unittest.TestCase):
         mutated["future_return"] = 1
         result = domain.audit(mutated, self.evidence, self.evidence_audit)
         self.assertGreater(result["future_information_dependency_count"], 0)
+        self.assertFalse(result["passed"])
+
+    def test_domain_rule_mutations_hit_specific_audit_counters(self) -> None:
+        cases = (
+            ("valuation", "valuation_reduction_violation_count"),
+            ("earnings", "earnings_reduction_violation_count"),
+            ("macro_confirmation", "macro_confirmation_violation_count"),
+            ("trend", "trend_domain_reduction_violation_count"),
+            ("sentiment_overlay", "sentiment_overlay_violation_count"),
+        )
+        for section, counter in cases:
+            mutated = copy.deepcopy(self.output)
+            if section == "sentiment_overlay":
+                mutated["records"][0][section]["state"] = "calm"
+            else:
+                mutated["records"][0][section]["state"] = "mutated"
+            result = domain.audit(mutated, self.evidence, self.evidence_audit)
+            self.assertGreater(result[counter], 0, section)
+            self.assertFalse(result["passed"])
+
+    def test_sentiment_cannot_leak_into_core_domain(self) -> None:
+        mutated = copy.deepcopy(self.output)
+        mutated["records"][0]["valuation"]["a_fear"] = 50
+        result = domain.audit(mutated, self.evidence, self.evidence_audit)
+        self.assertGreater(result["sentiment_core_leakage_count"], 0)
+        self.assertFalse(result["passed"])
+
+    def test_readiness_mutation_is_a_hard_failure(self) -> None:
+        mutated = copy.deepcopy(self.output)
+        mutated["records"][0]["valuation"]["ready"] = not mutated["records"][0]["valuation"]["ready"]
+        result = domain.audit(mutated, self.evidence, self.evidence_audit)
+        self.assertGreater(result["readiness_violation_count"], 0)
         self.assertFalse(result["passed"])
 
     def test_future_evidence_does_not_change_prior_domain_semantics(self) -> None:

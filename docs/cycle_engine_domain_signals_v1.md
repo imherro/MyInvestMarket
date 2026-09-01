@@ -27,17 +27,23 @@ The six trend fields for each index are reduced to one index state before
 CSI300/CSI500/CSI1000 states are reduced to one broad trend state. CSI1000 is
 omitted until its own six fields are ready.
 
+Every formal domain state observes the Phase 1 `normalization_history_ready`
+gate. Early months therefore report `insufficient_history` rather than a
+synthetic neutral state. Trend `dispersion` counts only participating indices;
+unavailable or immature indices are excluded.
+
 A-FEAR is always `overlay_only`; it never participates in a core vote. Its
 bands are `[0,20) calm`, `[20,40) normal`, `[40,60) watch`, `[60,80) high_fear`,
 and `[80,100] extreme_fear`.
 
 ## Audit
 
-`data/cycle_engine_domain_signals_audit_v1.json` independently rebuilds the
-domain output, checks the Phase 1 source gate and canonical hash, validates
+`data/cycle_engine_domain_signals_audit_v1.json` rebuilds the reduction output,
+checks the Phase 1 source gate and canonical hash, validates
 readiness and natural-month alignment, rejects non-candidate or future-data
 use, and ensures all forbidden global score/regime/allocation outputs remain
-absent. Phase 2 does not emit a Cycle Score, global regime, position,
+absent. Production generation accepts only the frozen Phase 1 Evidence
+canonical SHA256. Phase 2 does not emit a Cycle Score, global regime, position,
 allocation, or trading signal.
 
 Generate with:
