@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>自由现金流 × 科技成长策略回测</title>
+    <link rel="stylesheet" href="/style-rotation-backtest.css" />
+  </head>
+  <body>
+    <div data-myinvest-header></div>
+
+    <header class="hero">
+      <div>
+        <a class="eyebrow" href="/">MYINVEST / 策略实验室</a>
+        <h1>自由现金流 × 科技成长</h1>
+        <p>满仓双ETF轮动，与中证A500、沪深300及静态组合做同区间比较。</p>
+      </div>
+      <div class="hero-status">
+        <span>样本末目标配置</span>
+        <strong id="currentAllocation">--</strong>
+        <small id="currentSignal">数据加载中</small>
+      </div>
+    </header>
+
+    <main class="backtest-layout">
+      <section class="assumption-strip" aria-label="回测假设">
+        <div><span>代理指数</span><strong>932365 + 931696</strong></div>
+        <div><span>调仓频率</span><strong>月末判断 / 次日执行</strong></div>
+        <label for="costRange">
+          <span>单边交易成本</span>
+          <strong><output id="costOutput">10</output> bp</strong>
+          <input id="costRange" type="range" min="0" max="30" step="5" value="10" />
+        </label>
+        <div><span>样本区间</span><strong id="sampleRange">--</strong></div>
+      </section>
+
+      <section class="metric-grid" aria-label="核心回测指标">
+        <article>
+          <span>轮动策略累计收益</span>
+          <strong id="strategyReturn">--</strong>
+          <small id="strategyAnnualized">年化 --</small>
+        </article>
+        <article>
+          <span>相对A500超额</span>
+          <strong id="excessReturn">--</strong>
+          <small id="excessAnnualized">年化超额 --</small>
+        </article>
+        <article>
+          <span>最大回撤</span>
+          <strong id="maxDrawdown">--</strong>
+          <small id="drawdownDate">--</small>
+        </article>
+        <article>
+          <span>风险收益</span>
+          <strong id="sharpeRatio">--</strong>
+          <small id="turnoverSummary">--</small>
+        </article>
+      </section>
+
+      <section id="verdictBand" class="verdict-band" aria-label="回测结论">
+        <span>样本结论</span>
+        <strong id="verdictTitle">--</strong>
+        <p id="verdictDetail">--</p>
+      </section>
+
+      <section class="chart-section">
+        <div class="section-head">
+          <div>
+            <span class="kicker">净值比较</span>
+            <h2>相同起点，谁跑得更稳</h2>
+          </div>
+          <div id="seriesLegend" class="legend" aria-label="切换对比序列"></div>
+        </div>
+        <div id="equityChart" class="chart" role="img" aria-label="策略及宽基累计净值曲线"></div>
+      </section>
+
+      <section class="two-column">
+        <div class="chart-section compact">
+          <div class="section-head">
+            <div>
+              <span class="kicker">风险</span>
+              <h2>回撤路径</h2>
+            </div>
+          </div>
+          <div id="drawdownChart" class="chart compact" role="img" aria-label="策略与中证A500回撤曲线"></div>
+        </div>
+        <div class="chart-section compact">
+          <div class="section-head">
+            <div>
+              <span class="kicker">仓位</span>
+              <h2>科技仓位变化</h2>
+            </div>
+          </div>
+          <div id="allocationChart" class="chart compact" role="img" aria-label="历史科技成长目标仓位"></div>
+        </div>
+      </section>
+
+      <section class="comparison-section">
+        <div class="section-head">
+          <div>
+            <span class="kicker">横向比较</span>
+            <h2>收益不是唯一答案</h2>
+          </div>
+          <span id="effectiveRange" class="range-note">--</span>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>策略</th>
+                <th>累计收益</th>
+                <th>年化收益</th>
+                <th>年化波动</th>
+                <th>最大回撤</th>
+                <th>Sharpe</th>
+              </tr>
+            </thead>
+            <tbody id="comparisonRows"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="method-section">
+        <div>
+          <span class="kicker">执行规则</span>
+          <h2>只在月末换挡</h2>
+        </div>
+        <ol>
+          <li><strong>进攻档 45/55：</strong>科技站上60日线、20日线高于60日线、科技/现金流相对强弱突破前60日高点，三项满足至少两项。</li>
+          <li><strong>防守档 80/20：</strong>科技跌破60日线、相对强弱跌破前20日低点、科技距60日高点回撤超过12%，三项满足至少两项。</li>
+          <li><strong>均衡档 65/35：</strong>其余状态。信号使用当日收盘信息，在下一交易日生效，避免未来函数。</li>
+        </ol>
+      </section>
+
+      <section class="disclosure">
+        <strong>先看限制，再看收益</strong>
+        <p>这里使用价格指数代理，不含ETF跟踪误差、管理费、分红再投资和税费。自由现金流、科技成长和A500指数均晚于部分样本期发布，其早期历史由指数公司回溯计算，存在指数设计和幸存者偏差；交易成本只按调仓成交金额估算。结果适合验证规则行为，不足以证明长期有效，也不构成投资建议。</p>
+        <p id="sourceLine">数据来源加载中</p>
+      </section>
+    </main>
+
+    <div data-myinvest-footer></div>
+    <script src="/style-rotation-backtest.js"></script>
+    <script src="https://invest.okbbc.com/header.js" data-target="[data-myinvest-header]" defer></script>
+    <script src="https://invest.okbbc.com/footer.js" data-target="[data-myinvest-footer]" defer></script>
+  </body>
+</html>

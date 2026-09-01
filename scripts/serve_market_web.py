@@ -4,6 +4,7 @@ import hashlib
 import html
 import json
 import mimetypes
+import argparse
 import traceback
 from datetime import datetime, time, timedelta
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -2027,9 +2028,13 @@ class MarketWebHandler(BaseHTTPRequestHandler):
 
 
 def main() -> None:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--host", default="127.0.0.1")
+    parser.add_argument("--port", type=int, default=PORT)
+    args = parser.parse_args()
     WEB_DIR.mkdir(parents=True, exist_ok=True)
-    server = ThreadingHTTPServer(("127.0.0.1", PORT), MarketWebHandler)
-    print(f"MyInvestMarket Web is running at http://127.0.0.1:{PORT}")
+    server = ThreadingHTTPServer((args.host, args.port), MarketWebHandler)
+    print(f"MyInvestMarket Web is running at http://{args.host}:{args.port}")
     server.serve_forever()
 
 
