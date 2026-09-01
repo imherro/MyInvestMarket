@@ -42,6 +42,8 @@ class CycleEngineFeaturesTests(unittest.TestCase):
             {item["path"] for item in self.contract["model_input_registry"]},
             {item["path"] for item in freeze.build_registry()},
         )
+        self.assertTrue(all(set(item) == {"path", "domain", "role", "unit", "direction_hint", "availability_rule", "pit_date_field", "missing_policy", "description"} for item in freeze.build_registry()))
+        self.assertEqual(set(engine.build_engine_feature_policy(self.contract["model_input_registry"])), {item["path"] for item in freeze.build_registry()})
 
     def test_native_percentile_and_fear_are_identity_transforms(self) -> None:
         evidence = json.loads((ROOT / "data/cycle_engine_features_v1.json").read_text(encoding="utf-8"))
@@ -109,12 +111,43 @@ class CycleEngineFeaturesTests(unittest.TestCase):
         self.assertGreater(audit["normalization_readiness_violation_count"], 0)
         self.assertFalse(audit["passed"])
 
+    def test_normalization_audit_detects_native_boolean_and_fear_tampering(self) -> None:
+        records = freeze.records_for_hash(self.payload)
+        cases = [
+            ("valuation.indices.csi300.pe_ttm.percentile_expanding", "expanding_rank_pct", 1),
+            ("sentiment.a_fear.fear_score", "expanding_rank_pct", 1),
+            ("trend.indices.csi1000.above_ma250.value", "expanding_rank_pct", 50),
+        ]
+        for path, key, value in cases:
+            rows = engine.build_features(records, self.contract, self.manifest)
+            rows[-1]["features"][path][key] = value
+            audit = engine.build_audit(rows, records, self.contract, self.manifest)
+            self.assertGreater(audit["normalization_transform_violation_count"], 0, path)
+            self.assertFalse(audit["passed"], path)
+
+    def test_missing_after_40_keeps_history_and_readiness(self) -> None:
+        records = copy.deepcopy(freeze.records_for_hash(self.payload))
+        path = "valuation.csi300_erp_pct.value"
+        records[40]["valuation"]["csi300_erp_pct"]["value"] = None
+        rows = engine.build_features(records, self.contract, self.manifest)
+        feature = rows[40]["features"][path]
+        self.assertEqual(feature["normalization_history_observations"], 40)
+        self.assertTrue(feature["normalization_history_ready"])
+        self.assertIsNone(feature["expanding_rank_pct"])
+
     def test_engine_generation_does_not_write_frozen_layer(self) -> None:
         paths = [engine.DATASET_PATH, engine.CONTRACT_PATH, engine.MANIFEST_PATH, engine.MATRIX_PATH, engine.GOLDEN_PATH]
         before = {path: path.read_bytes() for path in paths}
         engine.generate()
         after = {path: path.read_bytes() for path in paths}
         self.assertEqual(before, after)
+
+    def test_final_freeze_v11_hashes_are_exact(self) -> None:
+        self.assertEqual(engine.FROZEN_RECORDS_SHA256, "82d5e6046aa7607d1b9646cd46de02eb512def1bd93a22881b0cc4d02c2c95d0")
+        self.assertEqual(engine.FROZEN_CONTRACT_SHA256, "062604d15805b01105f5fdf6aa1ecf8bd3024d0a730a341d635eee9331bd60ff")
+        self.assertEqual(self.manifest["baseline_git_commit"], "64032e8387642a418192d7feca2d09a602354af0")
+        self.assertEqual(freeze.sha256(self.contract), engine.FROZEN_CONTRACT_SHA256)
+        self.assertEqual(freeze.sha256(freeze.records_for_hash(self.payload, freeze.FROZEN_THROUGH)), engine.FROZEN_RECORDS_SHA256)
 
     def test_future_extreme_value_does_not_change_prior_rank(self) -> None:
         records = freeze.records_for_hash(self.payload)

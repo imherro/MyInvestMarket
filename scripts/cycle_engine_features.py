@@ -26,6 +26,10 @@ GOLDEN_PATH = DATA / "cycle_dataset_golden_spots_v1.json"
 FEATURES_PATH = DATA / "cycle_engine_features_v1.json"
 AUDIT_PATH = DATA / "cycle_engine_features_audit_v1.json"
 MIN_NORMALIZATION_HISTORY = 36
+FROZEN_RECORDS_SHA256 = "82d5e6046aa7607d1b9646cd46de02eb512def1bd93a22881b0cc4d02c2c95d0"
+FROZEN_CONTRACT_SHA256 = "062604d15805b01105f5fdf6aa1ecf8bd3024d0a730a341d635eee9331bd60ff"
+FROZEN_MATRIX_SHA256 = "86103098b57d2f084ebec3c565231a785875769841a205eb4685ce1e562b7dca"
+FROZEN_GOLDEN_SHA256 = "99a108058d224b1634f03f1c07a17796ecaf88eb2e266d097e2520983ab79419"
 
 
 def feature_family(path: str) -> str:
@@ -86,6 +90,10 @@ def load_source() -> tuple[dict[str, Any], dict[str, Any], dict[str, Any], dict[
     result = freeze.validate(payload, contract, matrix, manifest, golden)
     if not result["valid"]:
         raise FrozenDatasetInvalid("frozen dataset validation failed: " + "; ".join(result["errors"]))
+    if manifest.get("frozen_records_sha256") != FROZEN_RECORDS_SHA256 or manifest.get("contract_sha256") != FROZEN_CONTRACT_SHA256:
+        raise FrozenDatasetInvalid("Final Freeze v1.1 manifest baseline mismatch")
+    if freeze.sha256(contract) != FROZEN_CONTRACT_SHA256 or freeze.sha256(matrix) != FROZEN_MATRIX_SHA256 or freeze.sha256(golden) != FROZEN_GOLDEN_SHA256:
+        raise FrozenDatasetInvalid("Final Freeze v1.1 frozen layer hash mismatch")
     return payload, contract, matrix, manifest, golden
 
 
@@ -221,7 +229,7 @@ def build_features(records: list[dict[str, Any]], contract: dict[str, Any], mani
     return output
 
 
-def build_audit(rows: list[dict[str, Any]], records: list[dict[str, Any]], contract: dict[str, Any], manifest: dict[str, Any]) -> dict[str, Any]:
+def build_audit(rows: list[dict[str, Any]], records: list[dict[str, Any]], contract: dict[str, Any], manifest: dict[str, Any], matrix: dict[str, Any] | None = None, golden: dict[str, Any] | None = None) -> dict[str, Any]:
     registry_paths = {item["path"] for item in contract["model_input_registry"]}
     policy_map = build_engine_feature_policy(contract["model_input_registry"])
     unauthorized: list[str] = []
@@ -231,13 +239,14 @@ def build_audit(rows: list[dict[str, Any]], records: list[dict[str, Any]], contr
     family_missing = 0
     candidate_missing = 0
     unexpected = 0
-    normalization_errors = 0
+    normalization_future_leakage = 0
+    normalization_transform_errors = 0
     normalization_history_errors = 0
     normalization_readiness_errors = 0
     frozen_layer_mutations = 0
     rank_history: dict[str, list[float]] = defaultdict(list)
     observation_counts: dict[str, int] = defaultdict(int)
-    for row in rows:
+    for row, record in zip(rows, records):
         for path, feature in row["features"].items():
             if path not in registry_paths:
                 unauthorized.append(path)
@@ -255,33 +264,51 @@ def build_audit(rows: list[dict[str, Any]], records: list[dict[str, Any]], contr
                 type_violations += 1
             if not feature.get("available") and not feature.get("expected_missing"):
                 unexpected += 1
-            if feature.get("available") and feature.get("normalization_source") == "pit_expanding_rank_pct":
-                values = rank_history[path] + [float(feature["raw_value"])]
-                expected_rank = rank_pct(values, float(feature["raw_value"]))
-                if feature["expanding_rank_pct"] != expected_rank:
-                    normalization_errors += 1
-                rank_history[path].append(float(feature["raw_value"]))
             if candidate:
-                observation_counts[path] += int(bool(feature.get("available")))
+                expected_raw = resolve(record, path)
+                expected_available = expected_raw is not None
+                observation_counts[path] += int(expected_available)
                 if feature.get("normalization_history_observations") != observation_counts[path]:
                     normalization_history_errors += 1
                 if feature.get("normalization_history_ready") != (observation_counts[path] >= MIN_NORMALIZATION_HISTORY):
                     normalization_readiness_errors += 1
-                if feature.get("available"):
+                if not expected_available:
+                    if feature.get("expanding_rank_pct") is not None:
+                        normalization_transform_errors += 1
+                elif item := next((item for item in contract["model_input_registry"] if item["path"] == path), None):
                     source = feature.get("normalization_source")
-                    if source in ("dataset_native_percentile", "native_a_fear_score") and feature.get("expanding_rank_pct") != feature.get("raw_value"):
-                        normalization_errors += 1
-                    if feature.get("unit") == "boolean" and feature.get("expanding_rank_pct") is not None:
-                        normalization_errors += 1
-                elif feature.get("expanding_rank_pct") is not None:
-                    normalization_errors += 1
+                    if item["unit"] == "boolean":
+                        if feature.get("expanding_rank_pct") is not None or source != "boolean_identity":
+                            normalization_transform_errors += 1
+                    elif is_native_percentile(path):
+                        if feature.get("expanding_rank_pct") != expected_raw or source != "dataset_native_percentile":
+                            normalization_transform_errors += 1
+                    elif is_native_fear(path):
+                        if feature.get("expanding_rank_pct") != expected_raw or source != "native_a_fear_score":
+                            normalization_transform_errors += 1
+                    elif isinstance(expected_raw, (int, float)) and not isinstance(expected_raw, bool):
+                        values = rank_history[path] + [float(expected_raw)]
+                        expected_rank = rank_pct(values, float(expected_raw))
+                        if feature.get("expanding_rank_pct") != expected_rank or source != "pit_expanding_rank_pct":
+                            normalization_future_leakage += 1
+                        rank_history[path].append(float(expected_raw))
+                    else:
+                        normalization_transform_errors += 1
             elif path in registry_paths:
-                if feature.get("normalization_history_observations") is not None or feature.get("normalization_history_ready") is not False or feature.get("normalization_source") != "not_model_candidate":
-                    normalization_history_errors += 1
+                if feature.get("expanding_rank_pct") is not None or feature.get("normalization_history_observations") is not None or feature.get("normalization_history_ready") is not False or feature.get("normalization_source") != "not_model_candidate":
+                    normalization_transform_errors += 1
         missing_registry += sum(path not in row["features"] for path in registry_paths)
-    if manifest.get("contract_sha256") != freeze.sha256(contract) or manifest.get("frozen_records_sha256") != freeze.sha256(freeze.records_for_hash({"records": records}, freeze.FROZEN_THROUGH)):
+    matrix = matrix if matrix is not None else json.loads(MATRIX_PATH.read_text(encoding="utf-8"))
+    golden = golden if golden is not None else json.loads(GOLDEN_PATH.read_text(encoding="utf-8"))
+    frozen_hashes = {
+        "records": freeze.sha256(freeze.records_for_hash({"records": records}, freeze.FROZEN_THROUGH)),
+        "contract": freeze.sha256(contract),
+        "matrix": freeze.sha256(matrix),
+        "golden": freeze.sha256(golden),
+    }
+    if frozen_hashes != {"records": FROZEN_RECORDS_SHA256, "contract": FROZEN_CONTRACT_SHA256, "matrix": FROZEN_MATRIX_SHA256, "golden": FROZEN_GOLDEN_SHA256} or manifest.get("frozen_records_sha256") != FROZEN_RECORDS_SHA256 or manifest.get("contract_sha256") != FROZEN_CONTRACT_SHA256:
         frozen_layer_mutations += 1
-    audit = {"record_count": len(records), "start_month": records[0]["month"], "end_month": records[-1]["month"], "source_contract_version": contract["contract_version"], "source_contract_sha256": freeze.sha256(contract), "source_frozen_records_sha256": manifest["frozen_records_sha256"], "unauthorized_input_count": len(set(unauthorized)), "unauthorized_inputs": sorted(set(unauthorized)), "future_pit_date_count": future_pit, "missing_registry_path_count": missing_registry, "feature_type_violation_count": type_violations, "normalization_future_leakage_count": normalization_errors, "normalization_history_violation_count": normalization_history_errors, "normalization_readiness_violation_count": normalization_readiness_errors, "feature_family_missing_count": family_missing, "candidate_flag_missing_count": candidate_missing, "unexpected_input_missing_count": unexpected, "frozen_layer_mutation_count": frozen_layer_mutations, "passed": False}
+    audit = {"record_count": len(records), "start_month": records[0]["month"], "end_month": records[-1]["month"], "source_contract_version": contract["contract_version"], "source_contract_sha256": frozen_hashes["contract"], "source_frozen_records_sha256": frozen_hashes["records"], "unauthorized_input_count": len(set(unauthorized)), "unauthorized_inputs": sorted(set(unauthorized)), "future_pit_date_count": future_pit, "missing_registry_path_count": missing_registry, "feature_type_violation_count": type_violations, "normalization_future_leakage_count": normalization_future_leakage, "normalization_transform_violation_count": normalization_transform_errors, "normalization_history_violation_count": normalization_history_errors, "normalization_readiness_violation_count": normalization_readiness_errors, "feature_family_missing_count": family_missing, "candidate_flag_missing_count": candidate_missing, "unexpected_input_missing_count": unexpected, "frozen_layer_mutation_count": frozen_layer_mutations, "passed": False}
     audit["passed"] = all(value == 0 for key, value in audit.items() if key.endswith("_count") and key != "record_count")
     return audit
 

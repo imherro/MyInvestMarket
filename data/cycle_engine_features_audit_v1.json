@@ -11,6 +11,7 @@
   "missing_registry_path_count": 0,
   "feature_type_violation_count": 0,
   "normalization_future_leakage_count": 0,
+  "normalization_transform_violation_count": 0,
   "normalization_history_violation_count": 0,
   "normalization_readiness_violation_count": 0,
   "feature_family_missing_count": 0,

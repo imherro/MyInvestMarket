@@ -79,49 +79,6 @@ def build_registry() -> list[dict[str, str]]:
     return registry
 
 
-def feature_family(path: str) -> str:
-    if path.startswith("valuation.indices."):
-        return "valuation_level"
-    if path == "valuation.csi300_erp_pct.value":
-        return "relative_valuation"
-    if path.startswith("valuation."):
-        return "valuation_lineage"
-    if path.startswith("earnings.all_a_net_profit") or path.startswith("earnings.nonfinancial_a_net_profit"):
-        return "earnings_growth"
-    if path.startswith("earnings.all_a_roe") or path.startswith("earnings.nonfinancial_a_roe"):
-        return "earnings_quality"
-    if path.startswith("earnings.pmi."):
-        return "macro_confirmation"
-    if path.startswith("trend.indices."):
-        field = path.rsplit(".", 2)[-2]
-        if field in ("ma250_deviation_pct", "above_ma250"):
-            return "trend_level"
-        if field == "ma250_slope_3m_pct":
-            return "trend_direction"
-        if field in ("return_6m_pct", "return_12m_pct"):
-            return "trend_momentum"
-        return "trend_damage"
-    if path == "sentiment.a_fear.fear_score":
-        return "sentiment_overlay"
-    return "unclassified"
-
-
-def model_candidate(path: str) -> bool:
-    if path.startswith("valuation.indices."):
-        return path.endswith("percentile_expanding")
-    if path in ("valuation.csi300_earnings_yield_pct.value", "valuation.china_10y_government_bond_yield_pct.value"):
-        return False
-    return True
-
-
-def annotate_registry(registry: list[dict[str, str]]) -> list[dict[str, str]]:
-    for item in registry:
-        path = item["path"]
-        item["feature_family"] = feature_family(path)
-        item["model_candidate"] = model_candidate(path)
-    return registry
-
-
 EXCLUDED = [
     "industrial_profit_yoy_pct", "ppi_yoy_pct", "CPI", "M1", "M2", "social_financing", "credit_impulse", "capital_flow", "northbound_flow", "main_fund_flow", "theme_concentration", "short_term_5d_20d_momentum", "short_term_breadth", "daily_volume_ratio", "current_v3.4_market_score", "market_regime.py output", "market_risk.py output", "market_trend.py legacy output", "crowding_score", "four_sleeve_allocation",
 ]
