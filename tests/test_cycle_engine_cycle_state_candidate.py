@@ -112,8 +112,8 @@ class CycleStateCandidateTests(unittest.TestCase):
         self.assertFalse(failed["passed"])
 
     def test_audit_replay_does_not_call_formal_reducers(self) -> None:
-        source = inspect.getsource(candidate.audit)
-        for name in ("build(", "candidate_state(", "macro_alignment("):
+        source = inspect.getsource(candidate.audit) + inspect.getsource(candidate._audit_replay_record)
+        for name in ("build(", "candidate_state(", "macro_alignment(", "rules = _rule_matches("):
             self.assertNotIn(name, source)
         module_source = inspect.getsource(candidate)
         for name in ("cycle_engine_domain_diagnostics", "cycle_engine_evaluation_targets", "cycle_engine_nonoverlap_diagnostics"):

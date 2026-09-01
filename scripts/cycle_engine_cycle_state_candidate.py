@@ -170,6 +170,23 @@ def _true_runs(values: list[str], target: str) -> list[int]:
     return runs
 
 
+# Independent copy of the rule predicates used only by the audit replay.
+def _audit_rule_matches(valuation: str, earnings: str, trend: str) -> dict[str, bool]:
+    return {
+        "deep_bear_rule": trend == "damaged" and valuation == "cheap" and earnings == "deterioration",
+        "bottoming_rule_A": valuation == "cheap" and earnings in {"bottoming", "recovery"} and trend in {"damaged", "bottoming", "mixed"},
+        "bottoming_rule_B": trend == "bottoming" and valuation != "expensive" and earnings != "deterioration",
+        "distribution_extended_rule": earnings == "deterioration" and trend == "extended",
+        "distribution_expensive_rule": earnings == "deterioration" and valuation == "expensive" and trend in {"up", "extended", "mixed"},
+        "late_bull_extended_rule": earnings != "deterioration" and trend == "extended" and valuation in {"neutral", "expensive"},
+        "late_bull_expensive_rule": earnings != "deterioration" and valuation == "expensive" and trend in {"up", "extended"},
+        "early_bull_rule": trend == "up" and valuation != "expensive" and earnings in {"bottoming", "recovery"},
+        "bear_fallback": trend == "damaged",
+        "bull_fallback": trend in {"up", "extended"},
+        "ambiguous_fallback": True,
+    }
+
+
 def _audit_replay_record(source: dict[str, Any]) -> dict[str, Any]:
     valuation = source["valuation"]["state"]
     earnings = source["earnings"]["state"]
@@ -178,7 +195,7 @@ def _audit_replay_record(source: dict[str, Any]) -> dict[str, Any]:
     if not core_ready:
         state, reasons = "insufficient_history", ["core_not_ready"]
     else:
-        rules = _rule_matches(valuation, earnings, trend)
+        rules = _audit_rule_matches(valuation, earnings, trend)
         if rules["deep_bear_rule"]:
             state, reasons = "deep_bear", ["deep_bear_rule"]
         elif rules["bottoming_rule_A"] or rules["bottoming_rule_B"]:
