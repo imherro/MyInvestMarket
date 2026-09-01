@@ -169,12 +169,30 @@ class CycleStateCandidateTests(unittest.TestCase):
             self.assertFalse(result["passed"])
 
     def test_nested_future_fields_are_rejected(self) -> None:
-        for field in ("forward_return", "future_return", "evaluation_target"):
+        for field in ("forward_12m", "future_return", "evaluation_target"):
             mutated = copy.deepcopy(self.output)
             mutated["diagnostics"]["timeline"][0][field] = 1
             result = candidate.audit(mutated, self.phase2, self.phase2_audit)
             self.assertGreater(result["future_information_dependency_count"], 0, field)
             self.assertFalse(result["passed"])
+
+    def test_legal_fields_do_not_trigger_future_counter(self) -> None:
+        normal = copy.deepcopy(self.output)
+        normal["diagnostics"]["legal_fields"] = {
+            "first_core_ready_month": "2013-03",
+            "window_extracts": [],
+            "macro_alignment": "neutral",
+            "sentiment_overlay": {"role": "overlay_only"},
+        }
+        result = candidate.audit(normal, self.phase2, self.phase2_audit)
+        self.assertEqual(result["future_information_dependency_count"], 0)
+        self.assertTrue(result["passed"], result)
+
+    def test_candidate_data_is_byte_stable(self) -> None:
+        path = ROOT / "data/cycle_engine_cycle_state_candidate_v1.json"
+        before = path.read_bytes()
+        candidate.generate()
+        self.assertEqual(before, path.read_bytes())
 
     def test_audit_replay_does_not_call_formal_reducers(self) -> None:
         source = inspect.getsource(candidate.audit) + inspect.getsource(candidate._audit_replay_record) + inspect.getsource(candidate._audit_replay_diagnostics)
