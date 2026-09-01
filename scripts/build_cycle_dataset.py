@@ -424,6 +424,19 @@ def audit_dataset(payload: dict[str, Any]) -> dict[str, Any]:
                 })
     coverage = {key: finite(sum(values) / len(values), 2) if values else 0.0 for key, values in domain_totals.items()}
     duplicate_count = len(months) - len(set(months)) + len(basis_dates) - len(set(basis_dates))
+    cache = payload.get("earnings_source_cache", {})
+    affected_months: list[str] = []
+    identities = cache.get("conflicts", [])
+    for record in records:
+        basis = parse_date(record.get("basis_trade_date"))
+        periods = {record.get("earnings", {}).get("all_a_net_profit_yoy_pct", {}).get("report_period"), record.get("earnings", {}).get("all_a_net_profit_yoy_pct", {}).get("prior_year_report_period")}
+        for conflict in identities:
+            identity = conflict.get("identity", {})
+            if identity.get("end_date") in periods and basis and parse_date(identity.get("_effective_ann_str")) and parse_date(identity.get("_effective_ann_str")) <= basis:
+                affected_months.append(record["month"])
+                break
+    structural_passed = len(pit_violations) == 0 and duplicate_count == 0 and order_violation_count == 0 and current_invalid_report_types == 0 and prior_invalid_report_types == 0
+    freshness_passed = not bool(cache.get("stale")) and not bool(cache.get("refresh_error")) and not bool(cache.get("offline"))
     return {
         "dataset_version": payload.get("dataset_version"),
         "generated_at": datetime.now(build_market_dataset.TZ).isoformat(timespec="seconds"),
@@ -447,7 +460,9 @@ def audit_dataset(payload: dict[str, Any]) -> dict[str, Any]:
         "current_statement_invalid_report_type_count": current_invalid_report_types,
         "prior_statement_invalid_report_type_count": prior_invalid_report_types,
         "ambiguous_source_conflict_count": int(payload.get("earnings_source_cache", {}).get("conflict_count", 0)),
-        "affected_month_count": 0,
+        "affected_month_count": len(affected_months),
+        "affected_months": affected_months,
+        "affected_source_identities": identities,
         "earnings_cache_latest_period": payload.get("earnings_source_cache", {}).get("metadata", {}).get("latest_period"),
         "earnings_cache_stale": bool(payload.get("earnings_source_cache", {}).get("stale")),
         "earnings_cache_missing_expected_periods": payload.get("earnings_source_cache", {}).get("missing_expected_periods", []),
@@ -457,7 +472,9 @@ def audit_dataset(payload: dict[str, Any]) -> dict[str, Any]:
         "order_violation_count": order_violation_count,
         "missing_by_source": missing_by_field,
         "low_confidence_periods": low_confidence_periods,
-        "passed": len(pit_violations) == 0 and duplicate_count == 0 and order_violation_count == 0 and current_invalid_report_types == 0 and prior_invalid_report_types == 0,
+        "structural_passed": structural_passed,
+        "freshness_passed": freshness_passed,
+        "passed": structural_passed and freshness_passed,
     }
 
 
@@ -505,8 +522,9 @@ def build_dataset(as_of: date, refresh_earnings_cache: bool = True) -> dict[str,
         )
         earnings_income_by_period = cycle_earnings.prepare_income_by_period(earnings_income)
         earnings_cache_meta = cycle_earnings.load_cache_metadata(EARNINGS_CACHE_PATH)
+        earnings_freshness = cycle_earnings.audit_cache_freshness(earnings_income, earnings_cache_meta, end)
     except Exception as exc:
-        earnings_income_by_period, earnings_stocks, cache_conflicts, earnings_cache_meta = None, None, [{"source_error": str(exc)}], {}
+        earnings_income_by_period, earnings_stocks, cache_conflicts, earnings_cache_meta, earnings_freshness = None, None, [{"source_error": str(exc)}], {}, {"stale": True, "missing_expected_periods": [], "refresh_error": str(exc)}
     records = [
         record_for_month(month, month_basis[month], prices, valuations, price_errors, valuation_errors, earnings_income_by_period, earnings_stocks)
         for month in months
@@ -517,7 +535,7 @@ def build_dataset(as_of: date, refresh_earnings_cache: bool = True) -> dict[str,
         "description": "Monthly Point-in-Time cycle research inputs. Not an official score or position decision.",
         "period": {"start_month": months[0], "end_month": months[-1], "warmup_start": WARMUP_START},
         "sources": ["Tushare.trade_cal", "Tushare.index_daily", "Tushare.index_dailybasic", "Tushare.income_vip", "A-FEAR local history (optional)"],
-        "earnings_source_cache": {"path": str(EARNINGS_CACHE_PATH.relative_to(ROOT)), "conflict_count": len(cache_conflicts), "conflicts": cache_conflicts, "metadata": earnings_cache_meta, "stale": False, "missing_expected_periods": []},
+        "earnings_source_cache": {"path": str(EARNINGS_CACHE_PATH.relative_to(ROOT)), "conflict_count": len(cache_conflicts), "conflicts": cache_conflicts, "metadata": earnings_cache_meta, **earnings_freshness, "offline": not refresh_earnings_cache},
         "records": records,
     }
     audit = audit_dataset(payload)
@@ -552,7 +570,9 @@ def rebuild_earnings_from_existing_dataset(path: Path) -> dict[str, Any]:
         record["data_quality"]["coverage"] = domain_coverage({"valuation": record.get("valuation", {}), "earnings": earnings, "trend": record.get("trend", {}), "sentiment": record.get("sentiment", {})})
         record["data_quality"]["confidence"] = "low" if record["data_quality"]["coverage"]["earnings_pct"] == 0 else "medium"
     metadata = cycle_earnings.load_cache_metadata(EARNINGS_CACHE_PATH)
-    payload["earnings_source_cache"] = {"path": str(EARNINGS_CACHE_PATH.relative_to(ROOT)), "conflict_count": len(conflicts), "conflicts": conflicts, "metadata": metadata, "stale": False, "missing_expected_periods": []}
+    end = parse_date(payload.get("records", [])[-1].get("basis_trade_date"))
+    freshness = cycle_earnings.audit_cache_freshness(income, metadata, end) if end else {"stale": True, "missing_expected_periods": []}
+    payload["earnings_source_cache"] = {"path": str(EARNINGS_CACHE_PATH.relative_to(ROOT)), "conflict_count": len(conflicts), "conflicts": conflicts, "metadata": metadata, **freshness, "offline": True}
     return payload
 
 

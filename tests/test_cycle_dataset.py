@@ -254,6 +254,35 @@ class CycleDatasetTests(unittest.TestCase):
         self.assertNotEqual(after["value"], before["value"])
         self.assertEqual(after["prior_comparator_report_types_used"], ["4"])
 
+    def test_cache_freshness_respects_statutory_disclosure_deadlines(self) -> None:
+        income = cycle_earnings.normalise_income(pd.concat([self.income(period, {"000001.SZ": 1}, "20260820") for period in ("20260331", "20260630")], ignore_index=True))
+        meta = cycle_earnings.cache_metadata(income, [], date(2026, 8, 31))
+        september = cycle_earnings.audit_cache_freshness(income, meta, date(2026, 9, 30), 2026)
+        october = cycle_earnings.audit_cache_freshness(income, meta, date(2026, 10, 31), 2026)
+        self.assertFalse(september["stale"])
+        self.assertTrue(october["stale"])
+        self.assertIn("20260930", october["missing_expected_periods"])
+
+    def test_annual_period_is_not_required_before_april_thirtieth(self) -> None:
+        income = cycle_earnings.normalise_income(pd.concat([self.income(period, {"000001.SZ": 1}, "20261020") for period in ("20260331", "20260630", "20260930")], ignore_index=True))
+        meta = cycle_earnings.cache_metadata(income, [], date(2027, 4, 1))
+        self.assertFalse(cycle_earnings.audit_cache_freshness(income, meta, date(2027, 4, 29), 2026)["stale"])
+        self.assertTrue(cycle_earnings.audit_cache_freshness(income, meta, date(2027, 4, 30), 2026)["stale"])
+
+    def test_stock_lifecycle_enriches_delisting_without_rewriting_history(self) -> None:
+        existing = cycle_earnings.normalise_stocks(pd.DataFrame([{"ts_code": "000001.SZ", "list_date": "20100101", "delist_date": ""}]))
+        fresh = cycle_earnings.normalise_stocks(pd.DataFrame([{"ts_code": "000001.SZ", "list_date": "20100101", "delist_date": "20270630"}]))
+        merged, conflicts = cycle_earnings.append_stocks(existing, fresh)
+        self.assertEqual(conflicts, [])
+        self.assertEqual(cycle_earnings.eligible_universe(merged, "20260331"), {"000001.SZ"})
+        self.assertNotIn("000001.SZ", cycle_earnings.eligible_universe(merged, "20270630"))
+
+    def test_stock_metadata_conflict_is_recorded(self) -> None:
+        existing = cycle_earnings.normalise_stocks(pd.DataFrame([{"ts_code": "000001.SZ", "list_date": "20100101", "delist_date": "20270630"}]))
+        fresh = cycle_earnings.normalise_stocks(pd.DataFrame([{"ts_code": "000001.SZ", "list_date": "20100102", "delist_date": "20270701"}]))
+        _, conflicts = cycle_earnings.append_stocks(existing, fresh)
+        self.assertEqual({row["field"] for row in conflicts}, {"list_date", "delist_date"})
+
 
 if __name__ == "__main__":
     unittest.main()

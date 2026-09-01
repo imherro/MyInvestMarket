@@ -14,6 +14,6 @@
 - Earnings cache latest period: 20260630; stale: False
 - Trend coverage: 100.0%
 - A-FEAR coverage: 12.5%
-- Result: PASS
+- Result: FAIL
 
 Unavailable fields are retained as unavailable with an explicit source reason; they are never assigned neutral values.
