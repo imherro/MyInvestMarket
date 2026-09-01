@@ -42,6 +42,7 @@ DEFAULT_BASE_URL = f"http://127.0.0.1:{PORT}"
 POST_CLOSE_READY_TIME = time(16, 30)
 CYCLE_POSITION_POLICY_PATH = DATA_DIR / "cycle_engine_position_policy_v1.json"
 CYCLE_ENGINE_CHART_PATH = DATA_DIR / "cycle_engine_chart_v1.json"
+CYCLE_ENGINE_BACKTEST_PATH = ROOT / "web" / "data" / "cycle-engine-backtest.json"
 
 
 def stable_release_result() -> dict[str, object]:
@@ -462,6 +463,14 @@ def api_groups_result() -> list[dict[str, object]]:
                 ),
                 api_endpoint(
                     "GET",
+                    "/api/cycle-engine/backtest",
+                    "读取冻结周期状态映射股票账户仓位的月度代理回测。",
+                    "回测方法、样本、下限/中位数/上限策略、基准净值曲线、仓位曲线、逐月观察和审计结果。",
+                    read_only=True,
+                    safety_note="只读取已生成回测结果，不触发重计算、写入或交易。",
+                ),
+                api_endpoint(
+                    "GET",
                     "/api/fear/latest",
                     "读取最新 A-FEAR 恐慌状态、变化、阶段和数据质量。",
                     "最新 A-FEAR record、文件元数据和只读安全边界。",
@@ -604,6 +613,11 @@ def api_catalog_result(base_url: str = DEFAULT_BASE_URL) -> dict[str, object]:
                 "method": "GET",
                 "path": "/api/research/latest/model-health",
                 "purpose": "检查模型漂移、校准触发和健康状态。",
+            },
+            {
+                "method": "GET",
+                "path": "/api/cycle-engine/backtest",
+                "purpose": "检查周期仓位回测结果、超额收益和回撤变化。",
             },
         ],
         "safety": {
@@ -1583,6 +1597,16 @@ def cycle_engine_chart_result() -> dict[str, object]:
     }
 
 
+def cycle_engine_backtest_result() -> dict[str, object]:
+    if not CYCLE_ENGINE_BACKTEST_PATH.exists():
+        return {"available": False, "error": "cycle-engine-backtest.json not found"}
+    try:
+        payload = json.loads(CYCLE_ENGINE_BACKTEST_PATH.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        return {"available": False, "error": f"cycle engine backtest unavailable: {exc}"}
+    return {"available": True, **payload}
+
+
 def history_api_result(include_legacy: bool = False) -> dict[str, object]:
     history = filtered_history(load_history(DEFAULT_HISTORY_PATH), include_legacy=include_legacy)
     return {
@@ -1776,6 +1800,7 @@ def homepage_index_result() -> dict[str, object]:
         "api_catalog": api_catalog_summary_result(),
         "cycle_engine_position_policy": cycle_engine_position_policy_result(),
         "cycle_engine_chart": cycle_engine_chart_result(),
+        "cycle_engine_backtest": cycle_engine_backtest_result(),
         "position_policy_map": policy_map,
         "position_map": {**policy_map, "legacy_alias_of": "position_policy_map"},
         "allocation_policy": allocation_map,
@@ -1950,6 +1975,9 @@ class MarketWebHandler(BaseHTTPRequestHandler):
                 return
             if path == "/api/research/latest/strategy-robustness":
                 self.send_json(latest_strategy_robustness_result())
+                return
+            if path == "/api/cycle-engine/backtest":
+                self.send_json(cycle_engine_backtest_result())
                 return
             if path == "/api/fear/latest":
                 self.send_json(latest_a_fear_result())

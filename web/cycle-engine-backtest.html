@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Cycle Engine 周期仓位回测</title>
+    <link rel="stylesheet" href="/cycle-engine-backtest.css" />
+  </head>
+  <body>
+    <div data-myinvest-header></div>
+
+    <main class="backtest-layout">
+      <header class="page-header">
+        <div>
+          <a class="eyebrow" href="/">MYINVEST / 周期引擎</a>
+          <h1>Cycle Engine 周期仓位回测</h1>
+          <p>检验稳定周期状态映射到股票账户权益仓位后，收益、回撤和换手如何变化。</p>
+        </div>
+        <div class="header-status">
+          <span>主方案</span>
+          <strong id="sampleRange">--</strong>
+          <small id="auditStatus">回测结果加载中</small>
+        </div>
+      </header>
+
+      <section class="assumption-strip" aria-label="回测假设">
+        <div><span>信号</span><strong>月末收盘后</strong></div>
+        <div><span>执行代理</span><strong>下一月收益</strong></div>
+        <div><span>主基准</span><strong>沪深300</strong></div>
+        <div><span>成本</span><strong id="costBps">--</strong></div>
+      </section>
+
+      <section class="metric-grid" aria-label="主方案结论">
+        <article>
+          <span>中位数方案累计收益</span>
+          <strong id="strategyReturn">--</strong>
+          <small id="strategyAnnualized">年化 --</small>
+        </article>
+        <article>
+          <span>相对沪深300超额</span>
+          <strong id="excessReturn">--</strong>
+          <small>累计相对收益</small>
+        </article>
+        <article>
+          <span>最大回撤</span>
+          <strong id="maxDrawdown">--</strong>
+          <small id="drawdownDate">--</small>
+        </article>
+        <article>
+          <span>回撤改善</span>
+          <strong id="drawdownImprovement">--</strong>
+          <small>相对沪深300，百分点</small>
+        </article>
+      </section>
+
+      <section id="verdictBand" class="verdict-band">
+        <span>样本结论</span>
+        <strong id="verdictTitle">--</strong>
+        <p id="verdictDetail">--</p>
+      </section>
+
+      <section class="chart-section">
+        <div class="section-head">
+          <div><span class="kicker">净值比较</span><h2>动态仓位是否跑赢基准</h2></div>
+          <div id="equityLegend" class="legend"></div>
+        </div>
+        <div id="equityChart" class="chart" role="img" aria-label="周期仓位方案和指数基准累计净值曲线"></div>
+      </section>
+
+      <section class="two-column">
+        <div class="chart-section compact">
+          <div class="section-head"><div><span class="kicker">风险</span><h2>主方案回撤路径</h2></div></div>
+          <div id="drawdownChart" class="chart compact" role="img" aria-label="中位数方案和沪深300回撤曲线"></div>
+        </div>
+        <div class="chart-section compact">
+          <div class="section-head"><div><span class="kicker">仓位</span><h2>三种区间取值</h2></div></div>
+          <div id="positionChart" class="chart compact" role="img" aria-label="周期仓位区间下限中位数和上限曲线"></div>
+        </div>
+      </section>
+
+      <section class="comparison-section">
+        <div class="section-head"><div><span class="kicker">横向比较</span><h2>收益、风险和换手</h2></div><span id="comparisonNote">--</span></div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>方案</th><th>累计收益</th><th>年化收益</th><th>年化波动</th><th>最大回撤</th><th>Sharpe</th><th>总换手</th></tr></thead>
+            <tbody id="comparisonRows"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="method-section">
+        <div><span class="kicker">方法和边界</span><h2>先看限制，再看结果</h2></div>
+        <ul id="methodList"></ul>
+      </section>
+
+      <section class="audit-section">
+        <div class="section-head"><div><span class="kicker">可复核</span><h2>逐月状态、仓位与收益</h2></div><span id="observationCount">--</span></div>
+        <details open>
+          <summary>展开逐月回测明细</summary>
+          <div class="table-wrap detail-table-wrap">
+            <table>
+              <thead><tr><th>信号月</th><th>状态</th><th>执行代理月</th><th>沪深300收益</th><th>下限净收益</th><th>中位数净收益</th><th>上限净收益</th><th>中位数仓位</th></tr></thead>
+              <tbody id="observationRows"></tbody>
+            </table>
+          </div>
+        </details>
+      </section>
+
+      <section class="disclosure">
+        <strong>审计状态</strong>
+        <p id="auditDetail">--</p>
+        <p>回测结果用于检验规则行为，不构成投资建议。回测使用冻结月度文件；后来修订的历史数据、指数回溯计算、未计入分红和真实成交价格等因素，都会影响结果。</p>
+      </section>
+    </main>
+
+    <div data-myinvest-footer></div>
+    <script src="/cycle-engine-backtest.js"></script>
+    <script src="https://invest.okbbc.com/header.js" data-target="[data-myinvest-header]" defer></script>
+    <script src="https://invest.okbbc.com/footer.js" data-target="[data-myinvest-footer]" defer></script>
+  </body>
+</html>
