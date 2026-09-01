@@ -1,0 +1,532 @@
+{
+  "contract_version": "cycle_dataset_contract_v1",
+  "dataset": {
+    "contract_version": "cycle_dataset_contract_v1",
+    "dataset_version": "cycle_dataset_v1",
+    "frequency": "monthly",
+    "start_month": "2010-01",
+    "frozen_through_month": "2026-08",
+    "basis_rule": "last open SSE trading day of natural month",
+    "timezone": "Asia/Shanghai"
+  },
+  "model_input_registry": [
+    {
+      "path": "valuation.indices.csi300.pe_ttm.value",
+      "domain": "valuation",
+      "role": "core",
+      "unit": "ratio",
+      "direction_hint": "higher is more expensive",
+      "availability_rule": "PIT-visible index valuation",
+      "pit_date_field": "observation_date",
+      "missing_policy": "null; never impute or proxy",
+      "description": "TTM PE level"
+    },
+    {
+      "path": "valuation.indices.csi300.pe_ttm.percentile_expanding",
+      "domain": "valuation",
+      "role": "core",
+      "unit": "percentile",
+      "direction_hint": "higher is more expensive",
+      "availability_rule": "PIT-visible expanding history",
+      "pit_date_field": "observation_date",
+      "missing_policy": "null; never impute or proxy",
+      "description": "Expanding historical percentile of pe_ttm"
+    },
+    {
+      "path": "valuation.indices.csi300.pb.value",
+      "domain": "valuation",
+      "role": "core",
+      "unit": "ratio",
+      "direction_hint": "higher is more expensive",
+      "availability_rule": "PIT-visible index valuation",
+      "pit_date_field": "observation_date",
+      "missing_policy": "null; never impute or proxy",
+      "description": "PB level"
+    },
+    {
+      "path": "valuation.indices.csi300.pb.percentile_expanding",
+      "domain": "valuation",
+      "role": "core",
+      "unit": "percentile",
+      "direction_hint": "higher is more expensive",
+      "availability_rule": "PIT-visible expanding history",
+      "pit_date_field": "observation_date",
+      "missing_policy": "null; never impute or proxy",
+      "description": "Expanding historical percentile of pb"
+    },
+    {
+      "path": "valuation.indices.csi500.pe_ttm.value",
+      "domain": "valuation",
+      "role": "core",
+      "unit": "ratio",
+      "direction_hint": "higher is more expensive",
+      "availability_rule": "PIT-visible index valuation",
+      "pit_date_field": "observation_date",
+      "missing_policy": "null; never impute or proxy",
+      "description": "TTM PE level"
+    },
+    {
+      "path": "valuation.indices.csi500.pe_ttm.percentile_expanding",
+      "domain": "valuation",
+      "role": "core",
+      "unit": "percentile",
+      "direction_hint": "higher is more expensive",
+      "availability_rule": "PIT-visible expanding history",
+      "pit_date_field": "observation_date",
+      "missing_policy": "null; never impute or proxy",
+      "description": "Expanding historical percentile of pe_ttm"
+    },
+    {
+      "path": "valuation.indices.csi500.pb.value",
+      "domain": "valuation",
+      "role": "core",
+      "unit": "ratio",
+      "direction_hint": "higher is more expensive",
+      "availability_rule": "PIT-visible index valuation",
+      "pit_date_field": "observation_date",
+      "missing_policy": "null; never impute or proxy",
+      "description": "PB level"
+    },
+    {
+      "path": "valuation.indices.csi500.pb.percentile_expanding",
+      "domain": "valuation",
+      "role": "core",
+      "unit": "percentile",
+      "direction_hint": "higher is more expensive",
+      "availability_rule": "PIT-visible expanding history",
+      "pit_date_field": "observation_date",
+      "missing_policy": "null; never impute or proxy",
+      "description": "Expanding historical percentile of pb"
+    },
+    {
+      "path": "valuation.indices.csi1000.pe_ttm.value",
+      "domain": "valuation",
+      "role": "core",
+      "unit": "ratio",
+      "direction_hint": "higher is more expensive",
+      "availability_rule": "PIT-visible index valuation",
+      "pit_date_field": "observation_date",
+      "missing_policy": "null; never impute or proxy",
+      "description": "TTM PE level"
+    },
+    {
+      "path": "valuation.indices.csi1000.pe_ttm.percentile_expanding",
+      "domain": "valuation",
+      "role": "core",
+      "unit": "percentile",
+      "direction_hint": "higher is more expensive",
+      "availability_rule": "PIT-visible expanding history",
+      "pit_date_field": "observation_date",
+      "missing_policy": "null; never impute or proxy",
+      "description": "Expanding historical percentile of pe_ttm"
+    },
+    {
+      "path": "valuation.indices.csi1000.pb.value",
+      "domain": "valuation",
+      "role": "core",
+      "unit": "ratio",
+      "direction_hint": "higher is more expensive",
+      "availability_rule": "PIT-visible index valuation",
+      "pit_date_field": "observation_date",
+      "missing_policy": "null; never impute or proxy",
+      "description": "PB level"
+    },
+    {
+      "path": "valuation.indices.csi1000.pb.percentile_expanding",
+      "domain": "valuation",
+      "role": "core",
+      "unit": "percentile",
+      "direction_hint": "higher is more expensive",
+      "availability_rule": "PIT-visible expanding history",
+      "pit_date_field": "observation_date",
+      "missing_policy": "null; never impute or proxy",
+      "description": "Expanding historical percentile of pb"
+    },
+    {
+      "path": "valuation.csi300_earnings_yield_pct.value",
+      "domain": "valuation",
+      "role": "core",
+      "unit": "percent",
+      "direction_hint": "higher is more attractive",
+      "availability_rule": "PIT-visible derived CSI300 earnings yield",
+      "pit_date_field": "observation_date",
+      "missing_policy": "null; never impute or proxy",
+      "description": "CSI300 earnings yield"
+    },
+    {
+      "path": "valuation.china_10y_government_bond_yield_pct.value",
+      "domain": "valuation",
+      "role": "core",
+      "unit": "percent",
+      "direction_hint": "higher raises discount rate",
+      "availability_rule": "PIT-visible bond yield",
+      "pit_date_field": "observation_date",
+      "missing_policy": "null; never impute or proxy",
+      "description": "China 10-year government bond yield"
+    },
+    {
+      "path": "valuation.csi300_erp_pct.value",
+      "domain": "valuation",
+      "role": "core",
+      "unit": "percent",
+      "direction_hint": "higher is more attractive",
+      "availability_rule": "derived from PIT-visible earnings yield and bond yield",
+      "pit_date_field": "observation_date",
+      "missing_policy": "null; never impute or proxy",
+      "description": "CSI300 equity risk premium"
+    },
+    {
+      "path": "earnings.all_a_net_profit_yoy_pct.value",
+      "domain": "earnings",
+      "role": "core",
+      "unit": "percent",
+      "direction_hint": "higher/improving is better",
+      "availability_rule": "PIT-visible announced financial data",
+      "pit_date_field": "announcement_date",
+      "missing_policy": "null; never impute or proxy",
+      "description": "All-A net profit YoY"
+    },
+    {
+      "path": "earnings.nonfinancial_a_net_profit_yoy_pct.value",
+      "domain": "earnings",
+      "role": "core",
+      "unit": "percent",
+      "direction_hint": "higher/improving is better",
+      "availability_rule": "PIT-visible announced financial data",
+      "pit_date_field": "announcement_date",
+      "missing_policy": "null; never impute or proxy",
+      "description": "Nonfinancial All-A net profit YoY"
+    },
+    {
+      "path": "earnings.all_a_roe_ttm_pct.value",
+      "domain": "earnings",
+      "role": "core",
+      "unit": "percent",
+      "direction_hint": "higher/improving is better",
+      "availability_rule": "PIT-visible announced financial data",
+      "pit_date_field": "announcement_date",
+      "missing_policy": "null; never impute or proxy",
+      "description": "All-A ROE TTM"
+    },
+    {
+      "path": "earnings.nonfinancial_a_roe_ttm_pct.value",
+      "domain": "earnings",
+      "role": "core",
+      "unit": "percent",
+      "direction_hint": "higher/improving is better",
+      "availability_rule": "PIT-visible announced financial data",
+      "pit_date_field": "announcement_date",
+      "missing_policy": "null; never impute or proxy",
+      "description": "Nonfinancial ROE TTM"
+    },
+    {
+      "path": "earnings.pmi.value",
+      "domain": "macro_confirmation",
+      "role": "core",
+      "unit": "index",
+      "direction_hint": "above 50 is expansion",
+      "availability_rule": "trusted published PMI release visible at basis",
+      "pit_date_field": "publish_date",
+      "missing_policy": "null; never impute or proxy",
+      "description": "Manufacturing PMI value"
+    },
+    {
+      "path": "earnings.pmi.change_1m",
+      "domain": "macro_confirmation",
+      "role": "core",
+      "unit": "index points",
+      "direction_hint": "positive is improving",
+      "availability_rule": "exact natural prior month must be trusted and published",
+      "pit_date_field": "publish_date",
+      "missing_policy": "null; never impute or proxy",
+      "description": "PMI change versus natural prior data month"
+    },
+    {
+      "path": "earnings.pmi.change_3m",
+      "domain": "macro_confirmation",
+      "role": "core",
+      "unit": "index points",
+      "direction_hint": "positive is improving",
+      "availability_rule": "exact natural three-month prior month must be trusted and published",
+      "pit_date_field": "publish_date",
+      "missing_policy": "null; never impute or proxy",
+      "description": "PMI change versus natural three-month prior data month"
+    },
+    {
+      "path": "earnings.pmi.above_50",
+      "domain": "macro_confirmation",
+      "role": "core",
+      "unit": "boolean",
+      "direction_hint": "true is expansion",
+      "availability_rule": "same as trusted PMI value",
+      "pit_date_field": "publish_date",
+      "missing_policy": "null; never impute or proxy",
+      "description": "PMI above 50 flag"
+    },
+    {
+      "path": "trend.indices.csi300.ma250_deviation_pct.value",
+      "domain": "long_term_trend",
+      "role": "core",
+      "unit": "percent",
+      "direction_hint": "positive is above long-term mean",
+      "availability_rule": "PIT-visible index history after official launch",
+      "pit_date_field": "observation_date",
+      "missing_policy": "null; never impute or proxy",
+      "description": "csi300 Close deviation from 250-observation mean"
+    },
+    {
+      "path": "trend.indices.csi300.above_ma250.value",
+      "domain": "long_term_trend",
+      "role": "core",
+      "unit": "boolean",
+      "direction_hint": "true is above long-term mean",
+      "availability_rule": "PIT-visible index history after official launch",
+      "pit_date_field": "observation_date",
+      "missing_policy": "null; never impute or proxy",
+      "description": "csi300 Close above 250-observation mean"
+    },
+    {
+      "path": "trend.indices.csi300.ma250_slope_3m_pct.value",
+      "domain": "long_term_trend",
+      "role": "core",
+      "unit": "percent",
+      "direction_hint": "positive is rising",
+      "availability_rule": "PIT-visible index history after official launch",
+      "pit_date_field": "observation_date",
+      "missing_policy": "null; never impute or proxy",
+      "description": "csi300 250-observation mean slope over 63 observations"
+    },
+    {
+      "path": "trend.indices.csi300.return_6m_pct.value",
+      "domain": "long_term_trend",
+      "role": "core",
+      "unit": "percent",
+      "direction_hint": "positive is upward momentum",
+      "availability_rule": "PIT-visible index history after official launch",
+      "pit_date_field": "observation_date",
+      "missing_policy": "null; never impute or proxy",
+      "description": "csi300 126-observation return"
+    },
+    {
+      "path": "trend.indices.csi300.return_12m_pct.value",
+      "domain": "long_term_trend",
+      "role": "core",
+      "unit": "percent",
+      "direction_hint": "positive is upward momentum",
+      "availability_rule": "PIT-visible index history after official launch",
+      "pit_date_field": "observation_date",
+      "missing_policy": "null; never impute or proxy",
+      "description": "csi300 252-observation return"
+    },
+    {
+      "path": "trend.indices.csi300.drawdown_12m_high_pct.value",
+      "domain": "long_term_trend",
+      "role": "core",
+      "unit": "percent",
+      "direction_hint": "more negative is weaker",
+      "availability_rule": "PIT-visible index history after official launch",
+      "pit_date_field": "observation_date",
+      "missing_policy": "null; never impute or proxy",
+      "description": "csi300 Drawdown from inclusive rolling 252-observation high"
+    },
+    {
+      "path": "trend.indices.csi500.ma250_deviation_pct.value",
+      "domain": "long_term_trend",
+      "role": "core",
+      "unit": "percent",
+      "direction_hint": "positive is above long-term mean",
+      "availability_rule": "PIT-visible index history after official launch",
+      "pit_date_field": "observation_date",
+      "missing_policy": "null; never impute or proxy",
+      "description": "csi500 Close deviation from 250-observation mean"
+    },
+    {
+      "path": "trend.indices.csi500.above_ma250.value",
+      "domain": "long_term_trend",
+      "role": "core",
+      "unit": "boolean",
+      "direction_hint": "true is above long-term mean",
+      "availability_rule": "PIT-visible index history after official launch",
+      "pit_date_field": "observation_date",
+      "missing_policy": "null; never impute or proxy",
+      "description": "csi500 Close above 250-observation mean"
+    },
+    {
+      "path": "trend.indices.csi500.ma250_slope_3m_pct.value",
+      "domain": "long_term_trend",
+      "role": "core",
+      "unit": "percent",
+      "direction_hint": "positive is rising",
+      "availability_rule": "PIT-visible index history after official launch",
+      "pit_date_field": "observation_date",
+      "missing_policy": "null; never impute or proxy",
+      "description": "csi500 250-observation mean slope over 63 observations"
+    },
+    {
+      "path": "trend.indices.csi500.return_6m_pct.value",
+      "domain": "long_term_trend",
+      "role": "core",
+      "unit": "percent",
+      "direction_hint": "positive is upward momentum",
+      "availability_rule": "PIT-visible index history after official launch",
+      "pit_date_field": "observation_date",
+      "missing_policy": "null; never impute or proxy",
+      "description": "csi500 126-observation return"
+    },
+    {
+      "path": "trend.indices.csi500.return_12m_pct.value",
+      "domain": "long_term_trend",
+      "role": "core",
+      "unit": "percent",
+      "direction_hint": "positive is upward momentum",
+      "availability_rule": "PIT-visible index history after official launch",
+      "pit_date_field": "observation_date",
+      "missing_policy": "null; never impute or proxy",
+      "description": "csi500 252-observation return"
+    },
+    {
+      "path": "trend.indices.csi500.drawdown_12m_high_pct.value",
+      "domain": "long_term_trend",
+      "role": "core",
+      "unit": "percent",
+      "direction_hint": "more negative is weaker",
+      "availability_rule": "PIT-visible index history after official launch",
+      "pit_date_field": "observation_date",
+      "missing_policy": "null; never impute or proxy",
+      "description": "csi500 Drawdown from inclusive rolling 252-observation high"
+    },
+    {
+      "path": "trend.indices.csi1000.ma250_deviation_pct.value",
+      "domain": "long_term_trend",
+      "role": "core",
+      "unit": "percent",
+      "direction_hint": "positive is above long-term mean",
+      "availability_rule": "PIT-visible index history after official launch",
+      "pit_date_field": "observation_date",
+      "missing_policy": "null; never impute or proxy",
+      "description": "csi1000 Close deviation from 250-observation mean"
+    },
+    {
+      "path": "trend.indices.csi1000.above_ma250.value",
+      "domain": "long_term_trend",
+      "role": "core",
+      "unit": "boolean",
+      "direction_hint": "true is above long-term mean",
+      "availability_rule": "PIT-visible index history after official launch",
+      "pit_date_field": "observation_date",
+      "missing_policy": "null; never impute or proxy",
+      "description": "csi1000 Close above 250-observation mean"
+    },
+    {
+      "path": "trend.indices.csi1000.ma250_slope_3m_pct.value",
+      "domain": "long_term_trend",
+      "role": "core",
+      "unit": "percent",
+      "direction_hint": "positive is rising",
+      "availability_rule": "PIT-visible index history after official launch",
+      "pit_date_field": "observation_date",
+      "missing_policy": "null; never impute or proxy",
+      "description": "csi1000 250-observation mean slope over 63 observations"
+    },
+    {
+      "path": "trend.indices.csi1000.return_6m_pct.value",
+      "domain": "long_term_trend",
+      "role": "core",
+      "unit": "percent",
+      "direction_hint": "positive is upward momentum",
+      "availability_rule": "PIT-visible index history after official launch",
+      "pit_date_field": "observation_date",
+      "missing_policy": "null; never impute or proxy",
+      "description": "csi1000 126-observation return"
+    },
+    {
+      "path": "trend.indices.csi1000.return_12m_pct.value",
+      "domain": "long_term_trend",
+      "role": "core",
+      "unit": "percent",
+      "direction_hint": "positive is upward momentum",
+      "availability_rule": "PIT-visible index history after official launch",
+      "pit_date_field": "observation_date",
+      "missing_policy": "null; never impute or proxy",
+      "description": "csi1000 252-observation return"
+    },
+    {
+      "path": "trend.indices.csi1000.drawdown_12m_high_pct.value",
+      "domain": "long_term_trend",
+      "role": "core",
+      "unit": "percent",
+      "direction_hint": "more negative is weaker",
+      "availability_rule": "PIT-visible index history after official launch",
+      "pit_date_field": "observation_date",
+      "missing_policy": "null; never impute or proxy",
+      "description": "csi1000 Drawdown from inclusive rolling 252-observation high"
+    },
+    {
+      "path": "sentiment.a_fear.fear_score",
+      "domain": "sentiment",
+      "role": "overlay",
+      "unit": "0-100",
+      "direction_hint": "higher is more fearful",
+      "availability_rule": "available only when local A-FEAR history is present",
+      "pit_date_field": "basis_trade_date",
+      "missing_policy": "null; never impute or proxy",
+      "description": "A-FEAR extreme-fear overlay"
+    }
+  ],
+  "excluded_from_cycle_engine_v1": [
+    "industrial_profit_yoy_pct",
+    "ppi_yoy_pct",
+    "CPI",
+    "M1",
+    "M2",
+    "social_financing",
+    "credit_impulse",
+    "capital_flow",
+    "northbound_flow",
+    "main_fund_flow",
+    "theme_concentration",
+    "short_term_5d_20d_momentum",
+    "short_term_breadth",
+    "daily_volume_ratio",
+    "current_v3.4_market_score",
+    "market_regime.py output",
+    "market_risk.py output",
+    "market_trend.py legacy output",
+    "crowding_score",
+    "four_sleeve_allocation"
+  ],
+  "missing_policy": {
+    "default": null,
+    "rules": [
+      "unavailable remains null",
+      "never impute 0, 50, historical mean, current value, or proxy",
+      "pre-launch index history is expected missing",
+      "CSI1000 valuation source absence is an accepted limitation",
+      "A-FEAR pre-history is expected missing",
+      "PMI release conflicts are not resolved randomly",
+      "financial fields use only PIT-visible announced periods"
+    ]
+  },
+  "accepted_limitations": [
+    {
+      "id": "csi1000_valuation_unavailable",
+      "description": "Tushare index_dailybasic currently has no CSI1000 valuation records; no proxy is permitted."
+    },
+    {
+      "id": "a_fear_begins_2024",
+      "description": "A-FEAR is a modern historical overlay and is intentionally unavailable before its local history begins."
+    },
+    {
+      "id": "pmi_revision_vintage_unavailable",
+      "description": "PMI release-date PIT is maintained, but a complete real-time revision vintage database is not available."
+    },
+    {
+      "id": "financial_revision_vintage_limitation",
+      "description": "Financial announcement-date/version handling is retained, but upstream revisions cannot be fully reconstructed when the source does not expose every vintage."
+    },
+    {
+      "id": "index_backfilled_histories",
+      "description": "Index backfilled history may warm up calculations only on or after the official launch date; pre-launch snapshots are unavailable."
+    }
+  ]
+}

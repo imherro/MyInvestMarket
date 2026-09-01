@@ -29,6 +29,18 @@ A-FEAR = 300/1000 ATM 30日IV百分位 × 40%
 - 缺失规则：历史国债收益率或全市场财务 PIT 数据源不可用时，字段保留 `available=false` 和原因，不以中性值替代。
 - 设计和运行说明：[docs/cycle_dataset_v1.md](docs/cycle_dataset_v1.md)。
 
+### Cycle Dataset v1 Final Freeze
+
+Cycle Dataset v1 的输入契约已经冻结到 `2026-08`：
+
+- [契约与模型输入注册表](data/cycle_dataset_contract_v1.json)
+- [字段可用性矩阵](data/cycle_dataset_feature_availability_v1.json)
+- [黄金样本回归点](data/cycle_dataset_golden_spots_v1.json)
+- [冻结清单与 SHA-256](data/cycle_dataset_freeze_manifest_v1.json)
+- [完整契约说明](docs/cycle_dataset_contract_v1.md)
+
+运行 `python scripts/validate_cycle_dataset_contract.py` 可重验契约、PIT 结构、缺失边界、黄金样本和冻结哈希；运行 `python scripts/validate_cycle_dataset_contract.py --generate` 可在数据更新后重新生成上述审计产物。结构冻结通过不代表数据新鲜度通过；当前清单会如实记录两者状态。
+
 `Cycle Earnings PIT v1.1` 已用 `Tushare.income_vip` 补齐全 A 与非金融 A 的利润金额聚合同比。当前期只采用累计合并报表（`report_type=1`），上年同期优先使用当时已披露的调整后合并报表（`report_type=4`），不会混入单季或母公司口径；月末优先选择披露覆盖率不低于 70% 的最新季度，并以相同公司集合同比。缓存为 append-only，新增季度和最新季度的新披露版本会追加，历史记录不被改写。它仍是研究数据，不影响当前官方 v3.4 仓位输出。
 
 ## 核心输出
