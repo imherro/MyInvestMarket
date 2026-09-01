@@ -1,0 +1,17 @@
+{
+  "schema": "cycle_engine_nonoverlap_diagnostics_audit_v1",
+  "feature_count": 42,
+  "candidate_feature_count": 34,
+  "upstream_audits_passed": true,
+  "source_mutation_count": 0,
+  "upstream_audit_gate_violation_count": 0,
+  "cohort_rule_violation_count": 0,
+  "cohort_spacing_violation_count": 0,
+  "feature_scope_violation_count": 0,
+  "continuous_formula_violation_count": 0,
+  "boolean_formula_violation_count": 0,
+  "stability_formula_violation_count": 0,
+  "overlap_comparison_violation_count": 0,
+  "era_boundary_violation_count": 0,
+  "passed": true
+}

@@ -59,6 +59,8 @@ Phase 3 诊断层只把已通过 readiness 的 model candidate 与 Evaluation ta
 
 Phase 4 walk-forward 诊断按 `as_of_month` 严格截断未来目标，针对 6/12/24 个月收益和最大回撤输出连续特征相关性、布尔特征 true/false 中位数差、36 个已实现样本门槛、最新可用起点和稳定性/符号翻转统计；仅作样本外描述性研究，不产生模型输入或交易信号。运行 `python scripts/cycle_engine_walk_forward_diagnostics.py --generate`，说明见 [docs/cycle_engine_walk_forward_diagnostics_v1.md](docs/cycle_engine_walk_forward_diagnostics_v1.md)。
 
+Phase 4.1 使用固定自然月取模的 6/12/24 个月 non-overlap cohorts，分别输出连续特征与 Boolean 特征在 forward return / max drawdown 上的 cohort 统计、稳定性摘要和与重叠结果的描述性对照。所有 cohort 均保留，小样本输出 `null`；本层不产生选股、状态、权重、阈值、仓位或交易信号。运行 `python scripts/cycle_engine_nonoverlap_diagnostics.py --generate`，说明见 [docs/cycle_engine_nonoverlap_diagnostics_v1.md](docs/cycle_engine_nonoverlap_diagnostics_v1.md)。
+
 ## 核心输出
 
 - `market_opportunity_score`：市场机会分，衡量趋势、宽度、流动性、资金、主线、估值和宏观环境。
