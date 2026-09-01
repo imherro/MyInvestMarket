@@ -109,13 +109,21 @@ def build(evidence:dict[str,Any],targets:dict[str,Any])->dict[str,Any]:
         family[f]={'candidate_count':len(fs),'available_history_range':{x['path']:[x['all_available_sample_count'],x['ready_sample_count']] for x in fs},'median_pairwise_absolute_correlation':quantile([abs(x) for x in rs],.5),'maximum_pairwise_absolute_correlation':max([abs(x) for x in rs],default=None),'high_redundancy_pair_count':sum(abs(x)>=.8 for x in rs)}
     return {'schema':'cycle_engine_feature_diagnostics_v1','source_evidence_sha':canonical_sha(evidence),'source_evaluation_sha':canonical_sha(targets),'feature_diagnostics':features,'family_diagnostics':family,'redundancy_matrix':redundancy,'era_diagnostics':ERAS}
 def audit(d:dict[str,Any])->dict[str,Any]:
-    e,t=load(); expected=build(e,t); errors={'unauthorized_feature_count':0,'future_target_used_as_feature_count':0,'non_candidate_feature_analyzed_count':0,'sample_alignment_violation_count':0,'readiness_rule_violation_count':0,'bucket_assignment_violation_count':0,'correlation_formula_violation_count':0,'redundancy_formula_violation_count':0,'era_boundary_violation_count':0,'source_mutation_count':0}
+    e,t=load(); expected=build(e,t); ea=json.loads(EVIDENCE_AUDIT.read_text()); ta=json.loads(TARGET_AUDIT.read_text()); errors={'unauthorized_feature_count':0,'future_target_used_as_feature_count':0,'non_candidate_feature_analyzed_count':0,'sample_alignment_violation_count':0,'readiness_rule_violation_count':0,'bucket_assignment_violation_count':0,'correlation_formula_violation_count':0,'boolean_group_violation_count':0,'redundancy_formula_violation_count':0,'family_diagnostics_violation_count':0,'era_boundary_violation_count':0,'monotonicity_formula_violation_count':0,'source_mutation_count':0}
     if d.get('source_evidence_sha')!=canonical_sha(e) or d.get('source_evaluation_sha')!=canonical_sha(t): errors['source_mutation_count']+=1
-    if d.get('feature_diagnostics')!=expected.get('feature_diagnostics') or d.get('redundancy_matrix')!=expected.get('redundancy_matrix'): errors['correlation_formula_violation_count']+=1
-    if d.get('family_diagnostics')!=expected.get('family_diagnostics'): errors['redundancy_formula_violation_count']+=1
+    formal={p for p,f in e['records'][-1]['features'].items() if f.get('model_candidate')}; actual_paths=set(d.get('feature_diagnostics',{})); all_paths=set(e['records'][-1]['features'])
+    errors['unauthorized_feature_count'] += len(actual_paths-all_paths); errors['non_candidate_feature_analyzed_count'] += len((actual_paths&all_paths)-formal)
+    if d.get('redundancy_matrix')!=expected.get('redundancy_matrix'): errors['redundancy_formula_violation_count']+=1
+    if d.get('family_diagnostics')!=expected.get('family_diagnostics'): errors['family_diagnostics_violation_count']+=1
+    for p in actual_paths & formal:
+        got=d['feature_diagnostics'][p]; exp=expected['feature_diagnostics'][p]
+        if got.get('target_diagnostics')!=exp.get('target_diagnostics') or got.get('era_diagnostics')!=exp.get('era_diagnostics'): errors['correlation_formula_violation_count']+=1
+        if got.get('bucket_diagnostics')!=exp.get('bucket_diagnostics'): errors['bucket_assignment_violation_count']+=1
+        if got.get('increasing_step_count')!=exp.get('increasing_step_count') or got.get('decreasing_step_count')!=exp.get('decreasing_step_count'): errors['monotonicity_formula_violation_count']+=1
     feature_paths=list(d.get('feature_diagnostics',{}))
     if any(token in path for path in feature_paths for token in FORBIDDEN): errors['future_target_used_as_feature_count']+=1
-    return {'schema':'cycle_engine_feature_diagnostics_audit_v1','feature_count':len(e['records'][-1]['features']),'candidate_feature_count':len(expected['feature_diagnostics']),'source_evidence_hash_match':d.get('source_evidence_sha')==canonical_sha(e),'source_evaluation_hash_match':d.get('source_evaluation_sha')==canonical_sha(t),'evidence_audit_passed':True,'evaluation_audit_passed':True,**errors,'passed':sum(errors.values())==0}
+    source_ok=d.get('source_evidence_sha')==canonical_sha(e) and d.get('source_evaluation_sha')==canonical_sha(t)
+    return {'schema':'cycle_engine_feature_diagnostics_audit_v1','feature_count':len(e['records'][-1]['features']),'candidate_feature_count':len(expected['feature_diagnostics']),'source_evidence_hash_match':d.get('source_evidence_sha')==canonical_sha(e),'source_evaluation_hash_match':d.get('source_evaluation_sha')==canonical_sha(t),'evidence_audit_passed':ea.get('passed') is True,'evaluation_audit_passed':ta.get('passed') is True,**errors,'passed':source_ok and ea.get('passed') is True and ta.get('passed') is True and sum(errors.values())==0}
 def generate():
     e,t=load(); d=build(e,t); a=audit(d); OUT.write_text(json.dumps(d,ensure_ascii=False,indent=2)+'\n',encoding='utf-8'); AUDIT.write_text(json.dumps(a,ensure_ascii=False,indent=2)+'\n',encoding='utf-8'); return a
 if __name__=='__main__':

@@ -13,8 +13,11 @@
   "readiness_rule_violation_count": 0,
   "bucket_assignment_violation_count": 0,
   "correlation_formula_violation_count": 0,
+  "boolean_group_violation_count": 0,
   "redundancy_formula_violation_count": 0,
+  "family_diagnostics_violation_count": 0,
   "era_boundary_violation_count": 0,
+  "monotonicity_formula_violation_count": 0,
   "source_mutation_count": 0,
   "passed": true
 }
