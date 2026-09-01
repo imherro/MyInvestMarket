@@ -23,7 +23,8 @@
       "2026-08"
     ]
   },
-  "feature_count": 34,
+  "feature_count": 42,
+  "candidate_feature_count": 34,
   "features": {
     "valuation.indices.csi300.pe_ttm.percentile_expanding": {
       "feature_family": "valuation_level",
@@ -42702,5 +42703,11 @@
   "source_evidence_sha": "d617e0226f9957a696f202800fb7034c665e541eabb632891904d12f6aed8d23",
   "source_evaluation_sha": "12511ca6c52ad21f4307337e5b853ba7ca098f7162da00de2b3cc71cb871ceb4",
   "source_phase3_sha": "5dc40523e968628eebd3c8031ca4d0d62fbf404350e90083a4c49dac99a306e4",
-  "source_phase4_sha": "4abdbc5721332037ff11b50147e3fb0f184818469c3c89ab47252019a6e517cd"
+  "source_phase4_sha": "4abdbc5721332037ff11b50147e3fb0f184818469c3c89ab47252019a6e517cd",
+  "upstream_file_sha256": {
+    "data\\cycle_engine_features_v1.json": "127485c88e67f408aaa81f91d9f23a6d698fb4501af50aadfb23a2c19d471d91",
+    "data\\cycle_engine_evaluation_targets_v1.json": "cc827d12ec63017fb950ba7aa23f5a197074ae61212148fe66fecade7874f0f3",
+    "data\\cycle_engine_feature_diagnostics_v1.json": "19256ca0d39510536d43a47cecf69674e952314acaf56118ae2ed2e4fec4e5c2",
+    "data\\cycle_engine_walk_forward_diagnostics_v1.json": "43497a3382f2032b814928678da0ea18f6a03e8e0d2904676a108f2a05007939"
+  }
 }

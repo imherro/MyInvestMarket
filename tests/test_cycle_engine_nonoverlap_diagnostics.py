@@ -10,7 +10,7 @@ class NonOverlapTests(unittest.TestCase):
  def setUpClass(cls):
   cls.data=json.loads((ROOT/'data/cycle_engine_nonoverlap_diagnostics_v1.json').read_text(encoding='utf-8'))
  def test_audit_passes(self): self.assertTrue(json.loads((ROOT/'data/cycle_engine_nonoverlap_diagnostics_audit_v1.json').read_text())['passed'])
- def test_feature_and_candidate_counts(self): self.assertEqual(self.data['feature_count'],34); self.assertEqual(len(self.data['features']),34)
+ def test_feature_and_candidate_counts(self): self.assertEqual(self.data['feature_count'],42); self.assertEqual(self.data['candidate_feature_count'],34); self.assertEqual(len(self.data['features']),34)
  def test_natural_month_rule_is_explicit(self): self.assertIn('calendar_month_index % horizon',self.data['cohort_rule']); self.assertEqual(n.month_index('2020-01')%6,1)
  def test_all_fixed_cohorts_are_present(self):
   for f in self.data['features'].values():
@@ -47,6 +47,10 @@ class NonOverlapTests(unittest.TestCase):
   x=copy.deepcopy(self.data); x['features']['fake.feature']={}; self.assertGreater(n.audit(x)['candidate_scope_violation_count'],0)
  def test_spacing_mutation_counter(self):
   x=copy.deepcopy(self.data); f=next(iter(x['features'].values())); f['horizons']['forward_6m']['cohorts']['cohort_0']['origin_months']=['2020-01','2020-02']; self.assertGreater(n.audit(x)['overlapping_origin_violation_count'],0)
+ def test_origin_membership_delete_and_duplicate_counters(self):
+  path=next(iter(self.data['features'])); c=self.data['features'][path]['horizons']['forward_6m']['cohorts']['cohort_0']
+  x=copy.deepcopy(self.data); x['features'][path]['horizons']['forward_6m']['cohorts']['cohort_0']['origin_months']=c['origin_months'][1:]; self.assertGreater(n.audit(x)['origin_membership_violation_count'],0)
+  x=copy.deepcopy(self.data); c2=x['features'][path]['horizons']['forward_6m']['cohorts']['cohort_0']; c2['origin_months'] += [c2['origin_months'][0]]; self.assertGreater(n.audit(x)['origin_membership_violation_count'],0)
  def test_continuous_mutation_counter(self):
   x=copy.deepcopy(self.data); f=next(v for v in x['features'].values() if v['feature_type']=='continuous'); f['horizons']['forward_6m']['cohorts']['cohort_0']['continuous']['forward_return']['spearman_rho']=999; self.assertGreater(n.audit(x)['correlation_formula_violation_count'],0)
  def test_boolean_mutation_counter(self):
@@ -73,8 +77,11 @@ class NonOverlapTests(unittest.TestCase):
   with patch.object(n,'upstream_file_hashes',side_effect=[n.upstream_file_hashes(),{}]):
    self.assertGreater(n.audit(self.data)['upstream_mutation_count'],0)
  def test_forbidden_output_counter(self):
-  for key in ('score','ranking','selection','state','weight','position','signal'):
+  for key in ('score','ranking','selection','state','regime','weight','threshold','allocation','position','signal','backtest'):
    x=copy.deepcopy(self.data); x[key]=1; self.assertGreater(n.audit(x)['forbidden_output_violation_count'],0)
+ def test_research_boundary_counter(self):
+  x=copy.deepcopy(self.data); x['research_only']=False; self.assertGreater(n.audit(x)['research_boundary_violation_count'],0)
+  x=copy.deepcopy(self.data); x['uses_future_information']=False; self.assertGreater(n.audit(x)['research_boundary_violation_count'],0)
  def test_research_only_boundary(self):
   self.assertTrue(self.data['research_only']); self.assertNotIn('score',self.data); self.assertNotIn('position',self.data); self.assertNotIn('signal',self.data)
 if __name__=='__main__': unittest.main()
