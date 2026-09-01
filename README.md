@@ -57,6 +57,8 @@ Phase 1 只把冻结数据转换为可追溯的月频 Evidence Vector，不计�
 
 Phase 3 诊断层只把已通过 readiness 的 model candidate 与 Evaluation target 按月份连接，输出描述性 Spearman、固定 rank bucket、三个固定历史阶段和同月冗余矩阵。它不产生 score、feature ranking、recommendation、状态、权重或仓位；12/24 个月结果因高度重叠，仅作描述性诊断。运行 `python scripts/cycle_engine_feature_diagnostics.py --generate`，说明见 [docs/cycle_engine_feature_diagnostics_v1.md](docs/cycle_engine_feature_diagnostics_v1.md)。
 
+Phase 4 walk-forward 诊断按 `as_of_month` 严格截断未来目标，针对 6/12/24 个月收益和最大回撤输出连续特征相关性、布尔特征 true/false 中位数差、36 个已实现样本门槛、最新可用起点和稳定性/符号翻转统计；仅作样本外描述性研究，不产生模型输入或交易信号。运行 `python scripts/cycle_engine_walk_forward_diagnostics.py --generate`，说明见 [docs/cycle_engine_walk_forward_diagnostics_v1.md](docs/cycle_engine_walk_forward_diagnostics_v1.md)。
+
 ## 核心输出
 
 - `market_opportunity_score`：市场机会分，衡量趋势、宽度、流动性、资金、主线、估值和宏观环境。
