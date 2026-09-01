@@ -99,6 +99,35 @@ class CycleStateCandidateTests(unittest.TestCase):
             self.assertGreater(result["candidate_rule_violation_count"], 0, state)
             self.assertFalse(result["passed"])
 
+    def test_diagnostic_summary_mutations_fail_independent_audit(self) -> None:
+        for field, counter in (
+            ("candidate_state_distribution", "run_length_violation_count"),
+            ("monthly_state_change_rate", "transition_violation_count"),
+            ("transition_matrix", "transition_violation_count"),
+            ("ambiguous_month_count", "rule_precedence_violation_count"),
+            ("ambiguous_pct", "rule_precedence_violation_count"),
+            ("rule_hit_counts", "rule_precedence_violation_count"),
+            ("timeline", "record_alignment_violation_count"),
+            ("window_extracts", "record_alignment_violation_count"),
+        ):
+            mutated = copy.deepcopy(self.output)
+            value = mutated["diagnostics"][field]
+            if isinstance(value, dict):
+                key = next(iter(value))
+                if isinstance(value[key], dict):
+                    value[key]["month_count"] = value[key].get("month_count", 0) + 1
+                elif isinstance(value[key], int):
+                    value[key] += 1
+                else:
+                    value[key] = "mutated"
+            elif isinstance(value, list):
+                value[0]["candidate_state"] = "bull" if value[0]["candidate_state"] != "bull" else "bear"
+            else:
+                mutated["diagnostics"][field] = (value or 0) + 1
+            result = candidate.audit(mutated, self.phase2, self.phase2_audit)
+            self.assertGreater(result[counter], 0, field)
+            self.assertFalse(result["passed"])
+
     def test_hash_and_upstream_gates_reject_mutated_phase2(self) -> None:
         mutated = copy.deepcopy(self.phase2)
         mutated["records"][0]["valuation"]["state"] = "expensive"

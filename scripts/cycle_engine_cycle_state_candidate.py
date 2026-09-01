@@ -222,6 +222,30 @@ def _audit_replay_record(source: dict[str, Any]) -> dict[str, Any]:
     return {"month": source["month"], "basis_trade_date": source["basis_trade_date"], "core_ready": core_ready, "candidate_state": state, "valuation_state": valuation, "earnings_state": earnings, "trend_state": trend, "macro_confirmation_state": macro, "macro_alignment": alignment, "sentiment_overlay": overlay(source["sentiment_overlay"]), "reason_codes": reasons}
 
 
+def _audit_replay_diagnostics(expected_records: list[dict[str, Any]]) -> dict[str, Any]:
+    ready = [item for item in expected_records if item["core_ready"]]
+    values = [item["candidate_state"] for item in ready]
+    distribution = {}
+    for state in sorted(ALLOWED_CANDIDATES - {"insufficient_history"}):
+        months = [item["month"] for item in ready if item["candidate_state"] == state]
+        lengths = _true_runs(values, state)
+        distribution[state] = {"month_count": len(months), "percentage_of_core_ready_months": round(len(months) / len(ready) * 100, 6) if ready else 0.0, "first_month": min(months) if months else None, "last_month": max(months) if months else None, "longest_consecutive_run": max(lengths, default=0), "median_run_length": median([float(x) for x in lengths]) if lengths else None}
+    transitions = Counter(f"{a}->{b}" for a, b in zip(values, values[1:]))
+    outgoing = Counter(a for a, _ in zip(values, values[1:]))
+    transition_matrix = {key: {"transition_count": count, "transition_probability": round(count / outgoing[key.split("->")[0]] * 100, 6)} for key, count in sorted(transitions.items())}
+    hits = Counter()
+    for item in ready:
+        rules = _audit_rule_matches(item["valuation_state"], item["earnings_state"], item["trend_state"])
+        for name, matched in rules.items():
+            selected_fallback = name.endswith("_fallback") and name.removesuffix("_fallback") == item["candidate_state"]
+            if matched and (not name.endswith("_fallback") or selected_fallback):
+                hits[name] += 1
+    rule_names = ("deep_bear_rule", "bottoming_rule_A", "bottoming_rule_B", "distribution_extended_rule", "distribution_expensive_rule", "late_bull_extended_rule", "late_bull_expensive_rule", "early_bull_rule", "bear_fallback", "bull_fallback", "ambiguous_fallback")
+    timeline = [{key: item[key] for key in ("month", "candidate_state", "valuation_state", "earnings_state", "trend_state", "macro_confirmation_state", "macro_alignment")} for item in ready]
+    windows = {name: [item for item in timeline if start <= item["month"] <= end] for name, (start, end) in WINDOWS.items()}
+    return {"candidate_state_distribution": distribution, "monthly_state_change_rate": round(sum(a != b for a, b in zip(values, values[1:])) / (len(values) - 1) * 100, 6) if len(values) > 1 else None, "transition_matrix": transition_matrix, "ambiguous_month_count": values.count("ambiguous"), "ambiguous_pct": round(values.count("ambiguous") / len(values) * 100, 6) if values else 0.0, "rule_hit_counts": {name: hits[name] for name in rule_names}, "timeline": timeline, "window_extracts": windows}
+
+
 def audit(data: dict[str, Any], phase2: dict[str, Any], phase2_audit: dict[str, Any]) -> dict[str, Any]:
     errors = {name: 0 for name in ("source_phase2_audit_violation_count", "source_phase2_hash_violation_count", "record_alignment_violation_count", "core_readiness_violation_count", "candidate_rule_violation_count", "rule_precedence_violation_count", "macro_flip_violation_count", "sentiment_core_leakage_count", "run_length_violation_count", "transition_violation_count", "forbidden_output_violation_count", "future_information_dependency_count", "upstream_mutation_count")}
     actual_sha = sha256_bytes(PHASE2_PATH.read_bytes()) if phase2 == json.loads(PHASE2_PATH.read_text(encoding="utf-8")) else phase2_sha(phase2)
@@ -240,18 +264,20 @@ def audit(data: dict[str, Any], phase2: dict[str, Any], phase2_audit: dict[str, 
             errors["sentiment_core_leakage_count"] += 1
         if actual.get("candidate_state") != "insufficient_history" and actual.get("macro_alignment") not in {"supportive", "contradictory", "neutral"}:
             errors["macro_flip_violation_count"] += 1
+        if actual.get("candidate_state") != expected.get("candidate_state"):
+            errors["rule_precedence_violation_count"] += 1
     ready = [item for item in expected_records if item["core_ready"]]
     expected_states = [item["candidate_state"] for item in ready]
     diagnostic = data.get("diagnostics", {})
-    distribution = diagnostic.get("candidate_state_distribution", {})
-    for state in sorted(ALLOWED_CANDIDATES - {"insufficient_history"}):
-        expected_lengths = _true_runs(expected_states, state)
-        item = distribution.get(state, {})
-        if item.get("month_count") != expected_states.count(state) or item.get("longest_consecutive_run") != max(expected_lengths, default=0) or item.get("median_run_length") != (median([float(x) for x in expected_lengths]) if expected_lengths else None):
-            errors["run_length_violation_count"] += 1
-    transitions = Counter(f"{a}->{b}" for a, b in zip(expected_states, expected_states[1:]))
-    if {key: value["transition_count"] for key, value in diagnostic.get("transition_matrix", {}).items()} != dict(sorted(transitions.items())):
+    expected_diagnostic = _audit_replay_diagnostics(expected_records)
+    if diagnostic.get("candidate_state_distribution") != expected_diagnostic["candidate_state_distribution"]:
+        errors["run_length_violation_count"] += 1
+    if diagnostic.get("monthly_state_change_rate") != expected_diagnostic["monthly_state_change_rate"] or diagnostic.get("transition_matrix") != expected_diagnostic["transition_matrix"]:
         errors["transition_violation_count"] += 1
+    if diagnostic.get("ambiguous_month_count") != expected_diagnostic["ambiguous_month_count"] or diagnostic.get("ambiguous_pct") != expected_diagnostic["ambiguous_pct"] or diagnostic.get("rule_hit_counts") != expected_diagnostic["rule_hit_counts"]:
+        errors["rule_precedence_violation_count"] += 1
+    if diagnostic.get("timeline") != expected_diagnostic["timeline"] or diagnostic.get("window_extracts") != expected_diagnostic["window_extracts"]:
+        errors["record_alignment_violation_count"] += 1
     forbidden = json.dumps(data, ensure_ascii=False).lower()
     if any(token in forbidden for token in ("cycle_score", "bull_bear_score", "market_score", "recommended_position", "equity_position", "allocation", "buy_signal", "sell_signal")):
         errors["forbidden_output_violation_count"] += 1
