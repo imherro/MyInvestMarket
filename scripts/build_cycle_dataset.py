@@ -152,26 +152,45 @@ def fetch_open_calendar(pro: Any, start: date, end: date) -> list[str]:
     return sorted(frame["cal_date"].astype(str).tolist())
 
 
-def fetch_index_history(pro: Any, end: date) -> tuple[dict[str, pd.DataFrame], dict[str, str]]:
+def fetch_index_history_with_audit(pro: Any, end: date) -> tuple[dict[str, pd.DataFrame], dict[str, str], dict[str, list[dict[str, Any]]]]:
     frames: dict[str, pd.DataFrame] = {}
     errors: dict[str, str] = {}
+    conflicts: dict[str, list[dict[str, Any]]] = {}
     for name, meta in INDEXES.items():
         try:
-            frame = api_call(
-                pro.index_daily,
-                ts_code=meta["ts_code"],
-                start_date=WARMUP_START.replace("-", ""),
-                end_date=end.strftime("%Y%m%d"),
-            )
+            parts = [
+                api_call(
+                    pro.index_daily,
+                    ts_code=meta["ts_code"],
+                    start_date=start.strftime("%Y%m%d"),
+                    end_date=terminal.strftime("%Y%m%d"),
+                )
+                for start, terminal in valuation_date_windows(datetime.strptime(WARMUP_START, "%Y-%m-%d").date(), end)
+            ]
+            frame = pd.concat([part for part in parts if not part.empty], ignore_index=True) if any(not part.empty for part in parts) else pd.DataFrame()
             if frame.empty:
                 raise RuntimeError("empty index_daily response")
             frame = frame.copy()
             frame["trade_date"] = frame["trade_date"].astype(str)
             frame["close"] = pd.to_numeric(frame["close"], errors="coerce")
-            frames[name] = frame.dropna(subset=["close"]).sort_values("trade_date").reset_index(drop=True)
+            frame = frame.dropna(subset=["trade_date"]).sort_values("trade_date").reset_index(drop=True)
+            duplicate_groups = frame.dropna(subset=["close"]).groupby("trade_date")["close"]
+            for trade_date, values in duplicate_groups:
+                unique = sorted({round(float(value), 10) for value in values})
+                if len(unique) > 1:
+                    conflicts.setdefault(name, []).append({"trade_date": trade_date, "close_values": unique})
+            frame = frame.drop_duplicates(subset=["trade_date", "close"], keep="last")
+            frame["_source_conflict"] = frame["trade_date"].isin({item["trade_date"] for item in conflicts.get(name, [])})
+            frames[name] = frame.reset_index(drop=True)
         except Exception as exc:
             frames[name] = pd.DataFrame(columns=["trade_date", "close"])
             errors[name] = str(exc)
+    return frames, errors, conflicts
+
+
+def fetch_index_history(pro: Any, end: date) -> tuple[dict[str, pd.DataFrame], dict[str, str]]:
+    """Compatibility wrapper; production callers should use the audit-returning variant."""
+    frames, errors, _ = fetch_index_history_with_audit(pro, end)
     return frames, errors
 
 
@@ -224,33 +243,63 @@ def last_trade_date_by_month(open_dates: list[str], end: date) -> dict[str, date
     return result
 
 
+TREND_FIELDS = ("close", "ma250", "ma250_deviation_pct", "above_ma250", "ma250_slope_3m_pct", "return_6m_pct", "return_12m_pct", "drawdown_12m_high_pct")
+
+
 def trend_snapshot(frame: pd.DataFrame, basis: date, source: str, reason: str | None = None) -> dict[str, Any]:
-    eligible = frame.loc[frame["trade_date"] <= basis.strftime("%Y%m%d")].copy()
+    raw = frame.copy()
+    raw["trade_date"] = raw["trade_date"].astype(str).str[:8]
+    raw["close"] = pd.to_numeric(raw["close"], errors="coerce")
+    raw = raw.loc[raw["trade_date"].str.fullmatch(r"\d{8}")].sort_values("trade_date").reset_index(drop=True)
+    valid = raw.loc[raw["close"].notna() & ~raw.get("_source_conflict", pd.Series(False, index=raw.index)).astype(bool)].copy()
+    source_first = parse_date(valid["trade_date"].iloc[0]) if not valid.empty else (parse_date(raw["trade_date"].iloc[0]) if not raw.empty else None)
+    eligible = valid.loc[valid["trade_date"] <= basis.strftime("%Y%m%d")].reset_index(drop=True)
+    pre_inception = source_first is not None and source_first > basis
+    source_error = reason if reason and not pre_inception else None
+    history_observations = len(eligible)
+    history_start = parse_date(eligible["trade_date"].iloc[0]) if history_observations else None
+    history_end = parse_date(eligible["trade_date"].iloc[-1]) if history_observations else None
+    history_ready = history_observations >= 313
+    common = {
+        "source_first_observation_date": iso(source_first) if source_first else None,
+        "history_observations": history_observations,
+        "history_start_date": iso(history_start) if history_start else None,
+        "history_end_date": iso(history_end) if history_end else None,
+        "history_ready": history_ready,
+        "pre_inception": pre_inception,
+        "source_error": source_error,
+    }
+    why = "index history not yet available for index" if pre_inception else (reason or "no valid index observation at or before basis trade date")
+    def metric(value: float | None, observation: date | None = history_end, extra: dict[str, Any] | None = None) -> dict[str, Any]:
+        row = feature(finite(value), basis, source, observation_date=observation, reason=why if value is None else None, extra=common)
+        if extra:
+            row.update(extra)
+        return row
+    def boolean_metric(value: bool | None) -> dict[str, Any]:
+        row = feature(None, basis, source, observation_date=history_end, reason=why if value is None else None, extra=common)
+        row["value"] = value if history_end is not None and value is not None and history_end <= basis else None
+        row["available"] = row["value"] is not None
+        row["pit_safe"] = bool(row["available"])
+        return row
     if eligible.empty:
-        why = reason or "no index observation at or before basis trade date"
-        return {
-            "close": unavailable(basis, source, why),
-            "ma250_deviation_pct": unavailable(basis, source, why),
-            "return_6m_pct": unavailable(basis, source, why),
-            "return_12m_pct": unavailable(basis, source, why),
-            "drawdown_prev_12m_high_pct": unavailable(basis, source, why),
-        }
-    close = pd.to_numeric(eligible["close"], errors="coerce").dropna().reset_index(drop=True)
-    observation = datetime.strptime(str(eligible.iloc[-1]["trade_date"]), "%Y%m%d").date()
+        return {field: boolean_metric(None) if field == "above_ma250" else metric(None) for field in TREND_FIELDS}
+    close = eligible["close"].astype(float).reset_index(drop=True)
     latest = float(close.iloc[-1])
-    def metric(value: float | None) -> dict[str, Any]:
-        return feature(finite(value), basis, source, observation_date=observation)
-    ma250 = close.tail(250).mean() if len(close) >= 250 else None
-    return_6m = (latest / close.iloc[-127] - 1) * 100 if len(close) >= 127 else None
-    return_12m = (latest / close.iloc[-253] - 1) * 100 if len(close) >= 253 else None
-    prior_high = close.tail(252).max() if len(close) >= 1 else None
-    drawdown = (latest / prior_high - 1) * 100 if prior_high else None
+    ma_series = close.rolling(250).mean()
+    ma250 = float(ma_series.iloc[-1]) if len(close) >= 250 else None
+    ma250_reference = float(ma_series.iloc[-64]) if len(close) >= 313 else None
+    return_6m_reference = float(close.iloc[-127]) if len(close) >= 127 else None
+    return_12m_reference = float(close.iloc[-253]) if len(close) >= 253 else None
+    high_12m = float(close.tail(252).max())
     return {
         "close": metric(latest),
+        "ma250": metric(ma250),
         "ma250_deviation_pct": metric((latest / ma250 - 1) * 100 if ma250 else None),
-        "return_6m_pct": metric(return_6m),
-        "return_12m_pct": metric(return_12m),
-        "drawdown_prev_12m_high_pct": metric(drawdown),
+        "above_ma250": boolean_metric(latest >= ma250 if ma250 is not None else None),
+        "ma250_slope_3m_pct": metric((ma250 / ma250_reference - 1) * 100 if ma250 and ma250_reference else None, extra={"reference_ma250_63_observations_ago": ma250_reference}),
+        "return_6m_pct": metric((latest / return_6m_reference - 1) * 100 if return_6m_reference else None, extra={"reference_close_126_observations_ago": return_6m_reference}),
+        "return_12m_pct": metric((latest / return_12m_reference - 1) * 100 if return_12m_reference else None, extra={"reference_close_252_observations_ago": return_12m_reference}),
+        "drawdown_12m_high_pct": metric((latest / high_12m - 1) * 100 if high_12m else None, extra={"rolling_12m_high": high_12m}),
     }
 
 
@@ -281,6 +330,21 @@ def valuation_source_metadata(valuations: dict[str, pd.DataFrame], errors: dict[
         first = parse_date(frame.iloc[0]["trade_date"]) if not frame.empty else None
         metadata[name] = {
             "source_first_observation_date": iso(first) if first else None,
+            "source_error": errors.get(name),
+        }
+    return metadata
+
+
+def trend_source_metadata(frames: dict[str, pd.DataFrame], errors: dict[str, str], conflicts: dict[str, list[dict[str, Any]]]) -> dict[str, Any]:
+    metadata: dict[str, Any] = {}
+    for name, frame in frames.items():
+        valid_dates = frame.loc[pd.to_numeric(frame.get("close"), errors="coerce").notna(), "trade_date"] if not frame.empty else pd.Series(dtype=str)
+        first = min((parse_date(value) for value in valid_dates), default=None)
+        metadata[name] = {
+            "source_first_observation_date": iso(first) if first else None,
+            "source_observation_count": int(len(valid_dates)),
+            "source_conflict_count": len(conflicts.get(name, [])),
+            "source_conflicts": conflicts.get(name, []),
             "source_error": errors.get(name),
         }
     return metadata
@@ -542,6 +606,11 @@ def audit_dataset(payload: dict[str, Any]) -> dict[str, Any]:
     erp_lineage_violations: list[dict[str, Any]] = []
     pmi_available = 0
     pmi_future_publications: list[dict[str, Any]] = []
+    trend_samples: dict[str, list[dict[str, bool]]] = {name: [] for name in INDEXES}
+    trend_future_observations: list[dict[str, Any]] = []
+    trend_alignment_violations: list[dict[str, Any]] = []
+    trend_formula_violations: list[dict[str, Any]] = []
+    trend_invalid_drawdowns: list[dict[str, Any]] = []
     for record in records:
         basis = parse_date(record.get("basis_trade_date"))
         if not basis:
@@ -556,6 +625,37 @@ def audit_dataset(payload: dict[str, Any]) -> dict[str, Any]:
                     key = row.get("source", "unknown")
                     missing_by_field[key] = missing_by_field.get(key, 0) + 1
             domain_totals[domain].append(record.get("data_quality", {}).get("coverage", {}).get(f"{domain}_pct", 0.0))
+        for name in INDEXES:
+            indices = record.get("trend", {}).get("indices", {})
+            trend = indices.get(name, {})
+            close = trend.get("close", {})
+            close_value = close.get("value")
+            close_observation = close.get("observation_date")
+            for field in TREND_FIELDS:
+                row = trend.get(field, {})
+                observed = parse_date(row.get("observation_date") or row.get("history_end_date"))
+                if observed and observed > basis:
+                    trend_future_observations.append({"month": record["month"], "index": name, "field": field, "date": iso(observed), "basis": iso(basis)})
+                if row.get("available") and row.get("observation_date") != close_observation:
+                    trend_alignment_violations.append({"month": record["month"], "index": name, "field": field, "expected": close_observation, "actual": row.get("observation_date")})
+            ma = trend.get("ma250", {}).get("value")
+            deviation = trend.get("ma250_deviation_pct", {}).get("value")
+            if close_value is not None and ma is not None and deviation is not None and abs(float(deviation) - (float(close_value) / float(ma) - 1) * 100) > 0.011:
+                trend_formula_violations.append({"month": record["month"], "index": name, "field": "ma250_deviation_pct"})
+            above = trend.get("above_ma250", {}).get("value")
+            if close_value is not None and ma is not None and above is not None and bool(above) != (float(close_value) >= float(ma)):
+                trend_formula_violations.append({"month": record["month"], "index": name, "field": "above_ma250"})
+            for field, reference_key, scale in (("ma250_slope_3m_pct", "reference_ma250_63_observations_ago", 1), ("return_6m_pct", "reference_close_126_observations_ago", 1), ("return_12m_pct", "reference_close_252_observations_ago", 1)):
+                row = trend.get(field, {})
+                reference = row.get(reference_key)
+                value = row.get("value")
+                expected = ((float(ma) / float(reference) - 1) * 100) if field == "ma250_slope_3m_pct" and ma is not None and reference else ((float(close_value) / float(reference) - 1) * 100 if close_value is not None and reference else None)
+                if value is not None and expected is not None and abs(float(value) - expected) > 0.011:
+                    trend_formula_violations.append({"month": record["month"], "index": name, "field": field})
+            drawdown = trend.get("drawdown_12m_high_pct", {}).get("value")
+            if drawdown is not None and (float(drawdown) > 0.011 or float(drawdown) < -100.011):
+                trend_invalid_drawdowns.append({"month": record["month"], "index": name, "value": drawdown})
+            trend_samples[name].append({"available": any(bool(trend.get(field, {}).get("available")) for field in TREND_FIELDS), "history_ready": bool(close.get("history_ready")), "pre_inception": bool(close.get("pre_inception")), "source_error": bool(close.get("source_error"))})
         valuation = record.get("valuation", {})
         for name in INDEXES:
             index = valuation.get("indices", {}).get(name, {})
@@ -660,7 +760,9 @@ def audit_dataset(payload: dict[str, Any]) -> dict[str, Any]:
     china_10y_cache = payload.get("china_10y_source_cache", {})
     pmi_cache = payload.get("pmi_source_cache", {})
     roe_universe_violation_months = sorted({row["month"] for row in roe_nonfinancial_universe_violations + roe_nonfinancial_matched_violations})
-    structural_passed = len(pit_violations) == 0 and len(roe_pit_violations) == 0 and duplicate_count == 0 and order_violation_count == 0 and current_invalid_report_types == 0 and prior_invalid_report_types == 0 and roe_invalid_report_types == 0 and len(roe_nonfinancial_universe_violations) == 0 and len(roe_nonfinancial_matched_violations) == 0 and len(valuation_future_observations) == 0 and len(derived_lineage_violations) == 0 and len(china_10y_future_observations) == 0 and len(erp_lineage_violations) == 0 and len(pmi_future_publications) == 0
+    trend_metadata = payload.get("trend_source_metadata", {})
+    trend_source_conflicts = sum(int(item.get("source_conflict_count", 0)) for item in trend_metadata.values())
+    structural_passed = len(pit_violations) == 0 and len(roe_pit_violations) == 0 and duplicate_count == 0 and order_violation_count == 0 and current_invalid_report_types == 0 and prior_invalid_report_types == 0 and roe_invalid_report_types == 0 and len(roe_nonfinancial_universe_violations) == 0 and len(roe_nonfinancial_matched_violations) == 0 and len(valuation_future_observations) == 0 and len(derived_lineage_violations) == 0 and len(china_10y_future_observations) == 0 and len(erp_lineage_violations) == 0 and len(pmi_future_publications) == 0 and len(trend_future_observations) == 0 and len(trend_alignment_violations) == 0 and len(trend_formula_violations) == 0 and len(trend_invalid_drawdowns) == 0 and trend_source_conflicts == 0
     freshness_passed = not bool(cache.get("stale")) and not bool(cache.get("refresh_error")) and not bool(cache.get("offline")) and not bool(roe_cache.get("stale")) and not bool(roe_cache.get("refresh_error")) and not bool(roe_cache.get("offline")) and not bool(china_10y_cache.get("refresh_error")) and not bool(china_10y_cache.get("offline")) and not bool(pmi_cache.get("refresh_error")) and not bool(pmi_cache.get("offline"))
     return {
         "dataset_version": payload.get("dataset_version"),
@@ -732,6 +834,17 @@ def audit_dataset(payload: dict[str, Any]) -> dict[str, Any]:
         "pmi_untrusted_publish_date_count": int(pmi_cache.get("audit_counters", {}).get("untrusted", 0)),
         "pmi_cache_refresh_error": pmi_cache.get("refresh_error"),
         "pmi_revision_history_unavailable": bool(pmi_cache.get("audit_counters", {}).get("revision_history_unavailable", True)),
+        "trend_coverage": {name: {"coverage_pct": finite(sum(row["available"] for row in rows) / len(rows) * 100, 2) if rows else 0.0, "history_ready_coverage_pct": finite(sum(row["history_ready"] for row in rows) / len(rows) * 100, 2) if rows else 0.0, "pre_inception_count": sum(row["pre_inception"] for row in rows), "source_error_count": sum(row["source_error"] for row in rows)} for name, rows in trend_samples.items()},
+        "trend_future_observation_count": len(trend_future_observations),
+        "trend_observation_alignment_violation_count": len(trend_alignment_violations),
+        "trend_source_conflict_count": trend_source_conflicts,
+        "trend_formula_violation_count": len(trend_formula_violations),
+        "trend_invalid_drawdown_count": len(trend_invalid_drawdowns),
+        "trend_first_observation_date": {name: trend_metadata.get(name, {}).get("source_first_observation_date") for name in INDEXES},
+        "trend_future_observations": trend_future_observations,
+        "trend_observation_alignment_violations": trend_alignment_violations,
+        "trend_formula_violations": trend_formula_violations,
+        "trend_invalid_drawdowns": trend_invalid_drawdowns,
         "roe_source_conflict_count": int(roe_cache.get("conflict_count", 0)),
         "roe_cache_latest_period": roe_cache.get("metadata", {}).get("latest_period"),
         "roe_cache_stale": bool(roe_cache.get("stale")),
@@ -795,6 +908,8 @@ def audit_markdown(audit: dict[str, Any]) -> str:
             f"- Earnings cache latest period: {audit['earnings_cache_latest_period']}; stale: {audit['earnings_cache_stale']}",
             f"- Earnings cache last successful refresh: {audit['earnings_cache_last_successful_refresh_date']}; refresh lag days: {audit['earnings_cache_refresh_lag_days']}",
             f"- Trend coverage: {coverage['trend']}%",
+            f"- Trend index coverage (history-ready): {audit['trend_coverage']['csi300']['coverage_pct']}%/{audit['trend_coverage']['csi300']['history_ready_coverage_pct']}%; {audit['trend_coverage']['csi500']['coverage_pct']}%/{audit['trend_coverage']['csi500']['history_ready_coverage_pct']}%; {audit['trend_coverage']['csi1000']['coverage_pct']}%/{audit['trend_coverage']['csi1000']['history_ready_coverage_pct']}%",
+            f"- Trend audit future/alignment/source-conflict/formula/drawdown: {audit['trend_future_observation_count']}/{audit['trend_observation_alignment_violation_count']}/{audit['trend_source_conflict_count']}/{audit['trend_formula_violation_count']}/{audit['trend_invalid_drawdown_count']}",
             f"- A-FEAR coverage: {coverage['a_fear']}%",
             f"- Result: {'PASS' if audit['passed'] else 'FAIL'}",
             "",
@@ -812,7 +927,7 @@ def build_dataset(as_of: date, refresh_earnings_cache: bool = True) -> dict[str,
     open_dates = fetch_open_calendar(pro, datetime.strptime(WARMUP_START, "%Y-%m-%d").date(), end)
     month_basis = last_trade_date_by_month(open_dates, end)
     months = [month for month in month_range(START_MONTH, end) if month in month_basis]
-    prices, price_errors = fetch_index_history(pro, end)
+    prices, price_errors, price_conflicts = fetch_index_history_with_audit(pro, end)
     valuations, valuation_errors = fetch_valuation_history(pro, end)
     try:
         china_10y_rates, china_10y_conflicts, china_10y_cache_meta, china_10y_refresh_error = cycle_rates.source_from_cache_or_api_status(
@@ -859,6 +974,7 @@ def build_dataset(as_of: date, refresh_earnings_cache: bool = True) -> dict[str,
         "period": {"start_month": months[0], "end_month": months[-1], "warmup_start": WARMUP_START},
         "sources": ["Tushare.trade_cal", "Tushare.index_daily", "Tushare.index_dailybasic", "Tushare.income_vip", "Tushare.cn_pmi", "Tushare.cn_schedule", "AKShare.macro_china_pmi_yearly (release fallback)", "A-FEAR local history (optional)"],
         "valuation_source_metadata": valuation_source_metadata(valuations, valuation_errors),
+        "trend_source_metadata": trend_source_metadata(prices, price_errors, price_conflicts),
         "china_10y_source_cache": {"path": str(CHINA_10Y_CACHE_PATH.relative_to(ROOT)), "conflict_count": len(china_10y_conflicts), "conflicts": china_10y_conflicts, "metadata": china_10y_cache_meta, "refresh_error": china_10y_refresh_error, "offline": not refresh_earnings_cache, "validation": cycle_rates.source_validation(china_10y_rates)},
         "pmi_source_cache": {"path": str(PMI_CACHE_PATH.relative_to(ROOT)), "conflict_count": len([item for item in pmi_conflicts if "publish_dates" not in item]), "release_conflict_count": len([item for item in pmi_conflicts if "publish_dates" in item]), "crosscheck_mismatch_count": pmi_audit_counters.get("crosscheck_mismatch", 0), "conflicts": pmi_conflicts, "metadata": pmi_cache_meta, "refresh_error": pmi_refresh_error, "offline": not refresh_earnings_cache, "audit_counters": pmi_audit_counters},
         "earnings_source_cache": {"path": str(EARNINGS_CACHE_PATH.relative_to(ROOT)), "conflict_count": len(cache_conflicts), "conflicts": cache_conflicts, "metadata": earnings_cache_meta, **earnings_freshness, "offline": not refresh_earnings_cache},
@@ -930,6 +1046,23 @@ def rebuild_valuation_from_existing_dataset(path: Path, as_of: date) -> dict[str
     return payload
 
 
+def rebuild_trend_from_existing_dataset(path: Path, as_of: date) -> dict[str, Any]:
+    """Refresh only the long-term index trend fields and their source audit."""
+    payload = json.loads(path.read_text(encoding="utf-8-sig"))
+    end = previous_month_end(as_of)
+    pro = build_market_dataset.tushare_client()
+    prices, price_errors, price_conflicts = fetch_index_history_with_audit(pro, end)
+    for record in payload.get("records", []):
+        basis = parse_date(record.get("basis_trade_date"))
+        if not basis:
+            raise RuntimeError(f"invalid basis date in {record.get('month')}")
+        indices = {name: trend_snapshot(prices[name], basis, "Tushare.index_daily", price_errors.get(name)) for name in INDEXES}
+        record["trend"] = {"indices": indices}
+        record["data_quality"]["coverage"] = domain_coverage({"valuation": record.get("valuation", {}), "earnings": record.get("earnings", {}), "trend": record["trend"], "sentiment": record.get("sentiment", {})})
+    payload["trend_source_metadata"] = trend_source_metadata(prices, price_errors, price_conflicts)
+    return payload
+
+
 def rebuild_rates_from_existing_dataset(path: Path, as_of: date, refresh: bool = True) -> dict[str, Any]:
     """Refresh only formal China 10Y and derived ERP fields."""
     payload = json.loads(path.read_text(encoding="utf-8-sig"))
@@ -991,6 +1124,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--reuse-existing-nonvaluation-data", action="store_true", help="Reuse existing nonvaluation records and refresh only PIT valuation fields.")
     parser.add_argument("--reuse-existing-nonrate-data", action="store_true", help="Reuse existing records and refresh only China 10Y and derived ERP fields.")
     parser.add_argument("--reuse-existing-nonpmi-data", action="store_true", help="Reuse existing records and refresh only official PMI release-date PIT fields.")
+    parser.add_argument("--reuse-existing-nontrend-data", action="store_true", help="Reuse existing records and refresh only long-term PIT trend fields.")
     return parser.parse_args()
 
 
@@ -999,7 +1133,7 @@ def main() -> None:
     build_market_dataset.load_dotenv(ROOT / ".env")
     output_path = Path(args.out)
     as_of = datetime.strptime(args.as_of, "%Y-%m-%d").date()
-    if sum((args.reuse_existing_market_data, args.reuse_existing_nonvaluation_data, args.reuse_existing_nonrate_data, args.reuse_existing_nonpmi_data)) > 1:
+    if sum((args.reuse_existing_market_data, args.reuse_existing_nonvaluation_data, args.reuse_existing_nonrate_data, args.reuse_existing_nonpmi_data, args.reuse_existing_nontrend_data)) > 1:
         raise ValueError("choose at most one reuse mode")
     if args.reuse_existing_market_data:
         payload = rebuild_earnings_from_existing_dataset(output_path)
@@ -1009,6 +1143,8 @@ def main() -> None:
         payload = rebuild_rates_from_existing_dataset(output_path, as_of, refresh=not args.offline_cache)
     elif args.reuse_existing_nonpmi_data:
         payload = rebuild_pmi_from_existing_dataset(output_path, as_of, refresh=not args.offline_cache)
+    elif args.reuse_existing_nontrend_data:
+        payload = rebuild_trend_from_existing_dataset(output_path, as_of)
     else:
         payload = build_dataset(as_of, refresh_earnings_cache=not args.offline_cache)
     audit = audit_dataset(payload)

@@ -26,6 +26,8 @@
 - Earnings cache latest period: 20260630; stale: False
 - Earnings cache last successful refresh: 2026-08-31; refresh lag days: 0
 - Trend coverage: 100.0%
+- Trend index coverage (history-ready): 100.0%/100.0%; 100.0%/100.0%; 100.0%/100.0%
+- Trend audit future/alignment/source-conflict/formula/drawdown: 0/0/0/0/0
 - A-FEAR coverage: 12.5%
 - Result: FAIL
 

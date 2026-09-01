@@ -1,6 +1,6 @@
 {
   "dataset_version": "cycle_dataset_v1",
-  "generated_at": "2026-09-01T16:08:46+08:00",
+  "generated_at": "2026-09-01T16:26:51+08:00",
   "record_count": 200,
   "start_month": "2010-01",
   "end_month": "2026-08",
@@ -158,6 +158,40 @@
   "pmi_untrusted_publish_date_count": 6,
   "pmi_cache_refresh_error": null,
   "pmi_revision_history_unavailable": true,
+  "trend_coverage": {
+    "csi300": {
+      "coverage_pct": 100.0,
+      "history_ready_coverage_pct": 100.0,
+      "pre_inception_count": 0,
+      "source_error_count": 0
+    },
+    "csi500": {
+      "coverage_pct": 100.0,
+      "history_ready_coverage_pct": 100.0,
+      "pre_inception_count": 0,
+      "source_error_count": 0
+    },
+    "csi1000": {
+      "coverage_pct": 100.0,
+      "history_ready_coverage_pct": 100.0,
+      "pre_inception_count": 0,
+      "source_error_count": 0
+    }
+  },
+  "trend_future_observation_count": 0,
+  "trend_observation_alignment_violation_count": 0,
+  "trend_source_conflict_count": 0,
+  "trend_formula_violation_count": 0,
+  "trend_invalid_drawdown_count": 0,
+  "trend_first_observation_date": {
+    "csi300": "2005-01-04",
+    "csi500": "2005-01-04",
+    "csi1000": "2005-01-04"
+  },
+  "trend_future_observations": [],
+  "trend_observation_alignment_violations": [],
+  "trend_formula_violations": [],
+  "trend_invalid_drawdowns": [],
   "roe_source_conflict_count": 0,
   "roe_cache_latest_period": "20260630",
   "roe_cache_stale": false,
