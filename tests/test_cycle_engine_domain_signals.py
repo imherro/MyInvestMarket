@@ -71,6 +71,38 @@ class DomainSignalsTests(unittest.TestCase):
         result = domain.valuation(row)
         self.assertEqual(result["components"]["csi300"]["state"], "neutral")
 
+    def test_valuation_boundaries_and_readiness_are_explicit(self) -> None:
+        for erp_rank, expected in ((80, "cheap"), (20, "expensive")):
+            row = self.row()
+            for path, value in (
+                ("valuation.indices.csi300.pe_ttm.percentile_expanding", 50),
+                ("valuation.indices.csi300.pb.percentile_expanding", 50),
+                ("valuation.indices.csi500.pe_ttm.percentile_expanding", 50),
+                ("valuation.indices.csi500.pb.percentile_expanding", 50),
+                ("valuation.csi300_erp_pct.value", 1),
+            ):
+                self.put(row, path, value, erp_rank if path.endswith("erp_pct.value") else 50, ready=True)
+            result = domain.valuation(row)
+            self.assertEqual(result["components"]["erp"]["state"], expected)
+
+        row = self.row()
+        for path, value, rank_value in (
+            ("valuation.indices.csi300.pe_ttm.percentile_expanding", 1, 20),
+            ("valuation.indices.csi300.pb.percentile_expanding", 1, 80),
+            ("valuation.indices.csi500.pe_ttm.percentile_expanding", 1, 50),
+            ("valuation.indices.csi500.pb.percentile_expanding", 1, 50),
+            ("valuation.csi300_erp_pct.value", 1, 50),
+        ):
+            self.put(row, path, value, rank_value, ready=True)
+        result = domain.valuation(row)
+        self.assertEqual(result["components"]["csi300"]["state"], "neutral")
+        self.assertEqual(result["components"]["csi300"]["ready"], True)
+
+        self.put(row, "valuation.indices.csi300.pe_ttm.percentile_expanding", 1, 20, ready=False)
+        result = domain.valuation(row)
+        self.assertFalse(result["components"]["csi300"]["ready"])
+        self.assertNotIn("csi300", result["participating_components"])
+
     def test_earnings_states_and_strict_natural_month_change(self) -> None:
         current = self.row("2020-04")
         prior = self.row("2020-01")
@@ -163,6 +195,50 @@ class DomainSignalsTests(unittest.TestCase):
         result = domain.audit(mutated, self.evidence, self.evidence_audit)
         self.assertGreater(result["sentiment_core_leakage_count"], 0)
         self.assertFalse(result["passed"])
+
+    def test_audit_uses_independent_replay(self) -> None:
+        source = inspect.getsource(domain.audit)
+        for name in ("build(", "valuation(", "earnings(", "macro_confirmation(", "trend_index(", "trend(", "sentiment(", "reduce_record("):
+            self.assertNotIn(name, source)
+
+    def test_evidence_mutation_hits_fixed_source_gate(self) -> None:
+        mutated_evidence = copy.deepcopy(self.evidence)
+        mutated_evidence["records"][0]["features"]["valuation.csi300_erp_pct.value"]["raw_value"] = 999999
+        result = domain.audit(self.output, mutated_evidence, self.evidence_audit)
+        self.assertGreater(result["source_evidence_hash_violation_count"], 0)
+        self.assertGreater(result["upstream_mutation_count"], 0)
+        self.assertFalse(result["passed"])
+
+    def test_future_decision_inputs_do_not_change_prior_semantics(self) -> None:
+        future = copy.deepcopy(self.evidence)
+        for row in future["records"]:
+            if row["month"] <= "2025-12":
+                continue
+            for item in row["features"].values():
+                if isinstance(item.get("raw_value"), bool):
+                    item["raw_value"] = not item["raw_value"]
+                elif isinstance(item.get("raw_value"), (int, float)):
+                    item["raw_value"] = 999999
+                if item.get("expanding_rank_pct") is not None:
+                    item["expanding_rank_pct"] = 0
+        original = domain.build(self.evidence)
+        changed = domain.build(future)
+        def prior(records):
+            return [{k: v for k, v in row.items() if k != "source_evidence_sha256"} for row in records if row["month"] <= "2025-12"]
+        self.assertEqual(prior(original["records"]), prior(changed["records"]))
+
+    def test_a_fear_change_only_changes_overlay(self) -> None:
+        future = copy.deepcopy(self.evidence)
+        for row in future["records"]:
+            if row["month"] == "2025-12":
+                row["features"]["sentiment.a_fear.fear_score"]["raw_value"] = 100
+        original = domain.build(self.evidence)
+        changed = domain.build(future)
+        before = next(row for row in original["records"] if row["month"] == "2025-12")
+        after = next(row for row in changed["records"] if row["month"] == "2025-12")
+        for section in ("valuation", "earnings", "macro_confirmation", "trend"):
+            self.assertEqual(before[section], after[section])
+        self.assertNotEqual(before["sentiment_overlay"], after["sentiment_overlay"])
 
     def test_readiness_mutation_is_a_hard_failure(self) -> None:
         mutated = copy.deepcopy(self.output)

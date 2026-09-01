@@ -53,13 +53,12 @@
         "neutral_count": 2,
         "expensive_count": 1,
         "disagreement": true,
-        "participating_components": [
+        "participating_components": [],
+        "unavailable_components": [
+          "csi1000",
           "csi300",
           "csi500",
           "erp"
-        ],
-        "unavailable_components": [
-          "csi1000"
         ],
         "components": {
           "csi300": {
@@ -208,13 +207,12 @@
         "neutral_count": 1,
         "expensive_count": 1,
         "disagreement": true,
-        "participating_components": [
+        "participating_components": [],
+        "unavailable_components": [
+          "csi1000",
           "csi300",
           "csi500",
           "erp"
-        ],
-        "unavailable_components": [
-          "csi1000"
         ],
         "components": {
           "csi300": {
@@ -363,13 +361,12 @@
         "neutral_count": 2,
         "expensive_count": 0,
         "disagreement": true,
-        "participating_components": [
+        "participating_components": [],
+        "unavailable_components": [
+          "csi1000",
           "csi300",
           "csi500",
           "erp"
-        ],
-        "unavailable_components": [
-          "csi1000"
         ],
         "components": {
           "csi300": {
@@ -518,13 +515,12 @@
         "neutral_count": 2,
         "expensive_count": 0,
         "disagreement": true,
-        "participating_components": [
+        "participating_components": [],
+        "unavailable_components": [
+          "csi1000",
           "csi300",
           "csi500",
           "erp"
-        ],
-        "unavailable_components": [
-          "csi1000"
         ],
         "components": {
           "csi300": {
@@ -673,13 +669,12 @@
         "neutral_count": 2,
         "expensive_count": 0,
         "disagreement": true,
-        "participating_components": [
+        "participating_components": [],
+        "unavailable_components": [
+          "csi1000",
           "csi300",
           "csi500",
           "erp"
-        ],
-        "unavailable_components": [
-          "csi1000"
         ],
         "components": {
           "csi300": {
@@ -828,13 +823,12 @@
         "neutral_count": 0,
         "expensive_count": 0,
         "disagreement": false,
-        "participating_components": [
+        "participating_components": [],
+        "unavailable_components": [
+          "csi1000",
           "csi300",
           "csi500",
           "erp"
-        ],
-        "unavailable_components": [
-          "csi1000"
         ],
         "components": {
           "csi300": {
@@ -983,13 +977,12 @@
         "neutral_count": 3,
         "expensive_count": 0,
         "disagreement": false,
-        "participating_components": [
+        "participating_components": [],
+        "unavailable_components": [
+          "csi1000",
           "csi300",
           "csi500",
           "erp"
-        ],
-        "unavailable_components": [
-          "csi1000"
         ],
         "components": {
           "csi300": {
@@ -1138,13 +1131,12 @@
         "neutral_count": 1,
         "expensive_count": 0,
         "disagreement": true,
-        "participating_components": [
+        "participating_components": [],
+        "unavailable_components": [
+          "csi1000",
           "csi300",
           "csi500",
           "erp"
-        ],
-        "unavailable_components": [
-          "csi1000"
         ],
         "components": {
           "csi300": {
@@ -1293,13 +1285,12 @@
         "neutral_count": 1,
         "expensive_count": 0,
         "disagreement": true,
-        "participating_components": [
+        "participating_components": [],
+        "unavailable_components": [
+          "csi1000",
           "csi300",
           "csi500",
           "erp"
-        ],
-        "unavailable_components": [
-          "csi1000"
         ],
         "components": {
           "csi300": {
@@ -1448,13 +1439,12 @@
         "neutral_count": 3,
         "expensive_count": 0,
         "disagreement": false,
-        "participating_components": [
+        "participating_components": [],
+        "unavailable_components": [
+          "csi1000",
           "csi300",
           "csi500",
           "erp"
-        ],
-        "unavailable_components": [
-          "csi1000"
         ],
         "components": {
           "csi300": {
@@ -1603,13 +1593,12 @@
         "neutral_count": 2,
         "expensive_count": 0,
         "disagreement": true,
-        "participating_components": [
+        "participating_components": [],
+        "unavailable_components": [
+          "csi1000",
           "csi300",
           "csi500",
           "erp"
-        ],
-        "unavailable_components": [
-          "csi1000"
         ],
         "components": {
           "csi300": {
@@ -1758,13 +1747,12 @@
         "neutral_count": 2,
         "expensive_count": 0,
         "disagreement": true,
-        "participating_components": [
+        "participating_components": [],
+        "unavailable_components": [
+          "csi1000",
           "csi300",
           "csi500",
           "erp"
-        ],
-        "unavailable_components": [
-          "csi1000"
         ],
         "components": {
           "csi300": {
@@ -1913,13 +1901,12 @@
         "neutral_count": 3,
         "expensive_count": 0,
         "disagreement": false,
-        "participating_components": [
+        "participating_components": [],
+        "unavailable_components": [
+          "csi1000",
           "csi300",
           "csi500",
           "erp"
-        ],
-        "unavailable_components": [
-          "csi1000"
         ],
         "components": {
           "csi300": {
@@ -2068,13 +2055,12 @@
         "neutral_count": 3,
         "expensive_count": 0,
         "disagreement": false,
-        "participating_components": [
+        "participating_components": [],
+        "unavailable_components": [
+          "csi1000",
           "csi300",
           "csi500",
           "erp"
-        ],
-        "unavailable_components": [
-          "csi1000"
         ],
         "components": {
           "csi300": {
@@ -2223,13 +2209,12 @@
         "neutral_count": 3,
         "expensive_count": 0,
         "disagreement": false,
-        "participating_components": [
+        "participating_components": [],
+        "unavailable_components": [
+          "csi1000",
           "csi300",
           "csi500",
           "erp"
-        ],
-        "unavailable_components": [
-          "csi1000"
         ],
         "components": {
           "csi300": {
@@ -2378,13 +2363,12 @@
         "neutral_count": 1,
         "expensive_count": 0,
         "disagreement": true,
-        "participating_components": [
+        "participating_components": [],
+        "unavailable_components": [
+          "csi1000",
           "csi300",
           "csi500",
           "erp"
-        ],
-        "unavailable_components": [
-          "csi1000"
         ],
         "components": {
           "csi300": {
@@ -2533,13 +2517,12 @@
         "neutral_count": 0,
         "expensive_count": 0,
         "disagreement": false,
-        "participating_components": [
+        "participating_components": [],
+        "unavailable_components": [
+          "csi1000",
           "csi300",
           "csi500",
           "erp"
-        ],
-        "unavailable_components": [
-          "csi1000"
         ],
         "components": {
           "csi300": {
@@ -2688,13 +2671,12 @@
         "neutral_count": 0,
         "expensive_count": 0,
         "disagreement": false,
-        "participating_components": [
+        "participating_components": [],
+        "unavailable_components": [
+          "csi1000",
           "csi300",
           "csi500",
           "erp"
-        ],
-        "unavailable_components": [
-          "csi1000"
         ],
         "components": {
           "csi300": {
@@ -2843,13 +2825,12 @@
         "neutral_count": 0,
         "expensive_count": 0,
         "disagreement": false,
-        "participating_components": [
+        "participating_components": [],
+        "unavailable_components": [
+          "csi1000",
           "csi300",
           "csi500",
           "erp"
-        ],
-        "unavailable_components": [
-          "csi1000"
         ],
         "components": {
           "csi300": {
@@ -2998,13 +2979,12 @@
         "neutral_count": 0,
         "expensive_count": 0,
         "disagreement": false,
-        "participating_components": [
+        "participating_components": [],
+        "unavailable_components": [
+          "csi1000",
           "csi300",
           "csi500",
           "erp"
-        ],
-        "unavailable_components": [
-          "csi1000"
         ],
         "components": {
           "csi300": {
@@ -3153,13 +3133,12 @@
         "neutral_count": 0,
         "expensive_count": 0,
         "disagreement": false,
-        "participating_components": [
+        "participating_components": [],
+        "unavailable_components": [
+          "csi1000",
           "csi300",
           "csi500",
           "erp"
-        ],
-        "unavailable_components": [
-          "csi1000"
         ],
         "components": {
           "csi300": {
@@ -3308,13 +3287,12 @@
         "neutral_count": 0,
         "expensive_count": 0,
         "disagreement": false,
-        "participating_components": [
+        "participating_components": [],
+        "unavailable_components": [
+          "csi1000",
           "csi300",
           "csi500",
           "erp"
-        ],
-        "unavailable_components": [
-          "csi1000"
         ],
         "components": {
           "csi300": {
@@ -3463,13 +3441,12 @@
         "neutral_count": 0,
         "expensive_count": 0,
         "disagreement": false,
-        "participating_components": [
+        "participating_components": [],
+        "unavailable_components": [
+          "csi1000",
           "csi300",
           "csi500",
           "erp"
-        ],
-        "unavailable_components": [
-          "csi1000"
         ],
         "components": {
           "csi300": {
@@ -3618,13 +3595,12 @@
         "neutral_count": 0,
         "expensive_count": 0,
         "disagreement": false,
-        "participating_components": [
+        "participating_components": [],
+        "unavailable_components": [
+          "csi1000",
           "csi300",
           "csi500",
           "erp"
-        ],
-        "unavailable_components": [
-          "csi1000"
         ],
         "components": {
           "csi300": {
@@ -3773,13 +3749,12 @@
         "neutral_count": 0,
         "expensive_count": 0,
         "disagreement": false,
-        "participating_components": [
+        "participating_components": [],
+        "unavailable_components": [
+          "csi1000",
           "csi300",
           "csi500",
           "erp"
-        ],
-        "unavailable_components": [
-          "csi1000"
         ],
         "components": {
           "csi300": {
@@ -3928,13 +3903,12 @@
         "neutral_count": 0,
         "expensive_count": 0,
         "disagreement": false,
-        "participating_components": [
+        "participating_components": [],
+        "unavailable_components": [
+          "csi1000",
           "csi300",
           "csi500",
           "erp"
-        ],
-        "unavailable_components": [
-          "csi1000"
         ],
         "components": {
           "csi300": {
@@ -4083,13 +4057,12 @@
         "neutral_count": 0,
         "expensive_count": 0,
         "disagreement": false,
-        "participating_components": [
+        "participating_components": [],
+        "unavailable_components": [
+          "csi1000",
           "csi300",
           "csi500",
           "erp"
-        ],
-        "unavailable_components": [
-          "csi1000"
         ],
         "components": {
           "csi300": {
@@ -4238,13 +4211,12 @@
         "neutral_count": 0,
         "expensive_count": 0,
         "disagreement": false,
-        "participating_components": [
+        "participating_components": [],
+        "unavailable_components": [
+          "csi1000",
           "csi300",
           "csi500",
           "erp"
-        ],
-        "unavailable_components": [
-          "csi1000"
         ],
         "components": {
           "csi300": {
@@ -4393,13 +4365,12 @@
         "neutral_count": 0,
         "expensive_count": 0,
         "disagreement": false,
-        "participating_components": [
+        "participating_components": [],
+        "unavailable_components": [
+          "csi1000",
           "csi300",
           "csi500",
           "erp"
-        ],
-        "unavailable_components": [
-          "csi1000"
         ],
         "components": {
           "csi300": {
@@ -4548,13 +4519,12 @@
         "neutral_count": 0,
         "expensive_count": 0,
         "disagreement": false,
-        "participating_components": [
+        "participating_components": [],
+        "unavailable_components": [
+          "csi1000",
           "csi300",
           "csi500",
           "erp"
-        ],
-        "unavailable_components": [
-          "csi1000"
         ],
         "components": {
           "csi300": {
@@ -4703,13 +4673,12 @@
         "neutral_count": 0,
         "expensive_count": 0,
         "disagreement": false,
-        "participating_components": [
+        "participating_components": [],
+        "unavailable_components": [
+          "csi1000",
           "csi300",
           "csi500",
           "erp"
-        ],
-        "unavailable_components": [
-          "csi1000"
         ],
         "components": {
           "csi300": {
@@ -4858,13 +4827,12 @@
         "neutral_count": 0,
         "expensive_count": 0,
         "disagreement": false,
-        "participating_components": [
+        "participating_components": [],
+        "unavailable_components": [
+          "csi1000",
           "csi300",
           "csi500",
           "erp"
-        ],
-        "unavailable_components": [
-          "csi1000"
         ],
         "components": {
           "csi300": {
@@ -5013,13 +4981,12 @@
         "neutral_count": 0,
         "expensive_count": 0,
         "disagreement": false,
-        "participating_components": [
+        "participating_components": [],
+        "unavailable_components": [
+          "csi1000",
           "csi300",
           "csi500",
           "erp"
-        ],
-        "unavailable_components": [
-          "csi1000"
         ],
         "components": {
           "csi300": {
@@ -5168,13 +5135,12 @@
         "neutral_count": 0,
         "expensive_count": 0,
         "disagreement": false,
-        "participating_components": [
+        "participating_components": [],
+        "unavailable_components": [
+          "csi1000",
           "csi300",
           "csi500",
           "erp"
-        ],
-        "unavailable_components": [
-          "csi1000"
         ],
         "components": {
           "csi300": {
@@ -5323,13 +5289,12 @@
         "neutral_count": 0,
         "expensive_count": 0,
         "disagreement": false,
-        "participating_components": [
+        "participating_components": [],
+        "unavailable_components": [
+          "csi1000",
           "csi300",
           "csi500",
           "erp"
-        ],
-        "unavailable_components": [
-          "csi1000"
         ],
         "components": {
           "csi300": {

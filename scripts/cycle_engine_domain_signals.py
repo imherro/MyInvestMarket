@@ -22,7 +22,8 @@ AUDIT_PATH = DATA / "cycle_engine_domain_signals_audit_v1.json"
 MIN_HISTORY = 36
 HORIZONS = (6, 12, 24)
 INDEXES = ("csi300", "csi500", "csi1000")
-FROZEN_EVIDENCE_SHA256 = "d617e0226f9957a696f202800fb7034c665e541eabb632891904d12f6aed8d23"
+FROZEN_PHASE1_EVIDENCE_SHA256 = "d617e0226f9957a696f202800fb7034c665e541eabb632891904d12f6aed8d23"
+FROZEN_EVIDENCE_SHA256 = FROZEN_PHASE1_EVIDENCE_SHA256
 
 FORBIDDEN_OUTPUT_KEYS = {
     "cycle_score", "market_score", "bull_bear_score", "regime", "cycle_regime",
@@ -108,8 +109,8 @@ def valuation(row: dict[str, Any]) -> dict[str, Any]:
     components["erp"]["state"] = erp_band(components["erp"]["rank"])
     components["erp"]["ready"] = components["erp"]["available"] and ready(row, "valuation.csi300_erp_pct.value")
     states.append(components["erp"]["state"])
-    participating = [name for name, state in zip(("csi300", "csi500", "erp"), states) if state != "unavailable"]
-    unavailable = ["csi1000"] + [name for name, state in zip(("csi300", "csi500", "erp"), states) if state == "unavailable"]
+    participating = [name for name in ("csi300", "csi500", "erp") if components[name]["ready"]]
+    unavailable = ["csi1000"] + [name for name in ("csi300", "csi500", "erp") if not components[name]["ready"]]
     cheap = states.count("cheap")
     expensive = states.count("expensive")
     model_ready = all(components[name]["ready"] for name in ("csi300", "csi500", "erp"))
@@ -278,6 +279,118 @@ def reduce_record(row: dict[str, Any], rows: dict[str, dict[str, Any]]) -> dict[
     return {"month": row["month"], "basis_trade_date": row["basis_trade_date"], "source_evidence_sha256": rows["__meta__"]["source_sha"], "valuation": valuation(row), "earnings": earnings(row, rows), "macro_confirmation": macro_confirmation(row), "trend": trend(row), "sentiment_overlay": sentiment(row)}
 
 
+# These replay functions intentionally duplicate the decision rules. The audit
+# must be able to catch a production reducer that is internally self-consistent
+# but wrong, so it cannot call the production reducers above.
+def audit_expected_valuation(row: dict[str, Any]) -> dict[str, Any]:
+    def component_audit(path: str, reverse: bool = False) -> dict[str, Any]:
+        value = rank(row, path)
+        state = "unavailable" if value is None else ("cheap" if (value <= 30 if not reverse else value >= 70) else ("expensive" if (value >= 70 if not reverse else value <= 30) else "neutral"))
+        return {"available": value is not None, "rank": value, "ready": value is not None and ready(row, path), "state": state}
+
+    c300pe = component_audit("valuation.indices.csi300.pe_ttm.percentile_expanding")
+    c300pb = component_audit("valuation.indices.csi300.pb.percentile_expanding")
+    c500pe = component_audit("valuation.indices.csi500.pe_ttm.percentile_expanding")
+    c500pb = component_audit("valuation.indices.csi500.pb.percentile_expanding")
+    erp = component_audit("valuation.csi300_erp_pct.value", reverse=True)
+
+    def index_audit(pe: dict[str, Any], pb: dict[str, Any]) -> dict[str, Any]:
+        values = [item["rank"] for item in (pe, pb) if item["rank"] is not None]
+        state = "unavailable" if len(values) != 2 else ("cheap" if sum(values) / 2 <= 30 else ("expensive" if sum(values) / 2 >= 70 else "neutral"))
+        return {"pe": pe, "pb": pb, "state": state, "available": len(values) == 2, "ready": len(values) == 2 and pe["ready"] and pb["ready"]}
+
+    c300 = index_audit(c300pe, c300pb)
+    c500 = index_audit(c500pe, c500pb)
+    components = {"csi300": c300, "csi500": c500, "csi1000": {"available": False, "state": "unavailable", "reason_code": "frozen_valuation_unavailable_no_proxy"}, "erp": erp}
+    votes = [("csi300", c300), ("csi500", c500), ("erp", erp)]
+    participating = [name for name, item in votes if item["available"] and item["ready"]]
+    unavailable = ["csi1000"] + [name for name, item in votes if not item["ready"]]
+    states = [item["state"] for _, item in votes]
+    cheap = states.count("cheap")
+    expensive = states.count("expensive")
+    model_ready = len(participating) == 3
+    state = "insufficient_history" if not model_ready else ("cheap" if cheap >= 2 else ("expensive" if expensive >= 2 else "neutral"))
+    return {"state": state, "ready": model_ready, "cheap_count": cheap, "neutral_count": states.count("neutral"), "expensive_count": expensive, "disagreement": len(set(states)) > 1, "participating_components": participating, "unavailable_components": unavailable, "components": components, "reason_codes": [f"{name}_{item['state']}" for name, item in votes] + (["valuation_inputs_ready"] if model_ready else ["insufficient_history"])}
+
+
+def audit_expected_earnings(row: dict[str, Any], rows: dict[str, dict[str, Any]]) -> dict[str, Any]:
+    prior = rows.get(shift_month(row["month"], -3))
+    def pair_audit(paths: tuple[str, str], label: str) -> dict[str, Any]:
+        current_ranks = [rank(row, path) for path in paths]
+        current_raw = [raw(row, path) for path in paths]
+        prior_ranks = [rank(prior, path) if prior else None for path in paths]
+        rank_ok = all(value is not None for value in current_ranks)
+        change = sum(current_ranks) / 2 - sum(prior_ranks) / 2 if rank_ok and all(value is not None for value in prior_ranks) else None
+        raw_level = sum(current_raw) / 2 if all(isinstance(value, (int, float)) and not isinstance(value, bool) for value in current_raw) else None
+        return {"raw_level": raw_level, "rank": sum(current_ranks) / 2 if rank_ok else None, "rank_change_3m": change, "ready": all(ready(row, path) for path in paths), "reason_codes": [f"{label}_t_minus_3_natural_month" if change is not None else f"{label}_change_unavailable"]}
+    growth = pair_audit(("earnings.all_a_net_profit_yoy_pct.value", "earnings.nonfinancial_a_net_profit_yoy_pct.value"), "growth")
+    quality = pair_audit(("earnings.all_a_roe_ttm_pct.value", "earnings.nonfinancial_a_roe_ttm_pct.value"), "quality")
+    state = "insufficient_history"
+    if growth["ready"] and quality["ready"] and growth["rank_change_3m"] is not None and quality["rank_change_3m"] is not None:
+        if growth["rank_change_3m"] < 0 and quality["rank_change_3m"] < 0:
+            state = "deterioration"
+        elif growth["raw_level"] is not None and growth["raw_level"] > 0 and growth["rank"] >= 50 and quality["rank"] >= 50 and growth["rank_change_3m"] >= 0 and quality["rank_change_3m"] >= 0:
+            state = "expansion"
+        elif growth["raw_level"] is not None and growth["raw_level"] > 0 and growth["rank_change_3m"] > 0 and quality["rank_change_3m"] >= 0:
+            state = "recovery"
+        elif growth["raw_level"] is not None and growth["raw_level"] <= 0 and growth["rank_change_3m"] > 0 and quality["rank_change_3m"] >= 0:
+            state = "bottoming"
+        else:
+            state = "mixed"
+    return {"state": state, "ready": growth["ready"] and quality["ready"], "growth_raw_level": growth["raw_level"], "growth_rank": growth["rank"], "growth_rank_change_3m": growth["rank_change_3m"], "quality_rank": quality["rank"], "quality_rank_change_3m": quality["rank_change_3m"], "reason_codes": growth["reason_codes"] + quality["reason_codes"]}
+
+
+def audit_expected_macro(row: dict[str, Any]) -> dict[str, Any]:
+    above, one, three = (raw(row, path) for path in ("earnings.pmi.above_50", "earnings.pmi.change_1m", "earnings.pmi.change_3m"))
+    available = above is not None and one is not None and three is not None
+    model_ready = all(ready(row, path) for path in ("earnings.pmi.above_50", "earnings.pmi.change_1m", "earnings.pmi.change_3m"))
+    state = "insufficient_data"
+    if available and model_ready:
+        state = "positive" if above is True and (one > 0 or three > 0) else ("negative" if above is False and (one < 0 or three < 0) else "mixed")
+    return {"state": state, "ready": model_ready, "reason_codes": ["pmi_confirmation_only", "insufficient_data" if not available else "pmi_inputs_present"]}
+
+
+def audit_expected_trend_index(row: dict[str, Any], index: str) -> dict[str, Any]:
+    prefix = f"trend.indices.{index}."
+    paths = {"deviation": prefix + "ma250_deviation_pct.value", "above": prefix + "above_ma250.value", "slope": prefix + "ma250_slope_3m_pct.value", "return_6m": prefix + "return_6m_pct.value", "return_12m": prefix + "return_12m_pct.value", "drawdown": prefix + "drawdown_12m_high_pct.value"}
+    complete = all(ready(row, path) for path in paths.values())
+    unavailable = [name for name, path in paths.items() if raw(row, path) is None]
+    state = "insufficient_history"
+    if complete and not unavailable:
+        above, slope, r6, r12, deviation_rank, drawdown_rank = raw(row, paths["above"]), raw(row, paths["slope"]), raw(row, paths["return_6m"]), raw(row, paths["return_12m"]), rank(row, paths["deviation"]), rank(row, paths["drawdown"])
+        if above is True and slope > 0 and r12 > 0 and (deviation_rank >= 80 or rank(row, paths["return_12m"]) >= 80): state = "extended"
+        elif above is True and slope > 0 and r12 > 0: state = "up"
+        elif above is False and slope > 0 and r6 > 0: state = "bottoming"
+        elif above is False and slope <= 0 and (r12 < 0 or drawdown_rank <= 20): state = "damaged"
+        else: state = "mixed"
+    return {"state": state, "ready": complete and not unavailable, "unavailable_features": unavailable, "reason_codes": [f"{index}_six_feature_reduction"]}
+
+
+def audit_expected_trend(row: dict[str, Any]) -> dict[str, Any]:
+    indexes = {index: audit_expected_trend_index(row, index) for index in INDEXES}
+    participating = [index for index in INDEXES if indexes[index]["ready"]]
+    if "csi300" not in participating or "csi500" not in participating:
+        state = "insufficient_history"
+    else:
+        states = [indexes[index]["state"] for index in participating]
+        damaged, extended = states.count("damaged"), states.count("extended")
+        up = sum(value in ("up", "extended") for value in states)
+        bottoming = sum(value in ("bottoming", "up") for value in states)
+        state = "damaged" if damaged >= 2 else ("extended" if extended >= 2 else ("up" if up >= 2 else ("bottoming" if bottoming >= 2 and "bottoming" in states and damaged < 2 else "mixed")))
+    return {"state": state, "ready": state != "insufficient_history", "participating_indices": participating, "index_states": {index: indexes[index]["state"] for index in INDEXES}, "dispersion": len({indexes[index]["state"] for index in participating}), "unavailable_indices": [index for index in INDEXES if not indexes[index]["ready"]], "csi300": indexes["csi300"], "csi500": indexes["csi500"], "csi1000": indexes["csi1000"], "reason_codes": ["six_features_to_index_state", "index_states_to_broad_state"]}
+
+
+def audit_expected_sentiment(row: dict[str, Any]) -> dict[str, Any]:
+    value = raw(row, "sentiment.a_fear.fear_score")
+    state = "unavailable" if value is None else ("calm" if value < 20 else ("normal" if value < 40 else ("watch" if value < 60 else ("high_fear" if value < 80 else "extreme_fear"))))
+    observations = feature(row, "sentiment.a_fear.fear_score").get("normalization_history_observations")
+    return {"state": state, "score": value, "available": value is not None, "observations": observations, "normalization_history_observations": observations, "model_ready": ready(row, "sentiment.a_fear.fear_score"), "role": "overlay_only"}
+
+
+def audit_expected_record(row: dict[str, Any], rows: dict[str, dict[str, Any]]) -> dict[str, Any]:
+    return {"month": row["month"], "basis_trade_date": row["basis_trade_date"], "valuation": audit_expected_valuation(row), "earnings": audit_expected_earnings(row, rows), "macro_confirmation": audit_expected_macro(row), "trend": audit_expected_trend(row), "sentiment_overlay": audit_expected_sentiment(row)}
+
+
 def build(evidence: dict[str, Any]) -> dict[str, Any]:
     source_sha = canonical_sha(evidence)
     rows = {row["month"]: row for row in evidence["records"]}
@@ -287,21 +400,23 @@ def build(evidence: dict[str, Any]) -> dict[str, Any]:
 
 
 def audit(data: dict[str, Any], evidence: dict[str, Any], evidence_audit: dict[str, Any]) -> dict[str, Any]:
-    expected = build(evidence)
     errors = {name: 0 for name in ("source_evidence_audit_violation_count", "source_evidence_hash_violation_count", "record_alignment_violation_count", "unauthorized_feature_use_count", "noncandidate_decision_use_count", "readiness_violation_count", "valuation_reduction_violation_count", "earnings_reduction_violation_count", "macro_confirmation_violation_count", "trend_index_reduction_violation_count", "trend_domain_reduction_violation_count", "sentiment_overlay_violation_count", "sentiment_core_leakage_count", "natural_month_change_violation_count", "future_information_dependency_count", "forbidden_output_violation_count", "upstream_mutation_count")}
     errors["source_evidence_audit_violation_count"] = int(evidence_audit.get("passed") is not True)
-    errors["source_evidence_hash_violation_count"] = int(data.get("source_evidence_sha256") != expected["source_evidence_sha256"])
-    errors["record_alignment_violation_count"] = int(data.get("record_count") != len(evidence["records"]) or [item.get("month") for item in data.get("records", [])] != [item["month"] for item in evidence["records"]])
+    evidence_sha = canonical_sha(evidence)
+    errors["source_evidence_hash_violation_count"] = int(evidence_sha != FROZEN_PHASE1_EVIDENCE_SHA256 or data.get("source_evidence_sha256") != evidence_sha)
+    expected_months = [item["month"] for item in evidence["records"]]
+    actual_records = data.get("records", [])
+    errors["record_alignment_violation_count"] = int(data.get("record_count") != len(expected_months) or [item.get("month") for item in actual_records] != expected_months)
     candidate_paths = {path for path, item in evidence["records"][-1]["features"].items() if item.get("model_candidate")}
     errors["unauthorized_feature_use_count"] = int(set(data.get("reduction_policy", {})) != candidate_paths)
     errors["noncandidate_decision_use_count"] = int(any(key in json.dumps(data, ensure_ascii=False) for key in ("valuation.csi300_earnings_yield_pct.value", "valuation.china_10y_government_bond_yield_pct.value", "valuation.indices.csi300.pe_ttm.value", "valuation.indices.csi300.pb.value", "valuation.indices.csi500.pe_ttm.value", "valuation.indices.csi500.pb.value")))
     errors["forbidden_output_violation_count"] = forbidden(data)
-    if len(data.get("records", [])) != len(expected["records"]):
-        errors["record_alignment_violation_count"] += 1
-    for actual, wanted in zip(data.get("records", []), expected["records"]):
+    rows = {row["month"]: row for row in evidence["records"]}
+    for actual, source_row_value in zip(actual_records, evidence["records"]):
+        wanted = audit_expected_record(source_row_value, rows)
         if actual.get("month") != wanted["month"] or actual.get("basis_trade_date") != wanted["basis_trade_date"]:
             errors["record_alignment_violation_count"] += 1
-        if actual.get("source_evidence_sha256") != expected["source_evidence_sha256"]:
+        if actual.get("source_evidence_sha256") != evidence_sha:
             errors["source_evidence_hash_violation_count"] += 1
         for section in ("valuation", "earnings", "macro_confirmation", "trend", "sentiment_overlay"):
             if actual.get(section) != wanted.get(section):
@@ -327,8 +442,8 @@ def audit(data: dict[str, Any], evidence: dict[str, Any], evidence_audit: dict[s
             errors["readiness_violation_count"] += 1
     lower_keys = [key.lower() for key in keys(data)]
     errors["future_information_dependency_count"] = int(any(any(token in key for token in ("future", "forward", "target")) for key in lower_keys))
-    errors["upstream_mutation_count"] = int(data.get("source_evidence_sha256") != canonical_sha(evidence) or evidence_audit.get("passed") is not True)
-    result = {"schema": "cycle_engine_domain_signals_audit_v1", "record_count": len(expected["records"]), "start_month": expected["start_month"], "end_month": expected["end_month"], **errors, "passed": not any(errors.values())}
+    errors["upstream_mutation_count"] = int(evidence_sha != FROZEN_PHASE1_EVIDENCE_SHA256 or evidence_audit.get("passed") is not True)
+    result = {"schema": "cycle_engine_domain_signals_audit_v1", "record_count": len(expected_months), "start_month": expected_months[0], "end_month": expected_months[-1], **errors, "passed": not any(errors.values())}
     return result
 
 
