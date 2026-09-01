@@ -169,22 +169,23 @@ class CycleStateCandidateTests(unittest.TestCase):
             self.assertFalse(result["passed"])
 
     def test_nested_future_fields_are_rejected(self) -> None:
-        for field in ("forward_12m", "future_return", "evaluation_target"):
+        mutations = (
+            ("forward_12m", lambda data: data["diagnostics"]["timeline"][0].update({"forward_12m": 1})),
+            ("future_return", lambda data: data["diagnostics"]["timeline"][0].update({"future_return": 1})),
+            ("evaluation_target", lambda data: data["diagnostics"]["timeline"][0].update({"evaluation_target": 1})),
+            ("evaluation", lambda data: data["diagnostics"].update({"evaluation": {}})),
+            ("ex_post_metric", lambda data: data["records"][50].update({"ex_post_metric": 1})),
+            ("ex_post_return", lambda data: data["diagnostics"].update({"ex_post_return": 0.1})),
+        )
+        for field, mutate in mutations:
             mutated = copy.deepcopy(self.output)
-            mutated["diagnostics"]["timeline"][0][field] = 1
+            mutate(mutated)
             result = candidate.audit(mutated, self.phase2, self.phase2_audit)
             self.assertGreater(result["future_information_dependency_count"], 0, field)
             self.assertFalse(result["passed"])
 
     def test_legal_fields_do_not_trigger_future_counter(self) -> None:
-        normal = copy.deepcopy(self.output)
-        normal["diagnostics"]["legal_fields"] = {
-            "first_core_ready_month": "2013-03",
-            "window_extracts": [],
-            "macro_alignment": "neutral",
-            "sentiment_overlay": {"role": "overlay_only"},
-        }
-        result = candidate.audit(normal, self.phase2, self.phase2_audit)
+        result = candidate.audit(self.output, self.phase2, self.phase2_audit)
         self.assertEqual(result["future_information_dependency_count"], 0)
         self.assertTrue(result["passed"], result)
 

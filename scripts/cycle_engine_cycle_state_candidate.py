@@ -252,7 +252,7 @@ def _audit_replay_diagnostics(expected_records: list[dict[str, Any]]) -> dict[st
 
 def _contains_future_marker(value: Any) -> bool:
     if isinstance(value, dict):
-        return any(any(token in str(key).lower() for token in ("forward", "future_return", "evaluation_target")) or _contains_future_marker(child) for key, child in value.items())
+        return any(any(token in str(key).lower() for token in ("forward", "future_return", "evaluation_target", "evaluation", "ex_post")) or _contains_future_marker(child) for key, child in value.items())
     if isinstance(value, list):
         return any(_contains_future_marker(child) for child in value)
     return False
