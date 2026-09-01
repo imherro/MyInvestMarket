@@ -137,6 +137,7 @@ select {
 .market-observation-band,
 .fear-band,
 .score-card,
+.cycle-engine-band,
 .chart-band,
 .allocation-band,
 .position-map-band,
@@ -148,6 +149,45 @@ select {
   border-radius: 8px;
   background: var(--surface);
   box-shadow: var(--shadow);
+}
+
+.cycle-engine-band {
+  margin: 16px 0;
+  padding: 18px;
+}
+
+.cycle-engine-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.cycle-engine-panel {
+  min-height: 112px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-soft);
+}
+
+.cycle-engine-panel.primary {
+  border-left: 5px solid var(--teal);
+  background: #f0faf7;
+}
+
+.cycle-engine-panel strong,
+.cycle-engine-panel small {
+  display: block;
+}
+
+.cycle-engine-panel strong {
+  margin-top: 8px;
+  font-size: 1.55rem;
+}
+
+.cycle-engine-panel small {
+  margin-top: 8px;
+  color: var(--muted);
 }
 
 .fear-band {

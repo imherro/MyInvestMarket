@@ -151,6 +151,7 @@ function renderAll() {
   renderMarketObservation();
   renderFear();
   renderSummary();
+  renderCycleEnginePolicy();
   renderRiskOverview();
   renderContrarianOverlay();
   renderAllocationPolicy();
@@ -162,6 +163,18 @@ function renderAll() {
   renderModuleDetails();
   renderHistoryTable();
   renderApiCatalog();
+}
+
+function renderCycleEnginePolicy() {
+  const payload = state.index?.cycle_engine_position_policy || {};
+  const latest = payload.latest || {};
+  const available = payload.available === true && latest.latest_state;
+  setText("cycleEngineStatus", available ? "已接入冻结状态机" : "暂无周期仓位数据");
+  setText("cycleEngineState", available ? latest.latest_state : "--");
+  setText("cycleEngineRange", available ? latest.recommended_equity_range || "不可用" : "--");
+  setText("cycleEngineMonth", `基准月 ${latest.latest_month || "--"}`);
+  setText("cycleEngineRecords", available ? `${formatNumber(payload.record_count, 0)} 个月` : "--");
+  setText("cycleEngineSource", available ? "Phase 3.1 stable_state" : payload.error || "--");
 }
 
 function renderBasisStatus() {

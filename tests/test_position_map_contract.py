@@ -91,6 +91,15 @@ class PositionMapContractTest(unittest.TestCase):
             self.assertIn("equity_position_range", wave)
             self.assertIn("note", wave)
 
+    def test_api_index_exposes_cycle_engine_position_policy(self) -> None:
+        payload = serve_market_web.homepage_index_result()
+        cycle = payload.get("cycle_engine_position_policy")
+
+        self.assertTrue(cycle.get("available"))
+        self.assertEqual(cycle["latest"]["latest_month"], "2026-08")
+        self.assertEqual(cycle["latest"]["latest_state"], "late_bull")
+        self.assertEqual(cycle["latest"]["recommended_equity_range"], "60%-80%")
+
     def test_market_cycle_profile_marks_hot_capped_market_without_wave_prediction(self) -> None:
         record = {
             "market_opportunity_score": 72,
