@@ -52,8 +52,8 @@ def audit_cache_freshness(income: pd.DataFrame, metadata: dict[str, Any], as_of:
     required = expected_financial_periods(as_of, start_year)
     covered = sorted(set(income["end_date"].astype(str))) if not income.empty else []
     missing = [period for period in required if period not in set(covered)]
-    refreshed = parse_date(metadata.get("last_refresh_date"))
-    return {"required_periods": required, "covered_periods": covered, "missing_expected_periods": missing, "latest_required_period": required[-1] if required else None, "latest_cached_period": covered[-1] if covered else None, "stale": bool(missing), "last_refresh_date": iso(refreshed), "refresh_lag_days": (as_of - refreshed).days if refreshed else None, "refresh_error": refresh_error or metadata.get("refresh_error")}
+    refreshed = parse_date(metadata.get("last_successful_refresh_date") or metadata.get("last_refresh_date"))
+    return {"required_periods": required, "covered_periods": covered, "missing_expected_periods": missing, "latest_required_period": required[-1] if required else None, "latest_cached_period": covered[-1] if covered else None, "stale": bool(missing), "last_refresh_date": iso(refreshed), "last_successful_refresh_date": iso(refreshed), "refresh_lag_days": (as_of - refreshed).days if refreshed else None, "refresh_error": refresh_error if refresh_error is not None else metadata.get("refresh_error")}
 
 
 def normalise_income(frame: pd.DataFrame) -> pd.DataFrame:
@@ -90,32 +90,42 @@ def source_conflicts(income: pd.DataFrame) -> list[dict[str, Any]]:
     return conflicts
 
 
-def cache_metadata(income: pd.DataFrame, conflicts: list[dict[str, Any]], refreshed_at: date | None = None, stock_metadata_conflicts: list[dict[str, Any]] | None = None, refresh_error: str | None = None) -> dict[str, Any]:
+def cache_metadata(income: pd.DataFrame, conflicts: list[dict[str, Any]], refreshed_at: date | None = None, stock_metadata_conflicts: list[dict[str, Any]] | None = None, refresh_error: str | None = None, existing: dict[str, Any] | None = None) -> dict[str, Any]:
     periods = sorted(set(income["end_date"].astype(str))) if not income.empty else []
-    return {"covered_periods": periods, "latest_period": periods[-1] if periods else None, "last_refresh_date": iso(refreshed_at or date.today()), "record_count": int(len(income)), "conflict_count": len(conflicts), "stock_metadata_conflicts": stock_metadata_conflicts or [], "refresh_error": refresh_error}
+    metadata = dict(existing or {})
+    successful = iso(refreshed_at) if refreshed_at else metadata.get("last_successful_refresh_date") or metadata.get("last_refresh_date")
+    metadata.update({"covered_periods": periods, "latest_period": periods[-1] if periods else None, "last_successful_refresh_date": successful, "last_refresh_date": successful, "record_count": int(len(income)), "conflict_count": len(conflicts), "stock_metadata_conflicts": stock_metadata_conflicts if stock_metadata_conflicts is not None else metadata.get("stock_metadata_conflicts", []), "refresh_error": refresh_error if refresh_error is not None else metadata.get("refresh_error")})
+    return metadata
 
 
-def cache_payload(income: pd.DataFrame, stocks: pd.DataFrame, conflicts: list[dict[str, Any]], refreshed_at: date | None = None, stock_metadata_conflicts: list[dict[str, Any]] | None = None) -> dict[str, Any]:
+def cache_payload(income: pd.DataFrame, stocks: pd.DataFrame, conflicts: list[dict[str, Any]], refreshed_at: date | None = None, stock_metadata_conflicts: list[dict[str, Any]] | None = None, metadata: dict[str, Any] | None = None) -> dict[str, Any]:
     rows = income.drop(columns=[column for column in income.columns if column.startswith("_")], errors="ignore")
-    return {"schema_version": 2, "source": SOURCE, "metadata": cache_metadata(income, conflicts, refreshed_at, stock_metadata_conflicts), "income_records": rows.to_dict(orient="records"), "stock_records": stocks.to_dict(orient="records"), "conflicts": conflicts}
+    return {"schema_version": 2, "source": SOURCE, "metadata": cache_metadata(income, conflicts, refreshed_at, stock_metadata_conflicts, existing=metadata), "income_records": rows.to_dict(orient="records"), "stock_records": stocks.to_dict(orient="records"), "conflicts": conflicts}
 
 
-def load_cache(path: Path) -> tuple[pd.DataFrame, pd.DataFrame, list[dict[str, Any]]] | None:
+def load_cache_payload(path: Path) -> dict[str, Any] | None:
     if not path.exists():
         return None
     payload = json.loads(path.read_text(encoding="utf-8-sig"))
     if payload.get("schema_version") not in (1, 2):
         raise ValueError("unsupported cycle earnings cache schema")
+    return payload
+
+
+def load_cache(path: Path) -> tuple[pd.DataFrame, pd.DataFrame, list[dict[str, Any]]] | None:
+    payload = load_cache_payload(path)
+    if payload is None:
+        return None
     income = normalise_income(pd.DataFrame(payload.get("income_records", [])))
     return income, normalise_stocks(pd.DataFrame(payload.get("stock_records", []))), source_conflicts(income)
 
 
 def load_cache_metadata(path: Path) -> dict[str, Any]:
-    if not path.exists():
+    payload = load_cache_payload(path)
+    if payload is None:
         return cache_metadata(pd.DataFrame(columns=["end_date"]), [], None)
-    payload = json.loads(path.read_text(encoding="utf-8-sig"))
     income = normalise_income(pd.DataFrame(payload.get("income_records", [])))
-    return cache_metadata(income, source_conflicts(income), parse_date(payload.get("metadata", {}).get("last_refresh_date")))
+    return cache_metadata(income, source_conflicts(income), existing=payload.get("metadata", {}))
 
 
 def fetch_income_periods(pro: Any, periods: list[str]) -> pd.DataFrame:
@@ -167,27 +177,46 @@ def append_stocks(existing: pd.DataFrame, fresh: pd.DataFrame) -> tuple[pd.DataF
     return normalise_stocks(pd.DataFrame([{"ts_code": code, **row} for code, row in existing_by_code.items()])), conflicts
 
 
-def source_from_cache_or_api(pro: Any, cache_path: Path, start_year: int, end_year: int, as_of: date | None = None, refresh: bool = True) -> tuple[pd.DataFrame, pd.DataFrame, list[dict[str, Any]]]:
+def source_from_cache_or_api_status(pro: Any, cache_path: Path, start_year: int, end_year: int, as_of: date | None = None, refresh: bool = True, refresh_date: date | None = None) -> tuple[pd.DataFrame | None, pd.DataFrame | None, list[dict[str, Any]], dict[str, Any], str | None]:
     as_of = as_of or date(end_year, 12, 31)
     expected_periods = [period for period in quarter_ends(start_year, end_year) if period_date(period) <= as_of]
+    payload = load_cache_payload(cache_path)
     cached = load_cache(cache_path)
-    stock_conflicts: list[dict[str, Any]] = []
+    cached_metadata = dict((payload or {}).get("metadata", {}))
     if cached is None:
-        income, stocks, conflicts = fetch_source(pro, start_year, end_year)
-    elif not refresh:
+        try:
+            income, stocks, conflicts = fetch_source(pro, start_year, end_year)
+        except Exception as exc:
+            return None, None, [{"source_error": str(exc)}], cache_metadata(pd.DataFrame(columns=["end_date"]), [], None), str(exc)
+        cache_path.parent.mkdir(parents=True, exist_ok=True)
+        cache_path.write_text(json.dumps(cache_payload(income, stocks, conflicts, refresh_date or date.today()), ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        return income, stocks, conflicts, load_cache_metadata(cache_path), None
+    if not refresh:
         # An explicit offline read must not claim a source refresh or touch metadata.
-        return cached
-    elif refresh:
-        income, stocks, _ = cached
+        income, stocks, conflicts = cached
+        return income, stocks, conflicts, load_cache_metadata(cache_path), None
+    income, stocks, _ = cached
+    try:
         missing = [period for period in expected_periods if period not in set(income["end_date"].astype(str))]
-        # Refresh only the newest completed report period. It is the period still
-        # being disclosed or revised, while older cache rows remain immutable.
-        refresh = expected_periods[-1:] if expected_periods else []
-        income = append_income(income, fetch_income_periods(pro, sorted(set(missing + refresh))))
+        newest = expected_periods[-1:] if expected_periods else []
+        income = append_income(income, fetch_income_periods(pro, sorted(set(missing + newest))))
         stocks, stock_conflicts = append_stocks(stocks, fetch_stocks(pro))
         conflicts = source_conflicts(income)
-    cache_path.parent.mkdir(parents=True, exist_ok=True)
-    cache_path.write_text(json.dumps(cache_payload(income, stocks, conflicts, as_of, stock_conflicts), ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    except Exception as exc:
+        # A failed refresh is a run-level status, never a destructive cache write.
+        cached_income, cached_stocks, cached_conflicts = cached
+        return cached_income, cached_stocks, cached_conflicts, load_cache_metadata(cache_path), str(exc)
+    prior_stock_conflicts = cached_metadata.get("stock_metadata_conflicts", [])
+    all_stock_conflicts = prior_stock_conflicts + [item for item in stock_conflicts if item not in prior_stock_conflicts]
+    cache_path.write_text(json.dumps(cache_payload(income, stocks, conflicts, refresh_date or date.today(), all_stock_conflicts, cached_metadata), ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    return income, stocks, conflicts, load_cache_metadata(cache_path), None
+
+
+def source_from_cache_or_api(pro: Any, cache_path: Path, start_year: int, end_year: int, as_of: date | None = None, refresh: bool = True, refresh_date: date | None = None) -> tuple[pd.DataFrame, pd.DataFrame, list[dict[str, Any]]]:
+    income, stocks, conflicts, _, error = source_from_cache_or_api_status(pro, cache_path, start_year, end_year, as_of, refresh, refresh_date)
+    if error and income is None:
+        raise RuntimeError(error)
+    assert income is not None and stocks is not None
     return income, stocks, conflicts
 
 

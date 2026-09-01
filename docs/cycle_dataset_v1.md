@@ -31,7 +31,9 @@ Current-period profits use only `report_type == 1`: consolidated cumulative stat
 
 The stock denominator is historical: `list_date <= report_period` and no delisting on or before that report-period end. Later delistings remain in their historical universe; later IPOs do not enter it. `comp_type == 1` is the only nonfinancial classification. The nonfinancial denominator is the PIT-visible `comp_type == 1` universe, while unknown classifications remain unknown and are reported separately. If matched coverage is below 65% or matched prior profit is non-positive, the growth value is unavailable.
 
-`data/cycle_earnings_source_cache.json` is append-only. New report periods and newly disclosed versions of the newest completed report period are fetched and appended; exact duplicates are ignored and older source rows are never rewritten. Cache metadata records coverage, latest period, refresh date, record count, and conflicts.
+`data/cycle_earnings_source_cache.json` is append-only. New report periods and newly disclosed versions of the newest completed report period are fetched and appended; exact duplicates are ignored and older source rows are never rewritten. `last_successful_refresh_date` records a successful remote cache check, not the dataset's `as_of` date; `last_refresh_date` is retained as its compatible alias. Cache metadata round-trips unknown future fields and persists stock metadata conflicts.
+
+The cache freshness check only requires a period after its statutory reporting deadline: Q1 on April 30, H1 on August 31, Q3 on October 31, and annual results on April 30 of the following year. A live refresh failure never overwrites the source cache: existing cached earnings remain usable for historical research, while the run records `refresh_error` and returns `freshness_passed=false`. Offline rebuilds do not access or change the source cache and are explicitly marked `offline=true`, so they cannot pass as a live freshness verification.
 
 ## Output and audit
 

@@ -95,6 +95,7 @@
       "last_refresh_date": "2026-08-31",
       "record_count": 361382,
       "conflict_count": 0,
+      "last_successful_refresh_date": "2026-08-31",
       "stock_metadata_conflicts": [],
       "refresh_error": null
     },
@@ -247,6 +248,7 @@
     "latest_cached_period": "20260630",
     "stale": false,
     "last_refresh_date": "2026-08-31",
+    "last_successful_refresh_date": "2026-08-31",
     "refresh_lag_days": 0,
     "refresh_error": null,
     "offline": true

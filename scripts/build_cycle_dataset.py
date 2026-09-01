@@ -426,6 +426,7 @@ def audit_dataset(payload: dict[str, Any]) -> dict[str, Any]:
     duplicate_count = len(months) - len(set(months)) + len(basis_dates) - len(set(basis_dates))
     cache = payload.get("earnings_source_cache", {})
     affected_months: list[str] = []
+    affected_identities: list[dict[str, Any]] = []
     identities = cache.get("conflicts", [])
     for record in records:
         basis = parse_date(record.get("basis_trade_date"))
@@ -434,6 +435,8 @@ def audit_dataset(payload: dict[str, Any]) -> dict[str, Any]:
             identity = conflict.get("identity", {})
             if identity.get("end_date") in periods and basis and parse_date(identity.get("_effective_ann_str")) and parse_date(identity.get("_effective_ann_str")) <= basis:
                 affected_months.append(record["month"])
+                if conflict not in affected_identities:
+                    affected_identities.append(conflict)
                 break
     structural_passed = len(pit_violations) == 0 and duplicate_count == 0 and order_violation_count == 0 and current_invalid_report_types == 0 and prior_invalid_report_types == 0
     freshness_passed = not bool(cache.get("stale")) and not bool(cache.get("refresh_error")) and not bool(cache.get("offline"))
@@ -462,10 +465,15 @@ def audit_dataset(payload: dict[str, Any]) -> dict[str, Any]:
         "ambiguous_source_conflict_count": int(payload.get("earnings_source_cache", {}).get("conflict_count", 0)),
         "affected_month_count": len(affected_months),
         "affected_months": affected_months,
-        "affected_source_identities": identities,
+        "affected_source_conflict_count": len(affected_identities),
+        "affected_source_identities": affected_identities,
+        "stock_metadata_conflict_count": len(cache.get("metadata", {}).get("stock_metadata_conflicts", [])),
         "earnings_cache_latest_period": payload.get("earnings_source_cache", {}).get("metadata", {}).get("latest_period"),
         "earnings_cache_stale": bool(payload.get("earnings_source_cache", {}).get("stale")),
         "earnings_cache_missing_expected_periods": payload.get("earnings_source_cache", {}).get("missing_expected_periods", []),
+        "earnings_cache_last_successful_refresh_date": payload.get("earnings_source_cache", {}).get("last_successful_refresh_date") or payload.get("earnings_source_cache", {}).get("last_refresh_date"),
+        "earnings_cache_refresh_lag_days": payload.get("earnings_source_cache", {}).get("refresh_lag_days"),
+        "earnings_cache_refresh_error": payload.get("earnings_source_cache", {}).get("refresh_error"),
         "pit_violation_count": len(pit_violations),
         "pit_violations": pit_violations,
         "duplicate_count": duplicate_count,
@@ -496,6 +504,7 @@ def audit_markdown(audit: dict[str, Any]) -> str:
             f"- Earnings source-cache conflicts: {audit['earnings_source_cache_conflict_count']}",
             f"- Invalid current/prior report types: {audit['current_statement_invalid_report_type_count']}/{audit['prior_statement_invalid_report_type_count']}",
             f"- Earnings cache latest period: {audit['earnings_cache_latest_period']}; stale: {audit['earnings_cache_stale']}",
+            f"- Earnings cache last successful refresh: {audit['earnings_cache_last_successful_refresh_date']}; refresh lag days: {audit['earnings_cache_refresh_lag_days']}",
             f"- Trend coverage: {coverage['trend']}%",
             f"- A-FEAR coverage: {coverage['a_fear']}%",
             f"- Result: {'PASS' if audit['passed'] else 'FAIL'}",
@@ -517,12 +526,11 @@ def build_dataset(as_of: date, refresh_earnings_cache: bool = True) -> dict[str,
     prices, price_errors = fetch_index_history(pro, end)
     valuations, valuation_errors = fetch_valuation_history(pro, end)
     try:
-        earnings_income, earnings_stocks, cache_conflicts = cycle_earnings.source_from_cache_or_api(
+        earnings_income, earnings_stocks, cache_conflicts, earnings_cache_meta, refresh_error = cycle_earnings.source_from_cache_or_api_status(
             pro, EARNINGS_CACHE_PATH, 2009, end.year, end, refresh=refresh_earnings_cache
         )
-        earnings_income_by_period = cycle_earnings.prepare_income_by_period(earnings_income)
-        earnings_cache_meta = cycle_earnings.load_cache_metadata(EARNINGS_CACHE_PATH)
-        earnings_freshness = cycle_earnings.audit_cache_freshness(earnings_income, earnings_cache_meta, end)
+        earnings_income_by_period = cycle_earnings.prepare_income_by_period(earnings_income) if earnings_income is not None else None
+        earnings_freshness = cycle_earnings.audit_cache_freshness(earnings_income if earnings_income is not None else pd.DataFrame(columns=["end_date"]), earnings_cache_meta, end, refresh_error=refresh_error)
     except Exception as exc:
         earnings_income_by_period, earnings_stocks, cache_conflicts, earnings_cache_meta, earnings_freshness = None, None, [{"source_error": str(exc)}], {}, {"stale": True, "missing_expected_periods": [], "refresh_error": str(exc)}
     records = [
@@ -539,7 +547,7 @@ def build_dataset(as_of: date, refresh_earnings_cache: bool = True) -> dict[str,
         "records": records,
     }
     audit = audit_dataset(payload)
-    if not audit["passed"]:
+    if not audit["structural_passed"]:
         raise RuntimeError(
             "Cycle dataset audit failed: "
             f"{audit['pit_violation_count']} PIT violations, {audit['duplicate_count']} duplicates, "

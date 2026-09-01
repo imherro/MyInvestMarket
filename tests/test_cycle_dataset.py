@@ -283,6 +283,91 @@ class CycleDatasetTests(unittest.TestCase):
         _, conflicts = cycle_earnings.append_stocks(existing, fresh)
         self.assertEqual({row["field"] for row in conflicts}, {"list_date", "delist_date"})
 
+    def test_refresh_failure_uses_old_cache_without_modifying_it(self) -> None:
+        class BrokenPro:
+            def income_vip(self, **_: object) -> pd.DataFrame:
+                raise RuntimeError("income endpoint unavailable")
+
+            def stock_basic(self, **_: object) -> pd.DataFrame:
+                raise RuntimeError("stock endpoint unavailable")
+
+        income = self.income("20260630", {"000001.SZ": 90}, "20260820")
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "cache.json"
+            path.write_text(__import__("json").dumps(cycle_earnings.cache_payload(income, self.stocks(1), [], date(2026, 8, 15))), encoding="utf-8")
+            before = path.read_bytes()
+            result_income, result_stocks, conflicts, metadata, error = cycle_earnings.source_from_cache_or_api_status(BrokenPro(), path, 2026, 2026, date(2026, 8, 31), refresh=True)
+            freshness = cycle_earnings.audit_cache_freshness(result_income, metadata, date(2026, 8, 31), 2026, error)
+            audit = cycle.audit_dataset({"dataset_version": cycle.DATASET_VERSION, "records": [], "earnings_source_cache": {"conflict_count": len(conflicts), "conflicts": conflicts, "metadata": metadata, **freshness, "offline": False}})
+            self.assertEqual(len(result_income), len(income))
+            self.assertEqual(len(result_stocks), 1)
+            self.assertIn("income endpoint unavailable", error)
+            self.assertEqual(path.read_bytes(), before)
+            self.assertTrue(audit["structural_passed"])
+            self.assertFalse(audit["freshness_passed"])
+            self.assertFalse(audit["passed"])
+
+    def test_no_cache_and_refresh_failure_returns_unavailable_source(self) -> None:
+        class BrokenPro:
+            def income_vip(self, **_: object) -> pd.DataFrame:
+                raise RuntimeError("income endpoint unavailable")
+
+        with tempfile.TemporaryDirectory() as directory:
+            income, stocks, _, _, error = cycle_earnings.source_from_cache_or_api_status(BrokenPro(), Path(directory) / "cache.json", 2026, 2026, date(2026, 8, 31))
+        self.assertIsNone(income)
+        self.assertIsNone(stocks)
+        self.assertIn("income endpoint unavailable", error)
+
+    def test_successful_refresh_uses_injected_access_date_not_dataset_as_of(self) -> None:
+        class FakePro:
+            def income_vip(self, **_: object) -> pd.DataFrame:
+                return pd.DataFrame()
+
+            def stock_basic(self, **_: object) -> pd.DataFrame:
+                return pd.DataFrame()
+
+        income = self.income("20260630", {"000001.SZ": 90}, "20260820")
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "cache.json"
+            path.write_text(__import__("json").dumps(cycle_earnings.cache_payload(income, self.stocks(1), [], date(2026, 8, 15))), encoding="utf-8")
+            _, _, _, metadata, error = cycle_earnings.source_from_cache_or_api_status(FakePro(), path, 2026, 2026, date(2026, 8, 31), refresh_date=date(2026, 9, 2))
+        self.assertIsNone(error)
+        self.assertEqual(metadata["last_successful_refresh_date"], "2026-09-02")
+        self.assertNotEqual(metadata["last_successful_refresh_date"], "2026-08-31")
+
+    def test_metadata_round_trip_preserves_conflicts_and_custom_fields(self) -> None:
+        income = self.income("20260630", {"000001.SZ": 90}, "20260820")
+        metadata = {"last_successful_refresh_date": "2026-08-15", "stock_metadata_conflicts": [{"ts_code": "000001.SZ", "field": "delist_date"}], "refresh_error": "historic audit detail", "future_schema_field": {"retained": True}}
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "cache.json"
+            path.write_text(__import__("json").dumps(cycle_earnings.cache_payload(income, self.stocks(1), [], metadata=metadata)), encoding="utf-8")
+            loaded = cycle_earnings.load_cache_metadata(path)
+            path.write_text(__import__("json").dumps(cycle_earnings.cache_payload(income, self.stocks(1), [], metadata=loaded)), encoding="utf-8")
+            round_trip = cycle_earnings.load_cache_metadata(path)
+        self.assertEqual(round_trip["stock_metadata_conflicts"], metadata["stock_metadata_conflicts"])
+        self.assertEqual(round_trip["future_schema_field"], metadata["future_schema_field"])
+        self.assertEqual(round_trip["refresh_error"], metadata["refresh_error"])
+        self.assertEqual(round_trip["last_successful_refresh_date"], "2026-08-15")
+
+    def test_offline_read_does_not_change_last_successful_refresh(self) -> None:
+        income = self.income("20260630", {"000001.SZ": 90}, "20260820")
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "cache.json"
+            path.write_text(__import__("json").dumps(cycle_earnings.cache_payload(income, self.stocks(1), [], date(2026, 8, 15))), encoding="utf-8")
+            _, _, _, metadata, error = cycle_earnings.source_from_cache_or_api_status(None, path, 2026, 2026, date(2026, 8, 31), refresh=False)
+        self.assertIsNone(error)
+        self.assertEqual(metadata["last_successful_refresh_date"], "2026-08-15")
+
+    def test_affected_source_conflicts_only_lists_conflicts_with_cycle_months(self) -> None:
+        conflict = {"identity": {"ts_code": "000001.SZ", "end_date": "20240331", "report_type": "1", "_effective_ann_str": "20240430", "update_flag": "0"}}
+        payload = {"dataset_version": cycle.DATASET_VERSION, "earnings_source_cache": {"conflict_count": 1, "conflicts": [conflict], "metadata": {}}, "records": [{"month": "2024-05", "basis_trade_date": "2024-05-31", "earnings": {"all_a_net_profit_yoy_pct": {"report_period": "20240331", "prior_year_report_period": "20230331"}}, "data_quality": {"coverage": {}}}]}
+        audit = cycle.audit_dataset(payload)
+        self.assertEqual(audit["affected_months"], ["2024-05"])
+        self.assertEqual(audit["affected_source_identities"], [conflict])
+        unaffected = cycle.audit_dataset({**payload, "records": [{**payload["records"][0], "month": "2024-04", "basis_trade_date": "2024-04-29"}]})
+        self.assertEqual(unaffected["affected_month_count"], 0)
+        self.assertEqual(unaffected["affected_source_identities"], [])
+
 
 if __name__ == "__main__":
     unittest.main()

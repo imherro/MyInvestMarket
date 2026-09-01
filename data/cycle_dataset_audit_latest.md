@@ -12,6 +12,7 @@
 - Earnings source-cache conflicts: 0
 - Invalid current/prior report types: 0/0
 - Earnings cache latest period: 20260630; stale: False
+- Earnings cache last successful refresh: 2026-08-31; refresh lag days: 0
 - Trend coverage: 100.0%
 - A-FEAR coverage: 12.5%
 - Result: FAIL
