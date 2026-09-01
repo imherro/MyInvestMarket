@@ -213,13 +213,17 @@ def _audit_replay_record(source: dict[str, Any]) -> dict[str, Any]:
         else:
             state, reasons = "ambiguous", ["ambiguous_fallback"]
     macro = source["macro_confirmation"]["state"]
-    if state in BULLISH_CANDIDATES and macro == "positive" or state in BEARISH_CANDIDATES and macro == "negative":
+    bullish_states = {"bottoming", "early_bull", "bull", "late_bull"}
+    bearish_states = {"distribution", "bear", "deep_bear"}
+    if state in bullish_states and macro == "positive" or state in bearish_states and macro == "negative":
         alignment = "supportive"
-    elif state in BULLISH_CANDIDATES and macro == "negative" or state in BEARISH_CANDIDATES and macro == "positive":
+    elif state in bullish_states and macro == "negative" or state in bearish_states and macro == "positive":
         alignment = "contradictory"
     else:
         alignment = "neutral"
-    return {"month": source["month"], "basis_trade_date": source["basis_trade_date"], "core_ready": core_ready, "candidate_state": state, "valuation_state": valuation, "earnings_state": earnings, "trend_state": trend, "macro_confirmation_state": macro, "macro_alignment": alignment, "sentiment_overlay": overlay(source["sentiment_overlay"]), "reason_codes": reasons}
+    sentiment = source["sentiment_overlay"]
+    sentiment_fields = {key: sentiment.get(key) for key in ("state", "score", "available", "observations", "model_ready", "role")}
+    return {"month": source["month"], "basis_trade_date": source["basis_trade_date"], "core_ready": core_ready, "candidate_state": state, "valuation_state": valuation, "earnings_state": earnings, "trend_state": trend, "macro_confirmation_state": macro, "macro_alignment": alignment, "sentiment_overlay": sentiment_fields, "reason_codes": reasons}
 
 
 def _audit_replay_diagnostics(expected_records: list[dict[str, Any]]) -> dict[str, Any]:
@@ -258,6 +262,8 @@ def audit(data: dict[str, Any], phase2: dict[str, Any], phase2_audit: dict[str, 
     for actual, expected in zip(actual_records, expected_records):
         if any(actual.get(key) != expected.get(key) for key in expected):
             errors["candidate_rule_violation_count"] += 1
+        if actual.get("reason_codes") != expected.get("reason_codes"):
+            errors["rule_precedence_violation_count"] += 1
         if actual.get("core_ready") != (expected["candidate_state"] != "insufficient_history"):
             errors["core_readiness_violation_count"] += 1
         if actual.get("sentiment_overlay", {}).get("role") != "overlay_only":

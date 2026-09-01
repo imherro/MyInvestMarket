@@ -140,9 +140,17 @@ class CycleStateCandidateTests(unittest.TestCase):
         self.assertGreater(failed["source_phase2_audit_violation_count"], 0)
         self.assertFalse(failed["passed"])
 
+    def test_reason_code_mutation_hits_precedence_counter(self) -> None:
+        mutated = copy.deepcopy(self.output)
+        row = next(item for item in mutated["records"] if item["candidate_state"] != "insufficient_history")
+        row["reason_codes"] = ["wrong_precedence"]
+        result = candidate.audit(mutated, self.phase2, self.phase2_audit)
+        self.assertGreater(result["rule_precedence_violation_count"], 0)
+        self.assertFalse(result["passed"])
+
     def test_audit_replay_does_not_call_formal_reducers(self) -> None:
-        source = inspect.getsource(candidate.audit) + inspect.getsource(candidate._audit_replay_record)
-        for name in ("build(", "candidate_state(", "macro_alignment(", "rules = _rule_matches("):
+        source = inspect.getsource(candidate.audit) + inspect.getsource(candidate._audit_replay_record) + inspect.getsource(candidate._audit_replay_diagnostics)
+        for name in ("build(", "candidate_state(", "macro_alignment(", "rules = _rule_matches(", "BULLISH_CANDIDATES", "BEARISH_CANDIDATES", "overlay("):
             self.assertNotIn(name, source)
         module_source = inspect.getsource(candidate)
         for name in ("cycle_engine_domain_diagnostics", "cycle_engine_evaluation_targets", "cycle_engine_nonoverlap_diagnostics"):
