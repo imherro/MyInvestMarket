@@ -23,11 +23,14 @@ def build(e,t):
   if asof<'2013-12':continue
   snap={'as_of_month':asof,'uses_only_information_available_by_as_of':True,'features':{}}
   for p in candidates:
-   rows=[(m,em[m]['features'][p].get('expanding_rank_pct')) for m in months if m<=asof and em[m]['features'].get(p,{}).get('available') and em[m]['features'][p].get('normalization_history_ready') and em[m]['features'][p].get('expanding_rank_pct') is not None]
-   item={'feature_family':em[asof]['features'].get(p,{}).get('feature_family'),'sample_diagnostics':{}}
+   rows=[(m,em[m]['features'][p].get('expanding_rank_pct') if em[m]['features'][p].get('expanding_rank_pct') is not None else (1.0 if em[m]['features'][p].get('raw_value') is True else 0.0),em[m]['features'][p].get('expanding_rank_pct') is not None,isinstance(em[m]['features'][p].get('raw_value'),bool)) for m in months if m<=asof and em[m]['features'].get(p,{}).get('available') and em[m]['features'][p].get('normalization_history_ready')]
+   item={'feature_family':em[asof]['features'].get(p,{}).get('feature_family'),'ready_sample_count':len(rows),'diagnostic_history_ready':len(rows)>=36,'sample_diagnostics':{},'boolean_diagnostics':{}}
    for h in H:
-    pairs=[(v,tm[m]['benchmarks']['broad_proxy'][f'forward_{h}m']) for m,v in rows if tm.get(m) and tm[m]['benchmarks']['broad_proxy'][f'forward_{h}m'].get('target_available') and tm[m]['benchmarks']['broad_proxy'][f'forward_{h}m']['target_month']<=asof]
-    item['sample_diagnostics'][f'forward_{h}m']={'sample_count':len(pairs),'spearman_rho':rho([x for x,_ in pairs],[y['forward_return_pct'] for _,y in pairs]),'target_cutoff_rule':'target_month <= as_of_month'}
+    pairs=[(v,tm[m]['benchmarks']['broad_proxy'][f'forward_{h}m']) for m,v,has_rank,is_bool in rows if has_rank and tm.get(m) and tm[m]['benchmarks']['broad_proxy'][f'forward_{h}m'].get('target_available') and tm[m]['benchmarks']['broad_proxy'][f'forward_{h}m']['target_month']<=asof]
+    item['sample_diagnostics'][f'forward_{h}m']={'sample_count':len(pairs),'spearman_rho':rho([x for x,_ in pairs],[y['forward_return_pct'] for _,y in pairs]),'max_drawdown_spearman_rho':rho([x for x,_ in pairs],[y['max_drawdown_pct'] for _,y in pairs]),'target_cutoff_rule':'target_month <= as_of_month'}
+    for state in (True,False):
+     vals=[tm[m]['benchmarks']['broad_proxy'][f'forward_{h}m']['forward_return_pct'] for m,v,has_rank,is_bool in rows if is_bool and bool(v)==state and tm.get(m) and tm[m]['benchmarks']['broad_proxy'][f'forward_{h}m'].get('target_available') and tm[m]['benchmarks']['broad_proxy'][f'forward_{h}m']['target_month']<=asof]
+     item['boolean_diagnostics'][f'forward_{h}m']=item['boolean_diagnostics'].get(f'forward_{h}m',{}); item['boolean_diagnostics'][f'forward_{h}m']['true' if state else 'false']={'sample_count':len(vals),'median':round(sorted(vals)[len(vals)//2],6) if vals else None}
    snap['features'][p]=item
   snaps.append(snap)
  return {'schema':'cycle_engine_walk_forward_diagnostics_v1','evaluation_only':True,'uses_future_information':True,'description':'As-of walk-forward descriptive diagnostics; not a model input or signal.','as_of_start':'2013-12','as_of_end':months[-1],'horizons_months':list(H),'primary_benchmark':'broad_proxy','snapshots':snaps,'source_evidence_sha':sha(e),'source_evaluation_sha':sha(t),'source_diagnostics_sha':sha(json.loads(D.read_text()))}
