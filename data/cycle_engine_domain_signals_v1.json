@@ -50,9 +50,9 @@
         "state": "insufficient_history",
         "ready": false,
         "cheap_count": 0,
-        "neutral_count": 2,
-        "expensive_count": 1,
-        "disagreement": true,
+        "neutral_count": 0,
+        "expensive_count": 0,
+        "disagreement": false,
         "participating_components": [],
         "unavailable_components": [
           "csi1000",
@@ -66,15 +66,15 @@
               "available": true,
               "rank": 55.54,
               "ready": false,
-              "state": "neutral"
+              "state": "insufficient_history"
             },
             "pb": {
               "available": true,
               "rank": 52.81,
               "ready": false,
-              "state": "neutral"
+              "state": "insufficient_history"
             },
-            "state": "neutral",
+            "state": "insufficient_history",
             "available": true,
             "ready": false
           },
@@ -83,15 +83,15 @@
               "available": true,
               "rank": 81.07,
               "ready": false,
-              "state": "expensive"
+              "state": "insufficient_history"
             },
             "pb": {
               "available": true,
               "rank": 62.01,
               "ready": false,
-              "state": "neutral"
+              "state": "insufficient_history"
             },
-            "state": "expensive",
+            "state": "insufficient_history",
             "available": true,
             "ready": false
           },
@@ -104,13 +104,13 @@
             "available": true,
             "rank": 50.0,
             "ready": false,
-            "state": "neutral"
+            "state": "insufficient_history"
           }
         },
         "reason_codes": [
-          "csi300_neutral",
-          "csi500_expensive",
-          "erp_neutral",
+          "csi300_insufficient_history",
+          "csi500_insufficient_history",
+          "erp_insufficient_history",
           "insufficient_history"
         ]
       },
@@ -203,10 +203,10 @@
       "valuation": {
         "state": "insufficient_history",
         "ready": false,
-        "cheap_count": 1,
-        "neutral_count": 1,
-        "expensive_count": 1,
-        "disagreement": true,
+        "cheap_count": 0,
+        "neutral_count": 0,
+        "expensive_count": 0,
+        "disagreement": false,
         "participating_components": [],
         "unavailable_components": [
           "csi1000",
@@ -220,15 +220,15 @@
               "available": true,
               "rank": 56.52,
               "ready": false,
-              "state": "neutral"
+              "state": "insufficient_history"
             },
             "pb": {
               "available": true,
               "rank": 54.08,
               "ready": false,
-              "state": "neutral"
+              "state": "insufficient_history"
             },
-            "state": "neutral",
+            "state": "insufficient_history",
             "available": true,
             "ready": false
           },
@@ -237,15 +237,15 @@
               "available": true,
               "rank": 83.55,
               "ready": false,
-              "state": "expensive"
+              "state": "insufficient_history"
             },
             "pb": {
               "available": true,
               "rank": 69.34,
               "ready": false,
-              "state": "neutral"
+              "state": "insufficient_history"
             },
-            "state": "expensive",
+            "state": "insufficient_history",
             "available": true,
             "ready": false
           },
@@ -258,13 +258,13 @@
             "available": true,
             "rank": 75.0,
             "ready": false,
-            "state": "cheap"
+            "state": "insufficient_history"
           }
         },
         "reason_codes": [
-          "csi300_neutral",
-          "csi500_expensive",
-          "erp_cheap",
+          "csi300_insufficient_history",
+          "csi500_insufficient_history",
+          "erp_insufficient_history",
           "insufficient_history"
         ]
       },
@@ -357,10 +357,10 @@
       "valuation": {
         "state": "insufficient_history",
         "ready": false,
-        "cheap_count": 1,
-        "neutral_count": 2,
+        "cheap_count": 0,
+        "neutral_count": 0,
         "expensive_count": 0,
-        "disagreement": true,
+        "disagreement": false,
         "participating_components": [],
         "unavailable_components": [
           "csi1000",
@@ -374,15 +374,15 @@
               "available": true,
               "rank": 50.83,
               "ready": false,
-              "state": "neutral"
+              "state": "insufficient_history"
             },
             "pb": {
               "available": true,
               "rank": 53.38,
               "ready": false,
-              "state": "neutral"
+              "state": "insufficient_history"
             },
-            "state": "neutral",
+            "state": "insufficient_history",
             "available": true,
             "ready": false
           },
@@ -391,15 +391,15 @@
               "available": true,
               "rank": 49.17,
               "ready": false,
-              "state": "neutral"
+              "state": "insufficient_history"
             },
             "pb": {
               "available": true,
               "rank": 68.97,
               "ready": false,
-              "state": "neutral"
+              "state": "insufficient_history"
             },
-            "state": "neutral",
+            "state": "insufficient_history",
             "available": true,
             "ready": false
           },
@@ -412,13 +412,13 @@
             "available": true,
             "rank": 83.333333,
             "ready": false,
-            "state": "cheap"
+            "state": "insufficient_history"
           }
         },
         "reason_codes": [
-          "csi300_neutral",
-          "csi500_neutral",
-          "erp_cheap",
+          "csi300_insufficient_history",
+          "csi500_insufficient_history",
+          "erp_insufficient_history",
           "insufficient_history"
         ]
       },
@@ -511,10 +511,10 @@
       "valuation": {
         "state": "insufficient_history",
         "ready": false,
-        "cheap_count": 1,
-        "neutral_count": 2,
+        "cheap_count": 0,
+        "neutral_count": 0,
         "expensive_count": 0,
-        "disagreement": true,
+        "disagreement": false,
         "participating_components": [],
         "unavailable_components": [
           "csi1000",
@@ -528,15 +528,15 @@
               "available": true,
               "rank": 32.85,
               "ready": false,
-              "state": "neutral"
+              "state": "insufficient_history"
             },
             "pb": {
               "available": true,
               "rank": 43.31,
               "ready": false,
-              "state": "neutral"
+              "state": "insufficient_history"
             },
-            "state": "neutral",
+            "state": "insufficient_history",
             "available": true,
             "ready": false
           },
@@ -545,15 +545,15 @@
               "available": true,
               "rank": 30.6,
               "ready": false,
-              "state": "neutral"
+              "state": "insufficient_history"
             },
             "pb": {
               "available": true,
               "rank": 54.1,
               "ready": false,
-              "state": "neutral"
+              "state": "insufficient_history"
             },
-            "state": "neutral",
+            "state": "insufficient_history",
             "available": true,
             "ready": false
           },
@@ -566,13 +566,13 @@
             "available": true,
             "rank": 87.5,
             "ready": false,
-            "state": "cheap"
+            "state": "insufficient_history"
           }
         },
         "reason_codes": [
-          "csi300_neutral",
-          "csi500_neutral",
-          "erp_cheap",
+          "csi300_insufficient_history",
+          "csi500_insufficient_history",
+          "erp_insufficient_history",
           "insufficient_history"
         ]
       },
@@ -665,10 +665,10 @@
       "valuation": {
         "state": "insufficient_history",
         "ready": false,
-        "cheap_count": 1,
-        "neutral_count": 2,
+        "cheap_count": 0,
+        "neutral_count": 0,
         "expensive_count": 0,
-        "disagreement": true,
+        "disagreement": false,
         "participating_components": [],
         "unavailable_components": [
           "csi1000",
@@ -682,15 +682,15 @@
               "available": true,
               "rank": 29.53,
               "ready": false,
-              "state": "cheap"
+              "state": "insufficient_history"
             },
             "pb": {
               "available": true,
               "rank": 38.39,
               "ready": false,
-              "state": "neutral"
+              "state": "insufficient_history"
             },
-            "state": "neutral",
+            "state": "insufficient_history",
             "available": true,
             "ready": false
           },
@@ -699,15 +699,15 @@
               "available": true,
               "rank": 26.94,
               "ready": false,
-              "state": "cheap"
+              "state": "insufficient_history"
             },
             "pb": {
               "available": true,
               "rank": 44.17,
               "ready": false,
-              "state": "neutral"
+              "state": "insufficient_history"
             },
-            "state": "neutral",
+            "state": "insufficient_history",
             "available": true,
             "ready": false
           },
@@ -720,13 +720,13 @@
             "available": true,
             "rank": 90.0,
             "ready": false,
-            "state": "cheap"
+            "state": "insufficient_history"
           }
         },
         "reason_codes": [
-          "csi300_neutral",
-          "csi500_neutral",
-          "erp_cheap",
+          "csi300_insufficient_history",
+          "csi500_insufficient_history",
+          "erp_insufficient_history",
           "insufficient_history"
         ]
       },
@@ -819,7 +819,7 @@
       "valuation": {
         "state": "insufficient_history",
         "ready": false,
-        "cheap_count": 3,
+        "cheap_count": 0,
         "neutral_count": 0,
         "expensive_count": 0,
         "disagreement": false,
@@ -836,15 +836,15 @@
               "available": true,
               "rank": 21.07,
               "ready": false,
-              "state": "cheap"
+              "state": "insufficient_history"
             },
             "pb": {
               "available": true,
               "rank": 33.57,
               "ready": false,
-              "state": "neutral"
+              "state": "insufficient_history"
             },
-            "state": "cheap",
+            "state": "insufficient_history",
             "available": true,
             "ready": false
           },
@@ -853,15 +853,15 @@
               "available": true,
               "rank": 24.32,
               "ready": false,
-              "state": "cheap"
+              "state": "insufficient_history"
             },
             "pb": {
               "available": true,
               "rank": 32.74,
               "ready": false,
-              "state": "neutral"
+              "state": "insufficient_history"
             },
-            "state": "cheap",
+            "state": "insufficient_history",
             "available": true,
             "ready": false
           },
@@ -874,13 +874,13 @@
             "available": true,
             "rank": 91.666667,
             "ready": false,
-            "state": "cheap"
+            "state": "insufficient_history"
           }
         },
         "reason_codes": [
-          "csi300_cheap",
-          "csi500_cheap",
-          "erp_cheap",
+          "csi300_insufficient_history",
+          "csi500_insufficient_history",
+          "erp_insufficient_history",
           "insufficient_history"
         ]
       },
@@ -974,7 +974,7 @@
         "state": "insufficient_history",
         "ready": false,
         "cheap_count": 0,
-        "neutral_count": 3,
+        "neutral_count": 0,
         "expensive_count": 0,
         "disagreement": false,
         "participating_components": [],
@@ -990,15 +990,15 @@
               "available": true,
               "rank": 32.84,
               "ready": false,
-              "state": "neutral"
+              "state": "insufficient_history"
             },
             "pb": {
               "available": true,
               "rank": 40.96,
               "ready": false,
-              "state": "neutral"
+              "state": "insufficient_history"
             },
-            "state": "neutral",
+            "state": "insufficient_history",
             "available": true,
             "ready": false
           },
@@ -1007,15 +1007,15 @@
               "available": true,
               "rank": 27.05,
               "ready": false,
-              "state": "cheap"
+              "state": "insufficient_history"
             },
             "pb": {
               "available": true,
               "rank": 48.67,
               "ready": false,
-              "state": "neutral"
+              "state": "insufficient_history"
             },
-            "state": "neutral",
+            "state": "insufficient_history",
             "available": true,
             "ready": false
           },
@@ -1028,13 +1028,13 @@
             "available": true,
             "rank": 64.285714,
             "ready": false,
-            "state": "neutral"
+            "state": "insufficient_history"
           }
         },
         "reason_codes": [
-          "csi300_neutral",
-          "csi500_neutral",
-          "erp_neutral",
+          "csi300_insufficient_history",
+          "csi500_insufficient_history",
+          "erp_insufficient_history",
           "insufficient_history"
         ]
       },
@@ -1127,10 +1127,10 @@
       "valuation": {
         "state": "insufficient_history",
         "ready": false,
-        "cheap_count": 2,
-        "neutral_count": 1,
+        "cheap_count": 0,
+        "neutral_count": 0,
         "expensive_count": 0,
-        "disagreement": true,
+        "disagreement": false,
         "participating_components": [],
         "unavailable_components": [
           "csi1000",
@@ -1144,15 +1144,15 @@
               "available": true,
               "rank": 20.82,
               "ready": false,
-              "state": "cheap"
+              "state": "insufficient_history"
             },
             "pb": {
               "available": true,
               "rank": 36.09,
               "ready": false,
-              "state": "neutral"
+              "state": "insufficient_history"
             },
-            "state": "cheap",
+            "state": "insufficient_history",
             "available": true,
             "ready": false
           },
@@ -1161,15 +1161,15 @@
               "available": true,
               "rank": 30.78,
               "ready": false,
-              "state": "neutral"
+              "state": "insufficient_history"
             },
             "pb": {
               "available": true,
               "rank": 60.99,
               "ready": false,
-              "state": "neutral"
+              "state": "insufficient_history"
             },
-            "state": "neutral",
+            "state": "insufficient_history",
             "available": true,
             "ready": false
           },
@@ -1182,13 +1182,13 @@
             "available": true,
             "rank": 93.75,
             "ready": false,
-            "state": "cheap"
+            "state": "insufficient_history"
           }
         },
         "reason_codes": [
-          "csi300_cheap",
-          "csi500_neutral",
-          "erp_cheap",
+          "csi300_insufficient_history",
+          "csi500_insufficient_history",
+          "erp_insufficient_history",
           "insufficient_history"
         ]
       },
@@ -1281,10 +1281,10 @@
       "valuation": {
         "state": "insufficient_history",
         "ready": false,
-        "cheap_count": 2,
-        "neutral_count": 1,
+        "cheap_count": 0,
+        "neutral_count": 0,
         "expensive_count": 0,
-        "disagreement": true,
+        "disagreement": false,
         "participating_components": [],
         "unavailable_components": [
           "csi1000",
@@ -1298,15 +1298,15 @@
               "available": true,
               "rank": 21.72,
               "ready": false,
-              "state": "cheap"
+              "state": "insufficient_history"
             },
             "pb": {
               "available": true,
               "rank": 37.53,
               "ready": false,
-              "state": "neutral"
+              "state": "insufficient_history"
             },
-            "state": "cheap",
+            "state": "insufficient_history",
             "available": true,
             "ready": false
           },
@@ -1315,15 +1315,15 @@
               "available": true,
               "rank": 33.66,
               "ready": false,
-              "state": "neutral"
+              "state": "insufficient_history"
             },
             "pb": {
               "available": true,
               "rank": 63.69,
               "ready": false,
-              "state": "neutral"
+              "state": "insufficient_history"
             },
-            "state": "neutral",
+            "state": "insufficient_history",
             "available": true,
             "ready": false
           },
@@ -1336,13 +1336,13 @@
             "available": true,
             "rank": 72.222222,
             "ready": false,
-            "state": "cheap"
+            "state": "insufficient_history"
           }
         },
         "reason_codes": [
-          "csi300_cheap",
-          "csi500_neutral",
-          "erp_cheap",
+          "csi300_insufficient_history",
+          "csi500_insufficient_history",
+          "erp_insufficient_history",
           "insufficient_history"
         ]
       },
@@ -1436,7 +1436,7 @@
         "state": "insufficient_history",
         "ready": false,
         "cheap_count": 0,
-        "neutral_count": 3,
+        "neutral_count": 0,
         "expensive_count": 0,
         "disagreement": false,
         "participating_components": [],
@@ -1452,15 +1452,15 @@
               "available": true,
               "rank": 34.86,
               "ready": false,
-              "state": "neutral"
+              "state": "insufficient_history"
             },
             "pb": {
               "available": true,
               "rank": 45.97,
               "ready": false,
-              "state": "neutral"
+              "state": "insufficient_history"
             },
-            "state": "neutral",
+            "state": "insufficient_history",
             "available": true,
             "ready": false
           },
@@ -1469,15 +1469,15 @@
               "available": true,
               "rank": 38.18,
               "ready": false,
-              "state": "neutral"
+              "state": "insufficient_history"
             },
             "pb": {
               "available": true,
               "rank": 72.34,
               "ready": false,
-              "state": "expensive"
+              "state": "insufficient_history"
             },
-            "state": "neutral",
+            "state": "insufficient_history",
             "available": true,
             "ready": false
           },
@@ -1490,13 +1490,13 @@
             "available": true,
             "rank": 45.0,
             "ready": false,
-            "state": "neutral"
+            "state": "insufficient_history"
           }
         },
         "reason_codes": [
-          "csi300_neutral",
-          "csi500_neutral",
-          "erp_neutral",
+          "csi300_insufficient_history",
+          "csi500_insufficient_history",
+          "erp_insufficient_history",
           "insufficient_history"
         ]
       },
@@ -1589,10 +1589,10 @@
       "valuation": {
         "state": "insufficient_history",
         "ready": false,
-        "cheap_count": 1,
-        "neutral_count": 2,
+        "cheap_count": 0,
+        "neutral_count": 0,
         "expensive_count": 0,
-        "disagreement": true,
+        "disagreement": false,
         "participating_components": [],
         "unavailable_components": [
           "csi1000",
@@ -1606,15 +1606,15 @@
               "available": true,
               "rank": 22.29,
               "ready": false,
-              "state": "cheap"
+              "state": "insufficient_history"
             },
             "pb": {
               "available": true,
               "rank": 34.89,
               "ready": false,
-              "state": "neutral"
+              "state": "insufficient_history"
             },
-            "state": "cheap",
+            "state": "insufficient_history",
             "available": true,
             "ready": false
           },
@@ -1623,15 +1623,15 @@
               "available": true,
               "rank": 39.3,
               "ready": false,
-              "state": "neutral"
+              "state": "insufficient_history"
             },
             "pb": {
               "available": true,
               "rank": 71.61,
               "ready": false,
-              "state": "expensive"
+              "state": "insufficient_history"
             },
-            "state": "neutral",
+            "state": "insufficient_history",
             "available": true,
             "ready": false
           },
@@ -1644,13 +1644,13 @@
             "available": true,
             "rank": 50.0,
             "ready": false,
-            "state": "neutral"
+            "state": "insufficient_history"
           }
         },
         "reason_codes": [
-          "csi300_cheap",
-          "csi500_neutral",
-          "erp_neutral",
+          "csi300_insufficient_history",
+          "csi500_insufficient_history",
+          "erp_insufficient_history",
           "insufficient_history"
         ]
       },
@@ -1743,10 +1743,10 @@
       "valuation": {
         "state": "insufficient_history",
         "ready": false,
-        "cheap_count": 1,
-        "neutral_count": 2,
+        "cheap_count": 0,
+        "neutral_count": 0,
         "expensive_count": 0,
-        "disagreement": true,
+        "disagreement": false,
         "participating_components": [],
         "unavailable_components": [
           "csi1000",
@@ -1760,15 +1760,15 @@
               "available": true,
               "rank": 24.07,
               "ready": false,
-              "state": "cheap"
+              "state": "insufficient_history"
             },
             "pb": {
               "available": true,
               "rank": 34.1,
               "ready": false,
-              "state": "neutral"
+              "state": "insufficient_history"
             },
-            "state": "cheap",
+            "state": "insufficient_history",
             "available": true,
             "ready": false
           },
@@ -1777,15 +1777,15 @@
               "available": true,
               "rank": 35.88,
               "ready": false,
-              "state": "neutral"
+              "state": "insufficient_history"
             },
             "pb": {
               "available": true,
               "rank": 62.46,
               "ready": false,
-              "state": "neutral"
+              "state": "insufficient_history"
             },
-            "state": "neutral",
+            "state": "insufficient_history",
             "available": true,
             "ready": false
           },
@@ -1798,13 +1798,13 @@
             "available": true,
             "rank": 54.166667,
             "ready": false,
-            "state": "neutral"
+            "state": "insufficient_history"
           }
         },
         "reason_codes": [
-          "csi300_cheap",
-          "csi500_neutral",
-          "erp_neutral",
+          "csi300_insufficient_history",
+          "csi500_insufficient_history",
+          "erp_insufficient_history",
           "insufficient_history"
         ]
       },
@@ -1898,7 +1898,7 @@
         "state": "insufficient_history",
         "ready": false,
         "cheap_count": 0,
-        "neutral_count": 3,
+        "neutral_count": 0,
         "expensive_count": 0,
         "disagreement": false,
         "participating_components": [],
@@ -1914,15 +1914,15 @@
               "available": true,
               "rank": 25.07,
               "ready": false,
-              "state": "cheap"
+              "state": "insufficient_history"
             },
             "pb": {
               "available": true,
               "rank": 38.28,
               "ready": false,
-              "state": "neutral"
+              "state": "insufficient_history"
             },
-            "state": "neutral",
+            "state": "insufficient_history",
             "available": true,
             "ready": false
           },
@@ -1931,15 +1931,15 @@
               "available": true,
               "rank": 24.11,
               "ready": false,
-              "state": "cheap"
+              "state": "insufficient_history"
             },
             "pb": {
               "available": true,
               "rank": 47.82,
               "ready": false,
-              "state": "neutral"
+              "state": "insufficient_history"
             },
-            "state": "neutral",
+            "state": "insufficient_history",
             "available": true,
             "ready": false
           },
@@ -1952,13 +1952,13 @@
             "available": true,
             "rank": 42.307692,
             "ready": false,
-            "state": "neutral"
+            "state": "insufficient_history"
           }
         },
         "reason_codes": [
-          "csi300_neutral",
-          "csi500_neutral",
-          "erp_neutral",
+          "csi300_insufficient_history",
+          "csi500_insufficient_history",
+          "erp_insufficient_history",
           "insufficient_history"
         ]
       },
@@ -2052,7 +2052,7 @@
         "state": "insufficient_history",
         "ready": false,
         "cheap_count": 0,
-        "neutral_count": 3,
+        "neutral_count": 0,
         "expensive_count": 0,
         "disagreement": false,
         "participating_components": [],
@@ -2068,15 +2068,15 @@
               "available": true,
               "rank": 32.08,
               "ready": false,
-              "state": "neutral"
+              "state": "insufficient_history"
             },
             "pb": {
               "available": true,
               "rank": 43.82,
               "ready": false,
-              "state": "neutral"
+              "state": "insufficient_history"
             },
-            "state": "neutral",
+            "state": "insufficient_history",
             "available": true,
             "ready": false
           },
@@ -2085,15 +2085,15 @@
               "available": true,
               "rank": 35.23,
               "ready": false,
-              "state": "neutral"
+              "state": "insufficient_history"
             },
             "pb": {
               "available": true,
               "rank": 62.97,
               "ready": false,
-              "state": "neutral"
+              "state": "insufficient_history"
             },
-            "state": "neutral",
+            "state": "insufficient_history",
             "available": true,
             "ready": false
           },
@@ -2106,13 +2106,13 @@
             "available": true,
             "rank": 32.142857,
             "ready": false,
-            "state": "neutral"
+            "state": "insufficient_history"
           }
         },
         "reason_codes": [
-          "csi300_neutral",
-          "csi500_neutral",
-          "erp_neutral",
+          "csi300_insufficient_history",
+          "csi500_insufficient_history",
+          "erp_insufficient_history",
           "insufficient_history"
         ]
       },
@@ -2206,7 +2206,7 @@
         "state": "insufficient_history",
         "ready": false,
         "cheap_count": 0,
-        "neutral_count": 3,
+        "neutral_count": 0,
         "expensive_count": 0,
         "disagreement": false,
         "participating_components": [],
@@ -2222,15 +2222,15 @@
               "available": true,
               "rank": 21.25,
               "ready": false,
-              "state": "cheap"
+              "state": "insufficient_history"
             },
             "pb": {
               "available": true,
               "rank": 40.99,
               "ready": false,
-              "state": "neutral"
+              "state": "insufficient_history"
             },
-            "state": "neutral",
+            "state": "insufficient_history",
             "available": true,
             "ready": false
           },
@@ -2239,15 +2239,15 @@
               "available": true,
               "rank": 23.22,
               "ready": false,
-              "state": "cheap"
+              "state": "insufficient_history"
             },
             "pb": {
               "available": true,
               "rank": 54.73,
               "ready": false,
-              "state": "neutral"
+              "state": "insufficient_history"
             },
-            "state": "neutral",
+            "state": "insufficient_history",
             "available": true,
             "ready": false
           },
@@ -2260,13 +2260,13 @@
             "available": true,
             "rank": 63.333333,
             "ready": false,
-            "state": "neutral"
+            "state": "insufficient_history"
           }
         },
         "reason_codes": [
-          "csi300_neutral",
-          "csi500_neutral",
-          "erp_neutral",
+          "csi300_insufficient_history",
+          "csi500_insufficient_history",
+          "erp_insufficient_history",
           "insufficient_history"
         ]
       },
@@ -2359,10 +2359,10 @@
       "valuation": {
         "state": "insufficient_history",
         "ready": false,
-        "cheap_count": 2,
-        "neutral_count": 1,
+        "cheap_count": 0,
+        "neutral_count": 0,
         "expensive_count": 0,
-        "disagreement": true,
+        "disagreement": false,
         "participating_components": [],
         "unavailable_components": [
           "csi1000",
@@ -2376,15 +2376,15 @@
               "available": true,
               "rank": 13.58,
               "ready": false,
-              "state": "cheap"
+              "state": "insufficient_history"
             },
             "pb": {
               "available": true,
               "rank": 31.09,
               "ready": false,
-              "state": "neutral"
+              "state": "insufficient_history"
             },
-            "state": "cheap",
+            "state": "insufficient_history",
             "available": true,
             "ready": false
           },
@@ -2393,15 +2393,15 @@
               "available": true,
               "rank": 20.59,
               "ready": false,
-              "state": "cheap"
+              "state": "insufficient_history"
             },
             "pb": {
               "available": true,
               "rank": 45.5,
               "ready": false,
-              "state": "neutral"
+              "state": "insufficient_history"
             },
-            "state": "neutral",
+            "state": "insufficient_history",
             "available": true,
             "ready": false
           },
@@ -2414,13 +2414,13 @@
             "available": true,
             "rank": 78.125,
             "ready": false,
-            "state": "cheap"
+            "state": "insufficient_history"
           }
         },
         "reason_codes": [
-          "csi300_cheap",
-          "csi500_neutral",
-          "erp_cheap",
+          "csi300_insufficient_history",
+          "csi500_insufficient_history",
+          "erp_insufficient_history",
           "insufficient_history"
         ]
       },
@@ -2513,7 +2513,7 @@
       "valuation": {
         "state": "insufficient_history",
         "ready": false,
-        "cheap_count": 3,
+        "cheap_count": 0,
         "neutral_count": 0,
         "expensive_count": 0,
         "disagreement": false,
@@ -2530,15 +2530,15 @@
               "available": true,
               "rank": 4.95,
               "ready": false,
-              "state": "cheap"
+              "state": "insufficient_history"
             },
             "pb": {
               "available": true,
               "rank": 23.36,
               "ready": false,
-              "state": "cheap"
+              "state": "insufficient_history"
             },
-            "state": "cheap",
+            "state": "insufficient_history",
             "available": true,
             "ready": false
           },
@@ -2547,15 +2547,15 @@
               "available": true,
               "rank": 17.84,
               "ready": false,
-              "state": "cheap"
+              "state": "insufficient_history"
             },
             "pb": {
               "available": true,
               "rank": 32.49,
               "ready": false,
-              "state": "neutral"
+              "state": "insufficient_history"
             },
-            "state": "cheap",
+            "state": "insufficient_history",
             "available": true,
             "ready": false
           },
@@ -2568,13 +2568,13 @@
             "available": true,
             "rank": 97.058824,
             "ready": false,
-            "state": "cheap"
+            "state": "insufficient_history"
           }
         },
         "reason_codes": [
-          "csi300_cheap",
-          "csi500_cheap",
-          "erp_cheap",
+          "csi300_insufficient_history",
+          "csi500_insufficient_history",
+          "erp_insufficient_history",
           "insufficient_history"
         ]
       },
@@ -2667,7 +2667,7 @@
       "valuation": {
         "state": "insufficient_history",
         "ready": false,
-        "cheap_count": 3,
+        "cheap_count": 0,
         "neutral_count": 0,
         "expensive_count": 0,
         "disagreement": false,
@@ -2684,15 +2684,15 @@
               "available": true,
               "rank": 7.13,
               "ready": false,
-              "state": "cheap"
+              "state": "insufficient_history"
             },
             "pb": {
               "available": true,
               "rank": 30.1,
               "ready": false,
-              "state": "neutral"
+              "state": "insufficient_history"
             },
-            "state": "cheap",
+            "state": "insufficient_history",
             "available": true,
             "ready": false
           },
@@ -2701,15 +2701,15 @@
               "available": true,
               "rank": 20.44,
               "ready": false,
-              "state": "cheap"
+              "state": "insufficient_history"
             },
             "pb": {
               "available": true,
               "rank": 37.57,
               "ready": false,
-              "state": "neutral"
+              "state": "insufficient_history"
             },
-            "state": "cheap",
+            "state": "insufficient_history",
             "available": true,
             "ready": false
           },
@@ -2722,13 +2722,13 @@
             "available": true,
             "rank": 91.666667,
             "ready": false,
-            "state": "cheap"
+            "state": "insufficient_history"
           }
         },
         "reason_codes": [
-          "csi300_cheap",
-          "csi500_cheap",
-          "erp_cheap",
+          "csi300_insufficient_history",
+          "csi500_insufficient_history",
+          "erp_insufficient_history",
           "insufficient_history"
         ]
       },
@@ -2821,7 +2821,7 @@
       "valuation": {
         "state": "insufficient_history",
         "ready": false,
-        "cheap_count": 3,
+        "cheap_count": 0,
         "neutral_count": 0,
         "expensive_count": 0,
         "disagreement": false,
@@ -2838,15 +2838,15 @@
               "available": true,
               "rank": 3.45,
               "ready": false,
-              "state": "cheap"
+              "state": "insufficient_history"
             },
             "pb": {
               "available": true,
               "rank": 26.24,
               "ready": false,
-              "state": "cheap"
+              "state": "insufficient_history"
             },
-            "state": "cheap",
+            "state": "insufficient_history",
             "available": true,
             "ready": false
           },
@@ -2855,15 +2855,15 @@
               "available": true,
               "rank": 18.61,
               "ready": false,
-              "state": "cheap"
+              "state": "insufficient_history"
             },
             "pb": {
               "available": true,
               "rank": 33.6,
               "ready": false,
-              "state": "neutral"
+              "state": "insufficient_history"
             },
-            "state": "cheap",
+            "state": "insufficient_history",
             "available": true,
             "ready": false
           },
@@ -2876,13 +2876,13 @@
             "available": true,
             "rank": 86.842105,
             "ready": false,
-            "state": "cheap"
+            "state": "insufficient_history"
           }
         },
         "reason_codes": [
-          "csi300_cheap",
-          "csi500_cheap",
-          "erp_cheap",
+          "csi300_insufficient_history",
+          "csi500_insufficient_history",
+          "erp_insufficient_history",
           "insufficient_history"
         ]
       },
@@ -2975,7 +2975,7 @@
       "valuation": {
         "state": "insufficient_history",
         "ready": false,
-        "cheap_count": 3,
+        "cheap_count": 0,
         "neutral_count": 0,
         "expensive_count": 0,
         "disagreement": false,
@@ -2992,15 +2992,15 @@
               "available": true,
               "rank": 0.19,
               "ready": false,
-              "state": "cheap"
+              "state": "insufficient_history"
             },
             "pb": {
               "available": true,
               "rank": 17.13,
               "ready": false,
-              "state": "cheap"
+              "state": "insufficient_history"
             },
-            "state": "cheap",
+            "state": "insufficient_history",
             "available": true,
             "ready": false
           },
@@ -3009,15 +3009,15 @@
               "available": true,
               "rank": 14.16,
               "ready": false,
-              "state": "cheap"
+              "state": "insufficient_history"
             },
             "pb": {
               "available": true,
               "rank": 27.7,
               "ready": false,
-              "state": "cheap"
+              "state": "insufficient_history"
             },
-            "state": "cheap",
+            "state": "insufficient_history",
             "available": true,
             "ready": false
           },
@@ -3030,13 +3030,13 @@
             "available": true,
             "rank": 97.5,
             "ready": false,
-            "state": "cheap"
+            "state": "insufficient_history"
           }
         },
         "reason_codes": [
-          "csi300_cheap",
-          "csi500_cheap",
-          "erp_cheap",
+          "csi300_insufficient_history",
+          "csi500_insufficient_history",
+          "erp_insufficient_history",
           "insufficient_history"
         ]
       },
@@ -3129,7 +3129,7 @@
       "valuation": {
         "state": "insufficient_history",
         "ready": false,
-        "cheap_count": 3,
+        "cheap_count": 0,
         "neutral_count": 0,
         "expensive_count": 0,
         "disagreement": false,
@@ -3146,15 +3146,15 @@
               "available": true,
               "rank": 0.06,
               "ready": false,
-              "state": "cheap"
+              "state": "insufficient_history"
             },
             "pb": {
               "available": true,
               "rank": 13.67,
               "ready": false,
-              "state": "cheap"
+              "state": "insufficient_history"
             },
-            "state": "cheap",
+            "state": "insufficient_history",
             "available": true,
             "ready": false
           },
@@ -3163,15 +3163,15 @@
               "available": true,
               "rank": 10.34,
               "ready": false,
-              "state": "cheap"
+              "state": "insufficient_history"
             },
             "pb": {
               "available": true,
               "rank": 15.99,
               "ready": false,
-              "state": "cheap"
+              "state": "insufficient_history"
             },
-            "state": "cheap",
+            "state": "insufficient_history",
             "available": true,
             "ready": false
           },
@@ -3184,13 +3184,13 @@
             "available": true,
             "rank": 97.619048,
             "ready": false,
-            "state": "cheap"
+            "state": "insufficient_history"
           }
         },
         "reason_codes": [
-          "csi300_cheap",
-          "csi500_cheap",
-          "erp_cheap",
+          "csi300_insufficient_history",
+          "csi500_insufficient_history",
+          "erp_insufficient_history",
           "insufficient_history"
         ]
       },
@@ -3283,7 +3283,7 @@
       "valuation": {
         "state": "insufficient_history",
         "ready": false,
-        "cheap_count": 3,
+        "cheap_count": 0,
         "neutral_count": 0,
         "expensive_count": 0,
         "disagreement": false,
@@ -3300,15 +3300,15 @@
               "available": true,
               "rank": 0.81,
               "ready": false,
-              "state": "cheap"
+              "state": "insufficient_history"
             },
             "pb": {
               "available": true,
               "rank": 15.04,
               "ready": false,
-              "state": "cheap"
+              "state": "insufficient_history"
             },
-            "state": "cheap",
+            "state": "insufficient_history",
             "available": true,
             "ready": false
           },
@@ -3317,15 +3317,15 @@
               "available": true,
               "rank": 11.48,
               "ready": false,
-              "state": "cheap"
+              "state": "insufficient_history"
             },
             "pb": {
               "available": true,
               "rank": 17.65,
               "ready": false,
-              "state": "cheap"
+              "state": "insufficient_history"
             },
-            "state": "cheap",
+            "state": "insufficient_history",
             "available": true,
             "ready": false
           },
@@ -3338,13 +3338,13 @@
             "available": true,
             "rank": 93.181818,
             "ready": false,
-            "state": "cheap"
+            "state": "insufficient_history"
           }
         },
         "reason_codes": [
-          "csi300_cheap",
-          "csi500_cheap",
-          "erp_cheap",
+          "csi300_insufficient_history",
+          "csi500_insufficient_history",
+          "erp_insufficient_history",
           "insufficient_history"
         ]
       },
@@ -3437,7 +3437,7 @@
       "valuation": {
         "state": "insufficient_history",
         "ready": false,
-        "cheap_count": 3,
+        "cheap_count": 0,
         "neutral_count": 0,
         "expensive_count": 0,
         "disagreement": false,
@@ -3454,15 +3454,15 @@
               "available": true,
               "rank": 0.06,
               "ready": false,
-              "state": "cheap"
+              "state": "insufficient_history"
             },
             "pb": {
               "available": true,
               "rank": 8.53,
               "ready": false,
-              "state": "cheap"
+              "state": "insufficient_history"
             },
-            "state": "cheap",
+            "state": "insufficient_history",
             "available": true,
             "ready": false
           },
@@ -3471,15 +3471,15 @@
               "available": true,
               "rank": 10.26,
               "ready": false,
-              "state": "cheap"
+              "state": "insufficient_history"
             },
             "pb": {
               "available": true,
               "rank": 14.21,
               "ready": false,
-              "state": "cheap"
+              "state": "insufficient_history"
             },
-            "state": "cheap",
+            "state": "insufficient_history",
             "available": true,
             "ready": false
           },
@@ -3492,13 +3492,13 @@
             "available": true,
             "rank": 97.826087,
             "ready": false,
-            "state": "cheap"
+            "state": "insufficient_history"
           }
         },
         "reason_codes": [
-          "csi300_cheap",
-          "csi500_cheap",
-          "erp_cheap",
+          "csi300_insufficient_history",
+          "csi500_insufficient_history",
+          "erp_insufficient_history",
           "insufficient_history"
         ]
       },
@@ -3591,7 +3591,7 @@
       "valuation": {
         "state": "insufficient_history",
         "ready": false,
-        "cheap_count": 3,
+        "cheap_count": 0,
         "neutral_count": 0,
         "expensive_count": 0,
         "disagreement": false,
@@ -3608,15 +3608,15 @@
               "available": true,
               "rank": 0.61,
               "ready": false,
-              "state": "cheap"
+              "state": "insufficient_history"
             },
             "pb": {
               "available": true,
               "rank": 5.85,
               "ready": false,
-              "state": "cheap"
+              "state": "insufficient_history"
             },
-            "state": "cheap",
+            "state": "insufficient_history",
             "available": true,
             "ready": false
           },
@@ -3625,15 +3625,15 @@
               "available": true,
               "rank": 7.35,
               "ready": false,
-              "state": "cheap"
+              "state": "insufficient_history"
             },
             "pb": {
               "available": true,
               "rank": 9.5,
               "ready": false,
-              "state": "cheap"
+              "state": "insufficient_history"
             },
-            "state": "cheap",
+            "state": "insufficient_history",
             "available": true,
             "ready": false
           },
@@ -3646,13 +3646,13 @@
             "available": true,
             "rank": 97.916667,
             "ready": false,
-            "state": "cheap"
+            "state": "insufficient_history"
           }
         },
         "reason_codes": [
-          "csi300_cheap",
-          "csi500_cheap",
-          "erp_cheap",
+          "csi300_insufficient_history",
+          "csi500_insufficient_history",
+          "erp_insufficient_history",
           "insufficient_history"
         ]
       },
@@ -3745,7 +3745,7 @@
       "valuation": {
         "state": "insufficient_history",
         "ready": false,
-        "cheap_count": 3,
+        "cheap_count": 0,
         "neutral_count": 0,
         "expensive_count": 0,
         "disagreement": false,
@@ -3762,15 +3762,15 @@
               "available": true,
               "rank": 1.99,
               "ready": false,
-              "state": "cheap"
+              "state": "insufficient_history"
             },
             "pb": {
               "available": true,
               "rank": 11.78,
               "ready": false,
-              "state": "cheap"
+              "state": "insufficient_history"
             },
-            "state": "cheap",
+            "state": "insufficient_history",
             "available": true,
             "ready": false
           },
@@ -3779,15 +3779,15 @@
               "available": true,
               "rank": 6.28,
               "ready": false,
-              "state": "cheap"
+              "state": "insufficient_history"
             },
             "pb": {
               "available": true,
               "rank": 9.62,
               "ready": false,
-              "state": "cheap"
+              "state": "insufficient_history"
             },
-            "state": "cheap",
+            "state": "insufficient_history",
             "available": true,
             "ready": false
           },
@@ -3800,13 +3800,13 @@
             "available": true,
             "rank": 94.0,
             "ready": false,
-            "state": "cheap"
+            "state": "insufficient_history"
           }
         },
         "reason_codes": [
-          "csi300_cheap",
-          "csi500_cheap",
-          "erp_cheap",
+          "csi300_insufficient_history",
+          "csi500_insufficient_history",
+          "erp_insufficient_history",
           "insufficient_history"
         ]
       },
@@ -3899,7 +3899,7 @@
       "valuation": {
         "state": "insufficient_history",
         "ready": false,
-        "cheap_count": 3,
+        "cheap_count": 0,
         "neutral_count": 0,
         "expensive_count": 0,
         "disagreement": false,
@@ -3916,15 +3916,15 @@
               "available": true,
               "rank": 4.95,
               "ready": false,
-              "state": "cheap"
+              "state": "insufficient_history"
             },
             "pb": {
               "available": true,
               "rank": 19.03,
               "ready": false,
-              "state": "cheap"
+              "state": "insufficient_history"
             },
-            "state": "cheap",
+            "state": "insufficient_history",
             "available": true,
             "ready": false
           },
@@ -3933,15 +3933,15 @@
               "available": true,
               "rank": 12.43,
               "ready": false,
-              "state": "cheap"
+              "state": "insufficient_history"
             },
             "pb": {
               "available": true,
               "rank": 14.68,
               "ready": false,
-              "state": "cheap"
+              "state": "insufficient_history"
             },
-            "state": "cheap",
+            "state": "insufficient_history",
             "available": true,
             "ready": false
           },
@@ -3954,13 +3954,13 @@
             "available": true,
             "rank": 86.538462,
             "ready": false,
-            "state": "cheap"
+            "state": "insufficient_history"
           }
         },
         "reason_codes": [
-          "csi300_cheap",
-          "csi500_cheap",
-          "erp_cheap",
+          "csi300_insufficient_history",
+          "csi500_insufficient_history",
+          "erp_insufficient_history",
           "insufficient_history"
         ]
       },
@@ -4053,7 +4053,7 @@
       "valuation": {
         "state": "insufficient_history",
         "ready": false,
-        "cheap_count": 3,
+        "cheap_count": 0,
         "neutral_count": 0,
         "expensive_count": 0,
         "disagreement": false,
@@ -4070,15 +4070,15 @@
               "available": true,
               "rank": 1.83,
               "ready": false,
-              "state": "cheap"
+              "state": "insufficient_history"
             },
             "pb": {
               "available": true,
               "rank": 6.6,
               "ready": false,
-              "state": "cheap"
+              "state": "insufficient_history"
             },
-            "state": "cheap",
+            "state": "insufficient_history",
             "available": true,
             "ready": false
           },
@@ -4087,15 +4087,15 @@
               "available": true,
               "rank": 11.82,
               "ready": false,
-              "state": "cheap"
+              "state": "insufficient_history"
             },
             "pb": {
               "available": true,
               "rank": 10.01,
               "ready": false,
-              "state": "cheap"
+              "state": "insufficient_history"
             },
-            "state": "cheap",
+            "state": "insufficient_history",
             "available": true,
             "ready": false
           },
@@ -4108,13 +4108,13 @@
             "available": true,
             "rank": 90.740741,
             "ready": false,
-            "state": "cheap"
+            "state": "insufficient_history"
           }
         },
         "reason_codes": [
-          "csi300_cheap",
-          "csi500_cheap",
-          "erp_cheap",
+          "csi300_insufficient_history",
+          "csi500_insufficient_history",
+          "erp_insufficient_history",
           "insufficient_history"
         ]
       },
@@ -4207,7 +4207,7 @@
       "valuation": {
         "state": "insufficient_history",
         "ready": false,
-        "cheap_count": 3,
+        "cheap_count": 0,
         "neutral_count": 0,
         "expensive_count": 0,
         "disagreement": false,
@@ -4224,15 +4224,15 @@
               "available": true,
               "rank": 7.0,
               "ready": false,
-              "state": "cheap"
+              "state": "insufficient_history"
             },
             "pb": {
               "available": true,
               "rank": 8.8,
               "ready": false,
-              "state": "cheap"
+              "state": "insufficient_history"
             },
-            "state": "cheap",
+            "state": "insufficient_history",
             "available": true,
             "ready": false
           },
@@ -4241,15 +4241,15 @@
               "available": true,
               "rank": 20.68,
               "ready": false,
-              "state": "cheap"
+              "state": "insufficient_history"
             },
             "pb": {
               "available": true,
               "rank": 13.45,
               "ready": false,
-              "state": "cheap"
+              "state": "insufficient_history"
             },
-            "state": "cheap",
+            "state": "insufficient_history",
             "available": true,
             "ready": false
           },
@@ -4262,13 +4262,13 @@
             "available": true,
             "rank": 80.357143,
             "ready": false,
-            "state": "cheap"
+            "state": "insufficient_history"
           }
         },
         "reason_codes": [
-          "csi300_cheap",
-          "csi500_cheap",
-          "erp_cheap",
+          "csi300_insufficient_history",
+          "csi500_insufficient_history",
+          "erp_insufficient_history",
           "insufficient_history"
         ]
       },
@@ -4361,7 +4361,7 @@
       "valuation": {
         "state": "insufficient_history",
         "ready": false,
-        "cheap_count": 3,
+        "cheap_count": 0,
         "neutral_count": 0,
         "expensive_count": 0,
         "disagreement": false,
@@ -4378,15 +4378,15 @@
               "available": true,
               "rank": 4.49,
               "ready": false,
-              "state": "cheap"
+              "state": "insufficient_history"
             },
             "pb": {
               "available": true,
               "rank": 5.58,
               "ready": false,
-              "state": "cheap"
+              "state": "insufficient_history"
             },
-            "state": "cheap",
+            "state": "insufficient_history",
             "available": true,
             "ready": false
           },
@@ -4395,15 +4395,15 @@
               "available": true,
               "rank": 24.31,
               "ready": false,
-              "state": "cheap"
+              "state": "insufficient_history"
             },
             "pb": {
               "available": true,
               "rank": 17.13,
               "ready": false,
-              "state": "cheap"
+              "state": "insufficient_history"
             },
-            "state": "cheap",
+            "state": "insufficient_history",
             "available": true,
             "ready": false
           },
@@ -4416,13 +4416,13 @@
             "available": true,
             "rank": 84.482759,
             "ready": false,
-            "state": "cheap"
+            "state": "insufficient_history"
           }
         },
         "reason_codes": [
-          "csi300_cheap",
-          "csi500_cheap",
-          "erp_cheap",
+          "csi300_insufficient_history",
+          "csi500_insufficient_history",
+          "erp_insufficient_history",
           "insufficient_history"
         ]
       },
@@ -4515,7 +4515,7 @@
       "valuation": {
         "state": "insufficient_history",
         "ready": false,
-        "cheap_count": 3,
+        "cheap_count": 0,
         "neutral_count": 0,
         "expensive_count": 0,
         "disagreement": false,
@@ -4532,15 +4532,15 @@
               "available": true,
               "rank": 1.2,
               "ready": false,
-              "state": "cheap"
+              "state": "insufficient_history"
             },
             "pb": {
               "available": true,
               "rank": 3.13,
               "ready": false,
-              "state": "cheap"
+              "state": "insufficient_history"
             },
-            "state": "cheap",
+            "state": "insufficient_history",
             "available": true,
             "ready": false
           },
@@ -4549,15 +4549,15 @@
               "available": true,
               "rank": 18.3,
               "ready": false,
-              "state": "cheap"
+              "state": "insufficient_history"
             },
             "pb": {
               "available": true,
               "rank": 10.09,
               "ready": false,
-              "state": "cheap"
+              "state": "insufficient_history"
             },
-            "state": "cheap",
+            "state": "insufficient_history",
             "available": true,
             "ready": false
           },
@@ -4570,13 +4570,13 @@
             "available": true,
             "rank": 98.333333,
             "ready": false,
-            "state": "cheap"
+            "state": "insufficient_history"
           }
         },
         "reason_codes": [
-          "csi300_cheap",
-          "csi500_cheap",
-          "erp_cheap",
+          "csi300_insufficient_history",
+          "csi500_insufficient_history",
+          "erp_insufficient_history",
           "insufficient_history"
         ]
       },
@@ -4669,7 +4669,7 @@
       "valuation": {
         "state": "insufficient_history",
         "ready": false,
-        "cheap_count": 3,
+        "cheap_count": 0,
         "neutral_count": 0,
         "expensive_count": 0,
         "disagreement": false,
@@ -4686,15 +4686,15 @@
               "available": true,
               "rank": 0.17,
               "ready": false,
-              "state": "cheap"
+              "state": "insufficient_history"
             },
             "pb": {
               "available": true,
               "rank": 1.18,
               "ready": false,
-              "state": "cheap"
+              "state": "insufficient_history"
             },
-            "state": "cheap",
+            "state": "insufficient_history",
             "available": true,
             "ready": false
           },
@@ -4703,15 +4703,15 @@
               "available": true,
               "rank": 11.56,
               "ready": false,
-              "state": "cheap"
+              "state": "insufficient_history"
             },
             "pb": {
               "available": true,
               "rank": 7.33,
               "ready": false,
-              "state": "cheap"
+              "state": "insufficient_history"
             },
-            "state": "cheap",
+            "state": "insufficient_history",
             "available": true,
             "ready": false
           },
@@ -4724,13 +4724,13 @@
             "available": true,
             "rank": 98.387097,
             "ready": false,
-            "state": "cheap"
+            "state": "insufficient_history"
           }
         },
         "reason_codes": [
-          "csi300_cheap",
-          "csi500_cheap",
-          "erp_cheap",
+          "csi300_insufficient_history",
+          "csi500_insufficient_history",
+          "erp_insufficient_history",
           "insufficient_history"
         ]
       },
@@ -4823,7 +4823,7 @@
       "valuation": {
         "state": "insufficient_history",
         "ready": false,
-        "cheap_count": 3,
+        "cheap_count": 0,
         "neutral_count": 0,
         "expensive_count": 0,
         "disagreement": false,
@@ -4840,15 +4840,15 @@
               "available": true,
               "rank": 0.06,
               "ready": false,
-              "state": "cheap"
+              "state": "insufficient_history"
             },
             "pb": {
               "available": true,
               "rank": 0.06,
               "ready": false,
-              "state": "cheap"
+              "state": "insufficient_history"
             },
-            "state": "cheap",
+            "state": "insufficient_history",
             "available": true,
             "ready": false
           },
@@ -4857,15 +4857,15 @@
               "available": true,
               "rank": 15.0,
               "ready": false,
-              "state": "cheap"
+              "state": "insufficient_history"
             },
             "pb": {
               "available": true,
               "rank": 6.92,
               "ready": false,
-              "state": "cheap"
+              "state": "insufficient_history"
             },
-            "state": "cheap",
+            "state": "insufficient_history",
             "available": true,
             "ready": false
           },
@@ -4878,13 +4878,13 @@
             "available": true,
             "rank": 98.4375,
             "ready": false,
-            "state": "cheap"
+            "state": "insufficient_history"
           }
         },
         "reason_codes": [
-          "csi300_cheap",
-          "csi500_cheap",
-          "erp_cheap",
+          "csi300_insufficient_history",
+          "csi500_insufficient_history",
+          "erp_insufficient_history",
           "insufficient_history"
         ]
       },
@@ -4977,7 +4977,7 @@
       "valuation": {
         "state": "insufficient_history",
         "ready": false,
-        "cheap_count": 3,
+        "cheap_count": 0,
         "neutral_count": 0,
         "expensive_count": 0,
         "disagreement": false,
@@ -4994,15 +4994,15 @@
               "available": true,
               "rank": 1.04,
               "ready": false,
-              "state": "cheap"
+              "state": "insufficient_history"
             },
             "pb": {
               "available": true,
               "rank": 1.1,
               "ready": false,
-              "state": "cheap"
+              "state": "insufficient_history"
             },
-            "state": "cheap",
+            "state": "insufficient_history",
             "available": true,
             "ready": false
           },
@@ -5011,15 +5011,15 @@
               "available": true,
               "rank": 17.8,
               "ready": false,
-              "state": "cheap"
+              "state": "insufficient_history"
             },
             "pb": {
               "available": true,
               "rank": 7.82,
               "ready": false,
-              "state": "cheap"
+              "state": "insufficient_history"
             },
-            "state": "cheap",
+            "state": "insufficient_history",
             "available": true,
             "ready": false
           },
@@ -5032,13 +5032,13 @@
             "available": true,
             "rank": 95.454545,
             "ready": false,
-            "state": "cheap"
+            "state": "insufficient_history"
           }
         },
         "reason_codes": [
-          "csi300_cheap",
-          "csi500_cheap",
-          "erp_cheap",
+          "csi300_insufficient_history",
+          "csi500_insufficient_history",
+          "erp_insufficient_history",
           "insufficient_history"
         ]
       },
@@ -5131,7 +5131,7 @@
       "valuation": {
         "state": "insufficient_history",
         "ready": false,
-        "cheap_count": 3,
+        "cheap_count": 0,
         "neutral_count": 0,
         "expensive_count": 0,
         "disagreement": false,
@@ -5148,15 +5148,15 @@
               "available": true,
               "rank": 1.14,
               "ready": false,
-              "state": "cheap"
+              "state": "insufficient_history"
             },
             "pb": {
               "available": true,
               "rank": 0.16,
               "ready": false,
-              "state": "cheap"
+              "state": "insufficient_history"
             },
-            "state": "cheap",
+            "state": "insufficient_history",
             "available": true,
             "ready": false
           },
@@ -5165,15 +5165,15 @@
               "available": true,
               "rank": 25.66,
               "ready": false,
-              "state": "cheap"
+              "state": "insufficient_history"
             },
             "pb": {
               "available": true,
               "rank": 7.3,
               "ready": false,
-              "state": "cheap"
+              "state": "insufficient_history"
             },
-            "state": "cheap",
+            "state": "insufficient_history",
             "available": true,
             "ready": false
           },
@@ -5186,13 +5186,13 @@
             "available": true,
             "rank": 89.705882,
             "ready": false,
-            "state": "cheap"
+            "state": "insufficient_history"
           }
         },
         "reason_codes": [
-          "csi300_cheap",
-          "csi500_cheap",
-          "erp_cheap",
+          "csi300_insufficient_history",
+          "csi500_insufficient_history",
+          "erp_insufficient_history",
           "insufficient_history"
         ]
       },
@@ -5285,7 +5285,7 @@
       "valuation": {
         "state": "insufficient_history",
         "ready": false,
-        "cheap_count": 3,
+        "cheap_count": 0,
         "neutral_count": 0,
         "expensive_count": 0,
         "disagreement": false,
@@ -5302,15 +5302,15 @@
               "available": true,
               "rank": 0.21,
               "ready": false,
-              "state": "cheap"
+              "state": "insufficient_history"
             },
             "pb": {
               "available": true,
               "rank": 0.21,
               "ready": false,
-              "state": "cheap"
+              "state": "insufficient_history"
             },
-            "state": "cheap",
+            "state": "insufficient_history",
             "available": true,
             "ready": false
           },
@@ -5319,15 +5319,15 @@
               "available": true,
               "rank": 14.38,
               "ready": false,
-              "state": "cheap"
+              "state": "insufficient_history"
             },
             "pb": {
               "available": true,
               "rank": 2.93,
               "ready": false,
-              "state": "cheap"
+              "state": "insufficient_history"
             },
-            "state": "cheap",
+            "state": "insufficient_history",
             "available": true,
             "ready": false
           },
@@ -5340,13 +5340,13 @@
             "available": true,
             "rank": 98.571429,
             "ready": false,
-            "state": "cheap"
+            "state": "insufficient_history"
           }
         },
         "reason_codes": [
-          "csi300_cheap",
-          "csi500_cheap",
-          "erp_cheap",
+          "csi300_insufficient_history",
+          "csi500_insufficient_history",
+          "erp_insufficient_history",
           "insufficient_history"
         ]
       },

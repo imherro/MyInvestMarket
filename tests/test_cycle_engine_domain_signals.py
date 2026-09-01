@@ -6,6 +6,7 @@ import inspect
 import sys
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
@@ -101,6 +102,10 @@ class DomainSignalsTests(unittest.TestCase):
         self.put(row, "valuation.indices.csi300.pe_ttm.percentile_expanding", 1, 20, ready=False)
         result = domain.valuation(row)
         self.assertFalse(result["components"]["csi300"]["ready"])
+        self.assertEqual(result["components"]["csi300"]["pe"]["state"], "insufficient_history")
+        self.assertEqual(result["components"]["csi300"]["state"], "insufficient_history")
+        self.assertEqual(result["cheap_count"], 0)
+        self.assertEqual(result["expensive_count"], 0)
         self.assertNotIn("csi300", result["participating_components"])
 
     def test_earnings_states_and_strict_natural_month_change(self) -> None:
@@ -207,6 +212,37 @@ class DomainSignalsTests(unittest.TestCase):
         result = domain.audit(self.output, mutated_evidence, self.evidence_audit)
         self.assertGreater(result["source_evidence_hash_violation_count"], 0)
         self.assertGreater(result["upstream_mutation_count"], 0)
+        self.assertFalse(result["passed"])
+
+    def test_mutated_evidence_and_regenerated_output_cannot_bypass_audit(self) -> None:
+        mutated_evidence = copy.deepcopy(self.evidence)
+        mutated_evidence["records"][0]["features"]["valuation.csi300_erp_pct.value"]["raw_value"] = 999999
+        regenerated = domain.build(mutated_evidence)
+        result = domain.audit(regenerated, mutated_evidence, self.evidence_audit)
+        self.assertGreater(result["source_evidence_hash_violation_count"], 0)
+        self.assertGreater(result["upstream_mutation_count"], 0)
+        self.assertFalse(result["passed"])
+
+    def test_independent_audit_rejects_production_reducer_mutation(self) -> None:
+        original = domain.valuation
+
+        def wrong_valuation(row):
+            value = original(row)
+            value["state"] = "cheap"
+            return value
+
+        with patch.object(domain, "valuation", side_effect=wrong_valuation):
+            regenerated = domain.build(self.evidence)
+        result = domain.audit(regenerated, self.evidence, self.evidence_audit)
+        self.assertGreater(result["valuation_reduction_violation_count"], 0)
+        self.assertFalse(result["passed"])
+
+    def test_natural_month_numeric_change_mutation_is_rejected(self) -> None:
+        mutated = copy.deepcopy(self.output)
+        record = next(item for item in mutated["records"] if item["earnings"]["growth_rank_change_3m"] is not None)
+        record["earnings"]["growth_rank_change_3m"] += 1
+        result = domain.audit(mutated, self.evidence, self.evidence_audit)
+        self.assertGreater(result["natural_month_change_violation_count"], 0)
         self.assertFalse(result["passed"])
 
     def test_future_decision_inputs_do_not_change_prior_semantics(self) -> None:

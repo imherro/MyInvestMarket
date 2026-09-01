@@ -88,7 +88,9 @@ def erp_band(value: float | None) -> str:
 
 def component(path: str, row: dict[str, Any]) -> dict[str, Any]:
     value = rank(row, path)
-    return {"available": value is not None, "rank": value, "ready": ready(row, path), "state": band(value)}
+    is_ready = value is not None and ready(row, path)
+    state = "unavailable" if value is None else (band(value) if is_ready else "insufficient_history")
+    return {"available": value is not None, "rank": value, "ready": is_ready, "state": state}
 
 
 def valuation(row: dict[str, Any]) -> dict[str, Any]:
@@ -101,21 +103,28 @@ def valuation(row: dict[str, Any]) -> dict[str, Any]:
     states = []
     for name in ("csi300", "csi500"):
         values = [item["rank"] for item in components[name].values() if item["rank"] is not None]
-        state = band(sum(values) / 2 if len(values) == 2 else None)
+        complete = len(values) == 2
+        component_ready = complete and all(components[name][field]["ready"] for field in ("pe", "pb"))
+        state = band(sum(values) / 2) if component_ready else ("unavailable" if not complete else "insufficient_history")
         components[name]["state"] = state
-        components[name]["available"] = len(values) == 2
-        components[name]["ready"] = components[name]["available"] and all(components[name][field]["ready"] for field in ("pe", "pb"))
+        components[name]["available"] = complete
+        components[name]["ready"] = component_ready
         states.append(state)
     components["erp"]["state"] = erp_band(components["erp"]["rank"])
+    if not components["erp"]["available"]:
+        components["erp"]["state"] = "unavailable"
+    elif not ready(row, "valuation.csi300_erp_pct.value"):
+        components["erp"]["state"] = "insufficient_history"
     components["erp"]["ready"] = components["erp"]["available"] and ready(row, "valuation.csi300_erp_pct.value")
     states.append(components["erp"]["state"])
     participating = [name for name in ("csi300", "csi500", "erp") if components[name]["ready"]]
     unavailable = ["csi1000"] + [name for name in ("csi300", "csi500", "erp") if not components[name]["ready"]]
-    cheap = states.count("cheap")
-    expensive = states.count("expensive")
+    formal_states = [components[name]["state"] for name in participating]
+    cheap = formal_states.count("cheap")
+    expensive = formal_states.count("expensive")
     model_ready = all(components[name]["ready"] for name in ("csi300", "csi500", "erp"))
     state = "insufficient_history" if not model_ready else ("cheap" if cheap >= 2 else ("expensive" if expensive >= 2 else "neutral"))
-    return {"state": state, "ready": model_ready, "cheap_count": cheap, "neutral_count": states.count("neutral"), "expensive_count": expensive, "disagreement": len(set(states)) > 1, "participating_components": participating, "unavailable_components": unavailable, "components": components, "reason_codes": [f"{name}_{value}" for name, value in zip(("csi300", "csi500", "erp"), states)] + (["valuation_inputs_ready"] if model_ready else ["insufficient_history"])}
+    return {"state": state, "ready": model_ready, "cheap_count": cheap, "neutral_count": formal_states.count("neutral"), "expensive_count": expensive, "disagreement": len(set(formal_states)) > 1, "participating_components": participating, "unavailable_components": unavailable, "components": components, "reason_codes": [f"{name}_{value}" for name, value in zip(("csi300", "csi500", "erp"), states)] + (["valuation_inputs_ready"] if model_ready else ["insufficient_history"])}
 
 
 def earnings(row: dict[str, Any], rows: dict[str, dict[str, Any]]) -> dict[str, Any]:
@@ -285,8 +294,10 @@ def reduce_record(row: dict[str, Any], rows: dict[str, dict[str, Any]]) -> dict[
 def audit_expected_valuation(row: dict[str, Any]) -> dict[str, Any]:
     def component_audit(path: str, reverse: bool = False) -> dict[str, Any]:
         value = rank(row, path)
-        state = "unavailable" if value is None else ("cheap" if (value <= 30 if not reverse else value >= 70) else ("expensive" if (value >= 70 if not reverse else value <= 30) else "neutral"))
-        return {"available": value is not None, "rank": value, "ready": value is not None and ready(row, path), "state": state}
+        is_ready = value is not None and ready(row, path)
+        formal = "cheap" if (value <= 30 if not reverse else value >= 70) else ("expensive" if (value >= 70 if not reverse else value <= 30) else "neutral")
+        state = "unavailable" if value is None else (formal if is_ready else "insufficient_history")
+        return {"available": value is not None, "rank": value, "ready": is_ready, "state": state}
 
     c300pe = component_audit("valuation.indices.csi300.pe_ttm.percentile_expanding")
     c300pb = component_audit("valuation.indices.csi300.pb.percentile_expanding")
@@ -296,8 +307,10 @@ def audit_expected_valuation(row: dict[str, Any]) -> dict[str, Any]:
 
     def index_audit(pe: dict[str, Any], pb: dict[str, Any]) -> dict[str, Any]:
         values = [item["rank"] for item in (pe, pb) if item["rank"] is not None]
-        state = "unavailable" if len(values) != 2 else ("cheap" if sum(values) / 2 <= 30 else ("expensive" if sum(values) / 2 >= 70 else "neutral"))
-        return {"pe": pe, "pb": pb, "state": state, "available": len(values) == 2, "ready": len(values) == 2 and pe["ready"] and pb["ready"]}
+        complete = len(values) == 2
+        component_ready = complete and pe["ready"] and pb["ready"]
+        state = "unavailable" if not complete else (("cheap" if sum(values) / 2 <= 30 else ("expensive" if sum(values) / 2 >= 70 else "neutral")) if component_ready else "insufficient_history")
+        return {"pe": pe, "pb": pb, "state": state, "available": complete, "ready": component_ready}
 
     c300 = index_audit(c300pe, c300pb)
     c500 = index_audit(c500pe, c500pb)
@@ -305,12 +318,12 @@ def audit_expected_valuation(row: dict[str, Any]) -> dict[str, Any]:
     votes = [("csi300", c300), ("csi500", c500), ("erp", erp)]
     participating = [name for name, item in votes if item["available"] and item["ready"]]
     unavailable = ["csi1000"] + [name for name, item in votes if not item["ready"]]
-    states = [item["state"] for _, item in votes]
-    cheap = states.count("cheap")
-    expensive = states.count("expensive")
     model_ready = len(participating) == 3
+    formal_states = [item["state"] for _, item in votes if item["ready"]]
+    cheap = formal_states.count("cheap")
+    expensive = formal_states.count("expensive")
     state = "insufficient_history" if not model_ready else ("cheap" if cheap >= 2 else ("expensive" if expensive >= 2 else "neutral"))
-    return {"state": state, "ready": model_ready, "cheap_count": cheap, "neutral_count": states.count("neutral"), "expensive_count": expensive, "disagreement": len(set(states)) > 1, "participating_components": participating, "unavailable_components": unavailable, "components": components, "reason_codes": [f"{name}_{item['state']}" for name, item in votes] + (["valuation_inputs_ready"] if model_ready else ["insufficient_history"])}
+    return {"state": state, "ready": model_ready, "cheap_count": cheap, "neutral_count": formal_states.count("neutral"), "expensive_count": expensive, "disagreement": len(set(formal_states)) > 1, "participating_components": participating, "unavailable_components": unavailable, "components": components, "reason_codes": [f"{name}_{item['state']}" for name, item in votes] + (["valuation_inputs_ready"] if model_ready else ["insufficient_history"])}
 
 
 def audit_expected_earnings(row: dict[str, Any], rows: dict[str, dict[str, Any]]) -> dict[str, Any]:
@@ -431,9 +444,10 @@ def audit(data: dict[str, Any], evidence: dict[str, Any], evidence_audit: dict[s
         for index in INDEXES:
             if actual.get("trend", {}).get(index, {}).get("ready") != wanted.get("trend", {}).get(index, {}).get("ready"):
                 errors["readiness_violation_count"] += 1
-        if actual.get("earnings", {}).get("growth_rank_change_3m") is not None:
-            prior = shift_month(actual["month"], -3)
-            if prior not in {item["month"] for item in evidence["records"]}:
+        actual_earnings = actual.get("earnings", {})
+        wanted_earnings = wanted.get("earnings", {})
+        for field in ("growth_rank_change_3m", "quality_rank_change_3m"):
+            if actual_earnings.get(field) != wanted_earnings.get(field):
                 errors["natural_month_change_violation_count"] += 1
         for index in INDEXES:
             if actual.get("trend", {}).get(index, {}).get("state") != wanted.get("trend", {}).get(index, {}).get("state"):
