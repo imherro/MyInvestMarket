@@ -189,7 +189,7 @@ def roe_snapshot(income_by_period: dict[str, pd.DataFrame], balance_by_period: d
     universe = cycle_earnings.eligible_universe(stocks, report_period)
     current_profit = profit_statements[report_period]
     classified = set(current_profit.loc[current_profit["comp_type"] != ""].index)
-    nonfinancial_universe = set(current_profit.loc[current_profit["comp_type"] == "1"].index)
+    nonfinancial_universe = set(current_profit.loc[current_profit["comp_type"] == "1"].index) & universe
 
     def aggregate(nonfinancial: bool) -> dict[str, Any]:
         eligible = nonfinancial_universe if nonfinancial else universe

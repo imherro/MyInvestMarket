@@ -1,6 +1,6 @@
 {
   "dataset_version": "cycle_dataset_v1",
-  "generated_at": "2026-09-01T14:51:41+08:00",
+  "generated_at": "2026-09-01T15:01:06+08:00",
   "record_count": 200,
   "start_month": "2010-01",
   "end_month": "2026-08",
@@ -37,9 +37,9 @@
       "matched_coverage_rate": 92.1
     },
     "nonfinancial_a": {
-      "eligible_stock_count": 3639.43,
-      "matched_stock_count": 3325.22,
-      "matched_coverage_rate": 90.89
+      "eligible_stock_count": 3468.11,
+      "matched_stock_count": 3275.61,
+      "matched_coverage_rate": 93.91
     }
   },
   "roe_pit_violation_count": 0,

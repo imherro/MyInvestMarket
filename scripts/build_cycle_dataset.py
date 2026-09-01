@@ -609,6 +609,7 @@ def rebuild_earnings_from_existing_dataset(path: Path) -> dict[str, Any]:
     income, stocks, conflicts = cached
     balance, roe_conflicts = roe_cached if roe_cached is not None else (None, [])
     by_period = cycle_earnings.prepare_income_by_period(income)
+    roe_by_period = cycle_roe.prepare_balance_by_period(balance) if balance is not None else None
     for record in payload.get("records", []):
         basis = parse_date(record.get("basis_trade_date"))
         if not basis:
@@ -618,8 +619,8 @@ def rebuild_earnings_from_existing_dataset(path: Path) -> dict[str, Any]:
         earnings["all_a_net_profit_yoy_pct"] = aggregation["all_a"]
         earnings["nonfinancial_a_net_profit_yoy_pct"] = aggregation["nonfinancial_a"]
         earnings["profit_growth_aggregation"] = aggregation
-        if balance is not None:
-            roe = cycle_roe.roe_snapshot(by_period, cycle_roe.prepare_balance_by_period(balance), stocks, basis, aggregation["all_a"].get("report_period"))
+        if roe_by_period is not None:
+            roe = cycle_roe.roe_snapshot(by_period, roe_by_period, stocks, basis, aggregation["all_a"].get("report_period"))
             earnings["all_a_roe_ttm_pct"] = roe["all_a"]
             earnings["nonfinancial_a_roe_ttm_pct"] = roe["nonfinancial_a"]
         earnings["coverage"] = {"available": aggregation["all_a"]["available"], "stock_count": aggregation["all_a"]["matched_stock_count"], "coverage_rate": aggregation["all_a"]["matched_coverage_rate"], "report_period": aggregation["all_a"]["report_period"], "latest_announcement_date": aggregation["all_a"]["announcement_date"], "reason": aggregation["all_a"].get("reason")}

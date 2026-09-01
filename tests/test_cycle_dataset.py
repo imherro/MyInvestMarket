@@ -425,6 +425,14 @@ class CycleDatasetTests(unittest.TestCase):
         self.assertEqual(roe["nonfinancial_a"]["eligible_stock_count"], 1)
         self.assertEqual(roe["nonfinancial_a"]["matched_stock_count"], 1)
 
+    def test_roe_nonfinancial_universe_is_a_subset_of_historical_all_a_universe(self) -> None:
+        income = {"20240331": self.income("20240331", {"000001.SZ": 20, "000002.SZ": 20}, "20240430"), "20231231": self.income("20231231", {"000001.SZ": 100, "000002.SZ": 100}, "20240131"), "20230331": self.income("20230331", {"000001.SZ": 10, "000002.SZ": 10}, "20230430")}
+        balance = {"20240331": self.balance("20240331", {"000001.SZ": 100, "000002.SZ": 100}, "20240430"), "20230331": self.balance("20230331", {"000001.SZ": 100, "000002.SZ": 100}, "20230430")}
+        stocks = pd.DataFrame([{"ts_code": "000001.SZ", "list_date": "20100101", "delist_date": ""}, {"ts_code": "000002.SZ", "list_date": "20250101", "delist_date": ""}])
+        roe = cycle_roe.roe_snapshot(income, balance, cycle_earnings.normalise_stocks(stocks), date(2024, 5, 1), "20240331")
+        self.assertEqual(roe["all_a"]["eligible_stock_count"], 1)
+        self.assertEqual(roe["nonfinancial_a"]["eligible_stock_count"], 1)
+
     def test_roe_balance_cache_failure_uses_existing_rows(self) -> None:
         class BrokenPro:
             def balancesheet_vip(self, **_: object) -> pd.DataFrame:
