@@ -169,7 +169,7 @@ def ttm_profit_by_code(income_by_period: dict[str, pd.DataFrame], report_period:
 
 
 def _unavailable(basis: date, report_period: str | None, reason: str) -> dict[str, Any]:
-    return {"value": None, "observation_date": None, "announcement_date": None, "source": f"derived:{cycle_earnings.SOURCE},{SOURCE}", "lag_days": None, "available": False, "pit_safe": False, "report_period": report_period, "ttm_parent_profit": None, "current_parent_equity": None, "prior_year_parent_equity": None, "average_parent_equity": None, "eligible_stock_count": 0, "matched_stock_count": 0, "matched_coverage_rate": 0.0, "current_equity_coverage_rate": 0.0, "prior_equity_coverage_rate": 0.0, "classification_coverage_rate": 0.0, "current_statement_report_type": None, "prior_equity_report_types_used": [], "reason": reason}
+    return {"value": None, "observation_date": None, "announcement_date": None, "source": f"derived:{cycle_earnings.SOURCE},{SOURCE}", "lag_days": None, "available": False, "pit_safe": False, "report_period": report_period, "ttm_parent_profit": None, "current_parent_equity": None, "prior_year_parent_equity": None, "average_parent_equity": None, "eligible_stock_count": 0, "matched_stock_count": 0, "all_a_eligible_stock_count": 0, "classified_nonfinancial_eligible_stock_count": 0, "unknown_comp_type_count": 0, "matched_coverage_rate": 0.0, "current_equity_coverage_rate": 0.0, "prior_equity_coverage_rate": 0.0, "classification_coverage_rate": 0.0, "current_statement_report_type": None, "prior_equity_report_types_used": [], "reason": reason}
 
 
 def roe_snapshot(income_by_period: dict[str, pd.DataFrame], balance_by_period: dict[str, pd.DataFrame], stocks: pd.DataFrame, basis: date, report_period: str | None) -> dict[str, Any]:
@@ -188,8 +188,12 @@ def roe_snapshot(income_by_period: dict[str, pd.DataFrame], balance_by_period: d
     prior_equity = select_prior_comparable_statement(balance_by_period[prior_period], basis).set_index("ts_code")
     universe = cycle_earnings.eligible_universe(stocks, report_period)
     current_profit = profit_statements[report_period]
-    classified = set(current_profit.loc[current_profit["comp_type"] != ""].index)
+    # Classification is deliberately applied after the historical all-A
+    # universe is fixed. A later IPO can have backfilled statements in the
+    # source, but must not enter a pre-listing Cycle observation.
+    classified = set(current_profit.loc[current_profit["comp_type"] != ""].index) & universe
     nonfinancial_universe = set(current_profit.loc[current_profit["comp_type"] == "1"].index) & universe
+    unknown_comp_type_count = len(universe - classified)
 
     def aggregate(nonfinancial: bool) -> dict[str, Any]:
         eligible = nonfinancial_universe if nonfinancial else universe
@@ -218,6 +222,6 @@ def roe_snapshot(income_by_period: dict[str, pd.DataFrame], balance_by_period: d
             reason = "non-positive aggregate average equity"
         else:
             value = profit / average * 100
-        return {"value": round(value, 4) if value is not None else None, "observation_date": None, "announcement_date": cycle_earnings.iso(latest_ann), "source": f"derived:{cycle_earnings.SOURCE},{SOURCE}", "lag_days": (basis - latest_ann).days if latest_ann else None, "available": value is not None and latest_ann is not None and latest_ann <= basis, "pit_safe": latest_ann <= basis if latest_ann else False, "report_period": report_period, "ttm_parent_profit": round(profit, 2) if profit is not None else None, "current_parent_equity": round(current_total, 2) if current_total is not None else None, "prior_year_parent_equity": round(prior_total, 2) if prior_total is not None else None, "average_parent_equity": round(average, 2) if average is not None else None, "eligible_stock_count": len(eligible), "matched_stock_count": len(valid_codes), "matched_coverage_rate": round(coverage * 100, 4), "current_equity_coverage_rate": round(len(current_eq_codes) / len(eligible) * 100, 4) if eligible else 0.0, "prior_equity_coverage_rate": round(len(prior_eq_codes) / len(eligible) * 100, 4) if eligible else 0.0, "classification_coverage_rate": round(len(classified & universe) / len(universe) * 100, 4) if universe else 0.0, "current_statement_report_type": cycle_earnings.CURRENT_REPORT_TYPE, "prior_equity_report_types_used": sorted(set(prior_equity.loc[prior_equity.index.intersection(valid_codes), "report_type"])), "reason": reason}
+        return {"value": round(value, 4) if value is not None else None, "observation_date": None, "announcement_date": cycle_earnings.iso(latest_ann), "source": f"derived:{cycle_earnings.SOURCE},{SOURCE}", "lag_days": (basis - latest_ann).days if latest_ann else None, "available": value is not None and latest_ann is not None and latest_ann <= basis, "pit_safe": latest_ann <= basis if latest_ann else False, "report_period": report_period, "ttm_parent_profit": round(profit, 2) if profit is not None else None, "current_parent_equity": round(current_total, 2) if current_total is not None else None, "prior_year_parent_equity": round(prior_total, 2) if prior_total is not None else None, "average_parent_equity": round(average, 2) if average is not None else None, "eligible_stock_count": len(eligible), "matched_stock_count": len(valid_codes), "all_a_eligible_stock_count": len(universe), "classified_nonfinancial_eligible_stock_count": len(nonfinancial_universe), "unknown_comp_type_count": unknown_comp_type_count, "matched_coverage_rate": round(coverage * 100, 4), "current_equity_coverage_rate": round(len(current_eq_codes) / len(eligible) * 100, 4) if eligible else 0.0, "prior_equity_coverage_rate": round(len(prior_eq_codes) / len(eligible) * 100, 4) if eligible else 0.0, "classification_coverage_rate": round(len(classified) / len(universe) * 100, 4) if universe else 0.0, "current_statement_report_type": cycle_earnings.CURRENT_REPORT_TYPE, "prior_equity_report_types_used": sorted(set(prior_equity.loc[prior_equity.index.intersection(valid_codes), "report_type"])), "reason": reason}
 
     return {"all_a": aggregate(False), "nonfinancial_a": aggregate(True)}

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import sys
 import tempfile
 import unittest
@@ -426,12 +427,45 @@ class CycleDatasetTests(unittest.TestCase):
         self.assertEqual(roe["nonfinancial_a"]["matched_stock_count"], 1)
 
     def test_roe_nonfinancial_universe_is_a_subset_of_historical_all_a_universe(self) -> None:
-        income = {"20240331": self.income("20240331", {"000001.SZ": 20, "000002.SZ": 20}, "20240430"), "20231231": self.income("20231231", {"000001.SZ": 100, "000002.SZ": 100}, "20240131"), "20230331": self.income("20230331", {"000001.SZ": 10, "000002.SZ": 10}, "20230430")}
-        balance = {"20240331": self.balance("20240331", {"000001.SZ": 100, "000002.SZ": 100}, "20240430"), "20230331": self.balance("20230331", {"000001.SZ": 100, "000002.SZ": 100}, "20230430")}
+        income = {"20240331": self.income("20240331", {"000001.SZ": 20, "000002.SZ": 2000}, "20240430"), "20231231": self.income("20231231", {"000001.SZ": 100, "000002.SZ": 10000}, "20240131"), "20230331": self.income("20230331", {"000001.SZ": 10, "000002.SZ": 1000}, "20230430")}
+        balance = {"20240331": self.balance("20240331", {"000001.SZ": 100, "000002.SZ": 10000}, "20240430"), "20230331": self.balance("20230331", {"000001.SZ": 100, "000002.SZ": 10000}, "20230430")}
         stocks = pd.DataFrame([{"ts_code": "000001.SZ", "list_date": "20100101", "delist_date": ""}, {"ts_code": "000002.SZ", "list_date": "20250101", "delist_date": ""}])
         roe = cycle_roe.roe_snapshot(income, balance, cycle_earnings.normalise_stocks(stocks), date(2024, 5, 1), "20240331")
         self.assertEqual(roe["all_a"]["eligible_stock_count"], 1)
         self.assertEqual(roe["nonfinancial_a"]["eligible_stock_count"], 1)
+        self.assertEqual(roe["all_a"]["matched_stock_count"], 1)
+        self.assertEqual(roe["nonfinancial_a"]["matched_stock_count"], 1)
+        self.assertEqual(roe["nonfinancial_a"]["ttm_parent_profit"], 110.0)
+        self.assertEqual(roe["nonfinancial_a"]["current_parent_equity"], 100.0)
+        self.assertEqual(roe["nonfinancial_a"]["prior_year_parent_equity"], 100.0)
+        self.assertEqual(roe["nonfinancial_a"]["all_a_eligible_stock_count"], 1)
+        self.assertEqual(roe["nonfinancial_a"]["classified_nonfinancial_eligible_stock_count"], 1)
+
+    def test_roe_later_delisted_company_remains_in_historical_nonfinancial_universe(self) -> None:
+        income = {"20240331": self.income("20240331", {"000001.SZ": 20}, "20240430"), "20231231": self.income("20231231", {"000001.SZ": 100}, "20240131"), "20230331": self.income("20230331", {"000001.SZ": 10}, "20230430")}
+        balance = {"20240331": self.balance("20240331", {"000001.SZ": 100}, "20240430"), "20230331": self.balance("20230331", {"000001.SZ": 100}, "20230430")}
+        stocks = cycle_earnings.normalise_stocks(pd.DataFrame([{"ts_code": "000001.SZ", "list_date": "20100101", "delist_date": "20250101"}]))
+        roe = cycle_roe.roe_snapshot(income, balance, stocks, date(2024, 5, 1), "20240331")
+        self.assertEqual(roe["all_a"]["eligible_stock_count"], 1)
+        self.assertEqual(roe["nonfinancial_a"]["eligible_stock_count"], 1)
+        self.assertEqual(roe["nonfinancial_a"]["matched_stock_count"], 1)
+
+    def test_roe_audit_fails_on_nonfinancial_subset_violation(self) -> None:
+        base = {"available": True, "announcement_date": "2024-04-30", "current_statement_report_type": "1", "prior_equity_report_types_used": ["1"]}
+        payload = {"dataset_version": cycle.DATASET_VERSION, "records": [{"month": "2024-05", "basis_trade_date": "2024-05-31", "valuation": {}, "trend": {}, "earnings": {"all_a_roe_ttm_pct": {**base, "eligible_stock_count": 1, "matched_stock_count": 1}, "nonfinancial_a_roe_ttm_pct": {**base, "eligible_stock_count": 2, "matched_stock_count": 2}}, "data_quality": {"coverage": {"valuation_pct": 0, "earnings_pct": 0, "trend_pct": 0, "a_fear_pct": 0}}}]}
+        audit = cycle.audit_dataset(payload)
+        self.assertEqual(audit["roe_nonfinancial_universe_violation_count"], 1)
+        self.assertEqual(audit["roe_nonfinancial_matched_violation_count"], 1)
+        self.assertEqual(audit["roe_universe_violation_months"], ["2024-05"])
+        self.assertFalse(audit["structural_passed"])
+
+    def test_committed_cycle_history_obeys_roe_subset_invariants(self) -> None:
+        payload = json.loads((ROOT / "data" / "cycle_dataset_v1.json").read_text(encoding="utf-8"))
+        audit = cycle.audit_dataset(payload)
+        self.assertEqual(len(payload["records"]), 200)
+        self.assertEqual(audit["roe_nonfinancial_universe_violation_count"], 0)
+        self.assertEqual(audit["roe_nonfinancial_matched_violation_count"], 0)
+        self.assertEqual(audit["roe_universe_violation_months"], [])
 
     def test_roe_balance_cache_failure_uses_existing_rows(self) -> None:
         class BrokenPro:

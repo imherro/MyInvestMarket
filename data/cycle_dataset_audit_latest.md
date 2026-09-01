@@ -7,6 +7,8 @@
 - Order violations: 0
 - Valuation coverage: 41.11%
 - Earnings coverage: 65.67%
+- ROE nonfinancial-universe violations: 0
+- ROE nonfinancial-matched violations: 0
 - All-A profit-growth coverage: 98.5%
 - Nonfinancial profit-growth coverage: 98.5%
 - All-A/nonfinancial ROE(TTM) coverage: 98.5%/98.5%

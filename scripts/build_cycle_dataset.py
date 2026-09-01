@@ -400,6 +400,8 @@ def audit_dataset(payload: dict[str, Any]) -> dict[str, Any]:
     prior_invalid_report_types = 0
     roe_pit_violations: list[dict[str, Any]] = []
     roe_invalid_report_types = 0
+    roe_nonfinancial_universe_violations: list[dict[str, Any]] = []
+    roe_nonfinancial_matched_violations: list[dict[str, Any]] = []
     for record in records:
         basis = parse_date(record.get("basis_trade_date"))
         if not basis:
@@ -446,6 +448,16 @@ def audit_dataset(payload: dict[str, Any]) -> dict[str, Any]:
                 roe_invalid_report_types += 1
             if row.get("available"):
                 roe_samples[name].append({"eligible_stock_count": float(row.get("eligible_stock_count", 0)), "matched_stock_count": float(row.get("matched_stock_count", 0)), "matched_coverage_rate": float(row.get("matched_coverage_rate", 0))})
+        all_a_roe = earnings.get("all_a_roe_ttm_pct", {})
+        nonfinancial_roe = earnings.get("nonfinancial_a_roe_ttm_pct", {})
+        all_eligible = int(all_a_roe.get("eligible_stock_count", 0) or 0)
+        nonfinancial_eligible = int(nonfinancial_roe.get("eligible_stock_count", 0) or 0)
+        all_matched = int(all_a_roe.get("matched_stock_count", 0) or 0)
+        nonfinancial_matched = int(nonfinancial_roe.get("matched_stock_count", 0) or 0)
+        if nonfinancial_eligible > all_eligible:
+            roe_nonfinancial_universe_violations.append({"month": record["month"], "all_a_eligible_stock_count": all_eligible, "nonfinancial_eligible_stock_count": nonfinancial_eligible})
+        if nonfinancial_matched > all_matched:
+            roe_nonfinancial_matched_violations.append({"month": record["month"], "all_a_matched_stock_count": all_matched, "nonfinancial_matched_stock_count": nonfinancial_matched})
     coverage = {key: finite(sum(values) / len(values), 2) if values else 0.0 for key, values in domain_totals.items()}
     duplicate_count = len(months) - len(set(months)) + len(basis_dates) - len(set(basis_dates))
     cache = payload.get("earnings_source_cache", {})
@@ -463,7 +475,8 @@ def audit_dataset(payload: dict[str, Any]) -> dict[str, Any]:
                     affected_identities.append(conflict)
                 break
     roe_cache = payload.get("roe_source_cache", {})
-    structural_passed = len(pit_violations) == 0 and len(roe_pit_violations) == 0 and duplicate_count == 0 and order_violation_count == 0 and current_invalid_report_types == 0 and prior_invalid_report_types == 0 and roe_invalid_report_types == 0
+    roe_universe_violation_months = sorted({row["month"] for row in roe_nonfinancial_universe_violations + roe_nonfinancial_matched_violations})
+    structural_passed = len(pit_violations) == 0 and len(roe_pit_violations) == 0 and duplicate_count == 0 and order_violation_count == 0 and current_invalid_report_types == 0 and prior_invalid_report_types == 0 and roe_invalid_report_types == 0 and len(roe_nonfinancial_universe_violations) == 0 and len(roe_nonfinancial_matched_violations) == 0
     freshness_passed = not bool(cache.get("stale")) and not bool(cache.get("refresh_error")) and not bool(cache.get("offline")) and not bool(roe_cache.get("stale")) and not bool(roe_cache.get("refresh_error")) and not bool(roe_cache.get("offline"))
     return {
         "dataset_version": payload.get("dataset_version"),
@@ -489,6 +502,9 @@ def audit_dataset(payload: dict[str, Any]) -> dict[str, Any]:
         "roe_pit_violation_count": len(roe_pit_violations),
         "roe_pit_violations": roe_pit_violations,
         "roe_invalid_report_type_count": roe_invalid_report_types,
+        "roe_nonfinancial_universe_violation_count": len(roe_nonfinancial_universe_violations),
+        "roe_nonfinancial_matched_violation_count": len(roe_nonfinancial_matched_violations),
+        "roe_universe_violation_months": roe_universe_violation_months,
         "roe_source_conflict_count": int(roe_cache.get("conflict_count", 0)),
         "roe_cache_latest_period": roe_cache.get("metadata", {}).get("latest_period"),
         "roe_cache_stale": bool(roe_cache.get("stale")),
@@ -533,6 +549,8 @@ def audit_markdown(audit: dict[str, Any]) -> str:
             f"- Order violations: {audit['order_violation_count']}",
             f"- Valuation coverage: {coverage['valuation']}%",
             f"- Earnings coverage: {coverage['earnings']}%",
+            f"- ROE nonfinancial-universe violations: {audit['roe_nonfinancial_universe_violation_count']}",
+            f"- ROE nonfinancial-matched violations: {audit['roe_nonfinancial_matched_violation_count']}",
             f"- All-A profit-growth coverage: {audit['profit_growth_coverage_pct']['all_a_net_profit_yoy_pct']}%",
             f"- Nonfinancial profit-growth coverage: {audit['profit_growth_coverage_pct']['nonfinancial_a_net_profit_yoy_pct']}%",
             f"- All-A/nonfinancial ROE(TTM) coverage: {audit['roe_coverage_pct']['all_a']}%/{audit['roe_coverage_pct']['nonfinancial_a']}%",

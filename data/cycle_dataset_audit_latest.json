@@ -1,6 +1,6 @@
 {
   "dataset_version": "cycle_dataset_v1",
-  "generated_at": "2026-09-01T15:01:06+08:00",
+  "generated_at": "2026-09-01T15:11:39+08:00",
   "record_count": 200,
   "start_month": "2010-01",
   "end_month": "2026-08",
@@ -45,6 +45,9 @@
   "roe_pit_violation_count": 0,
   "roe_pit_violations": [],
   "roe_invalid_report_type_count": 0,
+  "roe_nonfinancial_universe_violation_count": 0,
+  "roe_nonfinancial_matched_violation_count": 0,
+  "roe_universe_violation_months": [],
   "roe_source_conflict_count": 0,
   "roe_cache_latest_period": "20260630",
   "roe_cache_stale": false,
