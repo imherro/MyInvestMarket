@@ -16,11 +16,13 @@ from typing import Any, Callable
 import pandas as pd
 
 import build_market_dataset
+import cycle_earnings
 
 
 ROOT = Path(__file__).resolve().parents[1]
 DATA_DIR = ROOT / "data"
 DATASET_VERSION = "cycle_dataset_v1"
+EARNINGS_CACHE_PATH = DATA_DIR / "cycle_earnings_source_cache.json"
 START_MONTH = "2010-01"
 WARMUP_START = "2005-01-01"
 INDEXES = {
@@ -288,7 +290,8 @@ def record_for_month(
     valuations: dict[str, pd.DataFrame],
     price_errors: dict[str, str],
     valuation_errors: dict[str, str],
-    earnings_reason: str,
+    earnings_income_by_period: dict[str, pd.DataFrame] | None,
+    earnings_stocks: pd.DataFrame | None,
 ) -> dict[str, Any]:
     valuation_indices: dict[str, Any] = {}
     trend_indices: dict[str, Any] = {}
@@ -318,8 +321,23 @@ def record_for_month(
             "requires both CSI 300 earnings yield and a PIT China 10-year government yield",
         ),
     }
-    earnings = unavailable_earnings(basis, earnings_reason)
-    warnings.append(f"earnings: {earnings_reason}")
+    if earnings_income_by_period is not None and earnings_stocks is not None:
+        aggregation = cycle_earnings.profit_growth_snapshot(earnings_income_by_period, earnings_stocks, basis)
+        earnings = unavailable_earnings(basis, "ROE and macro earnings fields are outside Cycle Earnings Growth PIT v1")
+        earnings["all_a_net_profit_yoy_pct"] = aggregation["all_a"]
+        earnings["nonfinancial_a_net_profit_yoy_pct"] = aggregation["nonfinancial_a"]
+        earnings["profit_growth_aggregation"] = aggregation
+        earnings["coverage"] = {
+            "available": aggregation["all_a"]["available"],
+            "stock_count": aggregation["all_a"]["matched_stock_count"],
+            "coverage_rate": aggregation["all_a"]["matched_coverage_rate"],
+            "report_period": aggregation["all_a"]["report_period"],
+            "latest_announcement_date": aggregation["all_a"]["announcement_date"],
+            "reason": aggregation["all_a"].get("reason"),
+        }
+    else:
+        earnings = unavailable_earnings(basis, "income_vip source unavailable; no neutral fallback is permitted")
+        warnings.append("earnings: income_vip source unavailable")
     domains = {"valuation": valuation, "earnings": earnings, "trend": {"indices": trend_indices}, "sentiment": {"a_fear": a_fear_snapshot(basis)}}
     coverage = domain_coverage(domains)
     return {
@@ -367,6 +385,8 @@ def audit_dataset(payload: dict[str, Any]) -> dict[str, Any]:
     missing_by_field: dict[str, int] = {}
     low_confidence_periods: list[str] = []
     domain_totals = {"valuation": [], "earnings": [], "trend": [], "a_fear": []}
+    profit_growth_counts = {"all_a": 0, "nonfinancial_a": 0, "months": 0}
+    profit_growth_samples: dict[str, list[dict[str, float]]] = {"all_a": [], "nonfinancial_a": []}
     for record in records:
         basis = parse_date(record.get("basis_trade_date"))
         if not basis:
@@ -384,6 +404,18 @@ def audit_dataset(payload: dict[str, Any]) -> dict[str, Any]:
         domain_totals["a_fear"].append(record.get("data_quality", {}).get("coverage", {}).get("a_fear_pct", 0.0))
         if record.get("data_quality", {}).get("confidence") == "low":
             low_confidence_periods.append(record["month"])
+        earnings = record.get("earnings", {})
+        profit_growth_counts["months"] += 1
+        profit_growth_counts["all_a"] += bool(earnings.get("all_a_net_profit_yoy_pct", {}).get("available"))
+        profit_growth_counts["nonfinancial_a"] += bool(earnings.get("nonfinancial_a_net_profit_yoy_pct", {}).get("available"))
+        for name, field in (("all_a", "all_a_net_profit_yoy_pct"), ("nonfinancial_a", "nonfinancial_a_net_profit_yoy_pct")):
+            row = earnings.get(field, {})
+            if row.get("available"):
+                profit_growth_samples[name].append({
+                    "eligible_stock_count": float(row.get("eligible_stock_count", 0)),
+                    "matched_stock_count": float(row.get("matched_stock_count", 0)),
+                    "matched_coverage_rate": float(row.get("matched_coverage_rate", 0)),
+                })
     coverage = {key: finite(sum(values) / len(values), 2) if values else 0.0 for key, values in domain_totals.items()}
     duplicate_count = len(months) - len(set(months)) + len(basis_dates) - len(set(basis_dates))
     return {
@@ -393,6 +425,19 @@ def audit_dataset(payload: dict[str, Any]) -> dict[str, Any]:
         "start_month": min(months) if months else None,
         "end_month": max(months) if months else None,
         "coverage_pct": coverage,
+        "profit_growth_coverage_pct": {
+            "all_a_net_profit_yoy_pct": finite(profit_growth_counts["all_a"] / profit_growth_counts["months"] * 100, 2) if profit_growth_counts["months"] else 0.0,
+            "nonfinancial_a_net_profit_yoy_pct": finite(profit_growth_counts["nonfinancial_a"] / profit_growth_counts["months"] * 100, 2) if profit_growth_counts["months"] else 0.0,
+        },
+        "profit_growth_sample_averages": {
+            name: {
+                "eligible_stock_count": finite(sum(row["eligible_stock_count"] for row in rows) / len(rows), 2) if rows else None,
+                "matched_stock_count": finite(sum(row["matched_stock_count"] for row in rows) / len(rows), 2) if rows else None,
+                "matched_coverage_rate": finite(sum(row["matched_coverage_rate"] for row in rows) / len(rows), 2) if rows else None,
+            }
+            for name, rows in profit_growth_samples.items()
+        },
+        "earnings_source_cache_conflict_count": int(payload.get("earnings_source_cache", {}).get("conflict_count", 0)),
         "pit_violation_count": len(pit_violations),
         "pit_violations": pit_violations,
         "duplicate_count": duplicate_count,
@@ -416,6 +461,9 @@ def audit_markdown(audit: dict[str, Any]) -> str:
             f"- Order violations: {audit['order_violation_count']}",
             f"- Valuation coverage: {coverage['valuation']}%",
             f"- Earnings coverage: {coverage['earnings']}%",
+            f"- All-A profit-growth coverage: {audit['profit_growth_coverage_pct']['all_a_net_profit_yoy_pct']}%",
+            f"- Nonfinancial profit-growth coverage: {audit['profit_growth_coverage_pct']['nonfinancial_a_net_profit_yoy_pct']}%",
+            f"- Earnings source-cache conflicts: {audit['earnings_source_cache_conflict_count']}",
             f"- Trend coverage: {coverage['trend']}%",
             f"- A-FEAR coverage: {coverage['a_fear']}%",
             f"- Result: {'PASS' if audit['passed'] else 'FAIL'}",
@@ -436,9 +484,15 @@ def build_dataset(as_of: date) -> dict[str, Any]:
     months = [month for month in month_range(START_MONTH, end) if month in month_basis]
     prices, price_errors = fetch_index_history(pro, end)
     valuations, valuation_errors = fetch_valuation_history(pro, end)
-    earnings_reason = "broad-market point-in-time financial source is not configured for this Tushare entitlement; no neutral fallback is permitted"
+    try:
+        earnings_income, earnings_stocks, cache_conflicts = cycle_earnings.source_from_cache_or_api(
+            pro, EARNINGS_CACHE_PATH, 2009, end.year
+        )
+        earnings_income_by_period = cycle_earnings.prepare_income_by_period(earnings_income)
+    except Exception as exc:
+        earnings_income_by_period, earnings_stocks, cache_conflicts = None, None, [{"source_error": str(exc)}]
     records = [
-        record_for_month(month, month_basis[month], prices, valuations, price_errors, valuation_errors, earnings_reason)
+        record_for_month(month, month_basis[month], prices, valuations, price_errors, valuation_errors, earnings_income_by_period, earnings_stocks)
         for month in months
     ]
     payload = {
@@ -446,7 +500,8 @@ def build_dataset(as_of: date) -> dict[str, Any]:
         "dataset_version": DATASET_VERSION,
         "description": "Monthly Point-in-Time cycle research inputs. Not an official score or position decision.",
         "period": {"start_month": months[0], "end_month": months[-1], "warmup_start": WARMUP_START},
-        "sources": ["Tushare.trade_cal", "Tushare.index_daily", "Tushare.index_dailybasic", "A-FEAR local history (optional)"],
+        "sources": ["Tushare.trade_cal", "Tushare.index_daily", "Tushare.index_dailybasic", "Tushare.income_vip", "A-FEAR local history (optional)"],
+        "earnings_source_cache": {"path": str(EARNINGS_CACHE_PATH.relative_to(ROOT)), "conflict_count": len(cache_conflicts), "conflicts": cache_conflicts},
         "records": records,
     }
     audit = audit_dataset(payload)

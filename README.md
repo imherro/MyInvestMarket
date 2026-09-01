@@ -29,6 +29,8 @@ A-FEAR = 300/1000 ATM 30日IV百分位 × 40%
 - 缺失规则：历史国债收益率或全市场财务 PIT 数据源不可用时，字段保留 `available=false` 和原因，不以中性值替代。
 - 设计和运行说明：[docs/cycle_dataset_v1.md](docs/cycle_dataset_v1.md)。
 
+`Cycle Earnings Growth PIT v1` 已用 `Tushare.income_vip` 补齐全 A 与非金融 A 的利润金额聚合同比。月末只采用已经公告的报告版本，优先选择披露覆盖率不低于 70% 的最新季度，并以相同公司集合与上年同期匹配；匹配覆盖率低于 65% 或基期利润非正时，数据明确不可用而非生成伪同比。它仍是研究数据，不影响当前官方 v3.4 仓位输出。
+
 ## 核心输出
 
 - `market_opportunity_score`：市场机会分，衡量趋势、宽度、流动性、资金、主线、估值和宏观环境。

@@ -23,6 +23,14 @@ The dataset intentionally excludes short-horizon 5/20-day returns, MA20, advance
 
 Price, trade calendar, and index valuation history use `Tushare.trade_cal`, `Tushare.index_daily`, and `Tushare.index_dailybasic`. The configured account does not currently have historical `yc_cb` access and does not have a configured broad-market PIT financial source. These gaps are emitted as unavailable fields with explicit reasons and audit coverage; they are not imputed.
 
+## Earnings growth PIT v1
+
+`Tushare.income_vip` supplies quarterly parent-company net profit, announcement dates, and `comp_type`. For each basis month, the builder selects the newest quarter whose actually announced report coverage is at least 70%; it then matches the identical companies with the prior-year same quarter. The published growth is `matched_current_profit_sum / matched_prior_profit_sum - 1`, never an average of company growth rates.
+
+The stock denominator is historical: `list_date <= report_period` and no delisting on or before that report-period end. Later delistings remain in their historical universe; later IPOs do not enter it. `comp_type == 1` is the only nonfinancial classification. Unknown classifications are excluded from the nonfinancial numerator and reported through classification coverage. If matched coverage is below 65% or matched prior profit is non-positive, the growth value is unavailable.
+
+Raw report records are frozen in `data/cycle_earnings_source_cache.json`. Conflicting identical source identities are retained in the cache audit and never silently replaced.
+
 ## Output and audit
 
 Run:
