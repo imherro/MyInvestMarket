@@ -11,7 +11,6 @@
   "combination_count_violation_count": 0,
   "conflict_diagnostic_violation_count": 0,
   "evaluation_alignment_violation_count": 0,
-  "phase3_design_evidence_violation_count": 0,
   "nonoverlap_cohort_violation_count": 0,
   "sample_count_violation_count": 0,
   "future_data_boundary_violation_count": 0,

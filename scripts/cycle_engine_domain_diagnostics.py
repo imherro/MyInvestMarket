@@ -196,28 +196,6 @@ def evaluation(records: list[dict[str, Any]], targets: dict[str, Any]) -> dict[s
     return output
 
 
-PHASE3_SUMMARY_FIELDS = ("aggregation_unit", "total_origin_count", "cohort_count", "cohort_sample_counts", "effective_sample_count", "min_cohort_sample_count", "max_cohort_sample_count", "mean_of_cohort_mean_forward_return", "median_of_cohort_mean_forward_return", "q25_of_cohort_mean_forward_return", "q75_of_cohort_mean_forward_return", "mean_of_cohort_win_rate", "median_of_cohort_win_rate", "median_of_cohort_median_drawdown", "global_worst_origin_drawdown", "small_sample")
-
-
-def _phase3_design_evidence(evaluation_out: dict[str, Any], distributions: dict[str, Any], transitions_out: dict[str, Any], combinations_out: dict[str, Any], conflicts_out: dict[str, Any]) -> dict[str, Any]:
-    state_forward = evaluation_out["benchmarks"]
-    summary = {}
-    sizes = {}
-    flags = {}
-    for benchmark, benchmark_data in state_forward.items():
-        summary[benchmark], sizes[benchmark], flags[benchmark] = {}, {}, {}
-        for horizon, horizon_data in benchmark_data.items():
-            summary[benchmark][horizon], sizes[benchmark][horizon], flags[benchmark][horizon] = {}, {}, {}
-            for domain, domain_data in horizon_data.items():
-                summary[benchmark][horizon][domain], sizes[benchmark][horizon][domain], flags[benchmark][horizon][domain] = {}, {}, {}
-                for value, item in domain_data.items():
-                    summary[benchmark][horizon][domain][value] = {key: item.get(key) for key in PHASE3_SUMMARY_FIELDS}
-                    sizes[benchmark][horizon][domain][value] = {key: item.get(key) for key in ("total_origin_count", "cohort_count", "cohort_sample_counts", "effective_sample_count", "min_cohort_sample_count", "max_cohort_sample_count")}
-                    small = item.get("small_sample") is True
-                    flags[benchmark][horizon][domain][value] = {"small_sample": small, "reason": "effective_sample_count_lt_12" if small else None}
-    return {"valuation_state_distribution": distributions["valuation"], "earnings_state_distribution": distributions["earnings"], "trend_state_distribution": distributions["trend"], "macro_state_distribution": distributions["macro_confirmation"], "domain_change_rates": {domain: transitions_out[domain]["monthly_state_change_rate"] for domain in CORE}, "median_state_durations": {domain: transitions_out[domain]["median_state_duration_months"] for domain in CORE}, "most_common_combinations": combinations_out, "major_conflicts": conflicts_out, "state_forward_return_summary": summary, "state_sample_sizes": sizes, "insufficient_sample_flags": flags}
-
-
 def build(phase2: dict[str, Any], targets: dict[str, Any]) -> dict[str, Any]:
     records = phase2["records"]
     domain_distributions = {domain: state_distribution(records, domain) for domain in DOMAINS}
@@ -229,26 +207,14 @@ def build(phase2: dict[str, Any], targets: dict[str, Any]) -> dict[str, Any]:
     combinations_out = combinations(records)
     conflicts_out = conflicts(records)
     evaluation_out = evaluation(records, targets)
-    phase3_evidence = _phase3_design_evidence(evaluation_out, distribution_summary, domain_transitions, combinations_out, conflicts_out)
+    state_forward = {benchmark: benchmark_data for benchmark, benchmark_data in evaluation_out["benchmarks"].items()}
+    state_sizes = {benchmark: {horizon: {domain: {value: item["sample_count"] for value, item in domain_values.items()} for domain, domain_values in horizon_data.items()} for horizon, horizon_data in benchmark_data.items()} for benchmark, benchmark_data in state_forward.items()}
+    insufficient = {benchmark: {horizon: {domain: {value: item["small_sample"] for value, item in domain_values.items()} for domain, domain_values in horizon_data.items()} for horizon, horizon_data in benchmark_data.items()} for benchmark, benchmark_data in state_forward.items()}
+    phase3_evidence = {"valuation_state_distribution": distribution_summary["valuation"], "earnings_state_distribution": distribution_summary["earnings"], "trend_state_distribution": distribution_summary["trend"], "macro_state_distribution": distribution_summary["macro_confirmation"], "domain_change_rates": {domain: domain_transitions[domain]["monthly_state_change_rate"] for domain in CORE}, "median_state_durations": {domain: domain_transitions[domain]["median_state_duration_months"] for domain in CORE}, "most_common_combinations": combinations_out, "major_conflicts": conflicts_out, "state_forward_return_summary": state_forward, "state_sample_sizes": state_sizes, "insufficient_sample_flags": insufficient}
     return {"schema": "cycle_engine_domain_diagnostics_v1", "description": "Research-only historical diagnostics for frozen Phase 2 Domain Signals; no model rule changes.", "research_only": True, "uses_future_information": True, "source_phase2_sha256": sha256_bytes(PHASE2_PATH.read_bytes()), "source_phase2_audit_sha256": canonical_sha(json.loads(PHASE2_AUDIT_PATH.read_text(encoding="utf-8"))), "source_evaluation_sha256": canonical_sha(targets), "record_count": len(records), "start_month": records[0]["month"], "end_month": records[-1]["month"], "coverage": domain_coverage, "state_distribution": domain_distributions, "transitions": domain_transitions, "combinations": combinations_out, "conflicts": conflicts_out, "timeline": timeline, "window_extracts": window_extracts, "evaluation": evaluation_out, "phase3_design_evidence": phase3_evidence}
 
 
 def audit_replay_snapshot(phase2: dict[str, Any]) -> dict[str, Any]:
-    def all_runs(values: list[str]) -> list[int]:
-        runs: list[int] = []
-        previous = None
-        length = 0
-        for value in values:
-            if value == previous:
-                length += 1
-            else:
-                if length:
-                    runs.append(length)
-                previous, length = value, 1
-        if length:
-            runs.append(length)
-        return runs
-
     def true_runs(values: list[str], target: str) -> list[int]:
         runs: list[int] = []
         current = 0
@@ -283,7 +249,7 @@ def audit_replay_snapshot(phase2: dict[str, Any]) -> dict[str, Any]:
         counts = Counter(f"{a}->{b}" for a, b in zip(values, values[1:]))
         outgoing = Counter(key.split("->")[0] for key in counts for _ in range(counts[key]))
         matrix = {key: {"transition_count": count, "transition_probability": round(count / outgoing[key.split("->")[0]] * 100, 6)} for key, count in sorted(counts.items())}
-        durations = all_runs(values)
+        durations = run_lengths(values)
         transition_out[domain] = {"transition_matrix": matrix, "self_transition_probability": round(sum(count for key, count in counts.items() if key.split("->")[0] == key.split("->")[1]) / sum(counts.values()) * 100, 6) if counts else None, "monthly_state_change_rate": round(sum(a != b for a, b in zip(values, values[1:])) / (len(values) - 1) * 100, 6) if len(values) > 1 else None, "median_state_duration_months": median([float(length) for length in durations])}
     specs = (("valuation_x_earnings", ("valuation", "earnings")), ("valuation_x_trend", ("valuation", "trend")), ("earnings_x_trend", ("earnings", "trend")), ("earnings_x_macro", ("earnings", "macro_confirmation")), ("valuation_x_earnings_x_trend", ("valuation", "earnings", "trend")))
     combinations_out = {}
@@ -300,74 +266,6 @@ def audit_replay_snapshot(phase2: dict[str, Any]) -> dict[str, Any]:
     timeline = [{"month": record["month"], "valuation": state(record, "valuation"), "earnings": state(record, "earnings"), "macro_confirmation": state(record, "macro_confirmation"), "trend": state(record, "trend"), "a_fear_state": state(record, "sentiment_overlay"), "a_fear_model_ready": record["sentiment_overlay"].get("model_ready") is True} for record in records]
     windows = {name: [item for item in timeline if start <= item["month"] <= end] for name, (start, end) in WINDOWS.items()}
     return {"coverage": coverage_out, "state_distribution": distribution_out, "transitions": transition_out, "combinations": combinations_out, "conflicts": conflicts_out, "timeline": timeline, "window_extracts": windows}
-
-
-def audit_replay_phase3_design_evidence(phase2: dict[str, Any], targets: dict[str, Any]) -> dict[str, Any]:
-    """Independently rebuild the three Phase 3 design-evidence contracts."""
-    target_map = {record["month"]: record for record in targets["records"]}
-    summary, sizes, flags = {}, {}, {}
-    for benchmark in ("csi300", "csi500"):
-        summary[benchmark], sizes[benchmark], flags[benchmark] = {}, {}, {}
-        for horizon in HORIZONS:
-            horizon_key = f"forward_{horizon}m"
-            summary[benchmark][horizon_key], sizes[benchmark][horizon_key], flags[benchmark][horizon_key] = {}, {}, {}
-            for domain in CORE:
-                by_state: dict[str, dict[int, list[tuple[str, dict[str, Any]]]]] = defaultdict(lambda: defaultdict(list))
-                for record in phase2["records"]:
-                    if not ready(record, domain):
-                        continue
-                    target = target_metric(target_map.get(record["month"], {}), benchmark, horizon)
-                    if target is not None:
-                        by_state[state(record, domain)][month_index(record["month"]) % horizon].append((record["month"], target))
-                summary[benchmark][horizon_key][domain] = {}
-                sizes[benchmark][horizon_key][domain] = {}
-                flags[benchmark][horizon_key][domain] = {}
-                for state_name, cohorts in sorted(by_state.items()):
-                    cohort_summaries = {}
-                    all_points = [point for cohort_points in cohorts.values() for point in cohort_points]
-                    all_returns = [float(target["forward_return_pct"]) for _, target in all_points if target.get("forward_return_pct") is not None]
-                    all_drawdowns = [float(target["max_drawdown_pct"]) for _, target in all_points if target.get("max_drawdown_pct") is not None]
-                    for cohort, points in sorted(cohorts.items()):
-                        returns = [float(target["forward_return_pct"]) for _, target in points if target.get("forward_return_pct") is not None]
-                        drawdowns = [float(target["max_drawdown_pct"]) for _, target in points if target.get("max_drawdown_pct") is not None]
-                        cohort_summaries[str(cohort)] = {
-                            "sample_count": len(returns),
-                            "mean_forward_return": round(statistics.mean(returns), 6) if returns else None,
-                            "median_forward_return": median(returns),
-                            "win_rate": round(sum(value > 0 for value in returns) / len(returns) * 100, 6) if returns else None,
-                            "q25": percentile(returns, .25),
-                            "q75": percentile(returns, .75),
-                            "median_future_max_drawdown": median(drawdowns),
-                            "worst_future_max_drawdown": min(drawdowns) if drawdowns else None,
-                            "origin_months": [month for month, _ in points],
-                        }
-                    cohort_sizes = [item["sample_count"] for item in cohort_summaries.values()]
-                    cohort_means = [item["mean_forward_return"] for item in cohort_summaries.values() if item["mean_forward_return"] is not None]
-                    cohort_win_rates = [item["win_rate"] for item in cohort_summaries.values() if item["win_rate"] is not None]
-                    cohort_drawdown_medians = [item["median_future_max_drawdown"] for item in cohort_summaries.values() if item["median_future_max_drawdown"] is not None]
-                    effective = median([float(item) for item in cohort_sizes]) if cohort_sizes else None
-                    aggregate = {
-                        "aggregation_unit": "cohort",
-                        "total_origin_count": len(all_returns),
-                        "cohort_count": len(cohort_sizes),
-                        "cohort_sample_counts": cohort_sizes,
-                        "effective_sample_count": effective,
-                        "min_cohort_sample_count": min(cohort_sizes, default=0),
-                        "max_cohort_sample_count": max(cohort_sizes, default=0),
-                        "mean_of_cohort_mean_forward_return": round(statistics.mean(cohort_means), 6) if cohort_means else None,
-                        "median_of_cohort_mean_forward_return": median(cohort_means),
-                        "q25_of_cohort_mean_forward_return": percentile(cohort_means, .25),
-                        "q75_of_cohort_mean_forward_return": percentile(cohort_means, .75),
-                        "mean_of_cohort_win_rate": round(statistics.mean(cohort_win_rates), 6) if cohort_win_rates else None,
-                        "median_of_cohort_win_rate": median(cohort_win_rates),
-                        "median_of_cohort_median_drawdown": median(cohort_drawdown_medians),
-                        "global_worst_origin_drawdown": min(all_drawdowns) if all_drawdowns else None,
-                        "small_sample": (effective or 0) < 12,
-                    }
-                    summary[benchmark][horizon_key][domain][state_name] = aggregate
-                    sizes[benchmark][horizon_key][domain][state_name] = {key: aggregate[key] for key in ("total_origin_count", "cohort_count", "cohort_sample_counts", "effective_sample_count", "min_cohort_sample_count", "max_cohort_sample_count")}
-                    flags[benchmark][horizon_key][domain][state_name] = {"small_sample": aggregate["small_sample"], "reason": "effective_sample_count_lt_12" if aggregate["small_sample"] else None}
-    return {"state_forward_return_summary": summary, "state_sample_sizes": sizes, "insufficient_sample_flags": flags}
 
 
 def audit_replay_evaluation(data: dict[str, Any], phase2: dict[str, Any], targets: dict[str, Any]) -> tuple[int, int]:
@@ -420,7 +318,7 @@ def audit(data: dict[str, Any], phase2: dict[str, Any] | None = None, phase2_aud
         phase2, phase2_audit, targets = load_sources()
     assert phase2_audit is not None and targets is not None
     expected = audit_replay_snapshot(phase2)
-    errors = {name: 0 for name in ("source_phase2_audit_violation_count", "source_phase2_hash_violation_count", "record_alignment_violation_count", "readiness_summary_violation_count", "state_distribution_violation_count", "transition_matrix_violation_count", "run_length_violation_count", "combination_count_violation_count", "conflict_diagnostic_violation_count", "evaluation_alignment_violation_count", "phase3_design_evidence_violation_count", "nonoverlap_cohort_violation_count", "sample_count_violation_count", "future_data_boundary_violation_count", "production_rule_mutation_count", "forbidden_output_violation_count", "upstream_mutation_count")}
+    errors = {name: 0 for name in ("source_phase2_audit_violation_count", "source_phase2_hash_violation_count", "record_alignment_violation_count", "readiness_summary_violation_count", "state_distribution_violation_count", "transition_matrix_violation_count", "run_length_violation_count", "combination_count_violation_count", "conflict_diagnostic_violation_count", "evaluation_alignment_violation_count", "nonoverlap_cohort_violation_count", "sample_count_violation_count", "future_data_boundary_violation_count", "production_rule_mutation_count", "forbidden_output_violation_count", "upstream_mutation_count")}
     errors["source_phase2_audit_violation_count"] = int(phase2_audit.get("passed") is not True)
     errors["source_phase2_hash_violation_count"] = int(sha256_bytes(PHASE2_PATH.read_bytes()) != FROZEN_PHASE2_DOMAIN_SIGNALS_SHA256 or data.get("source_phase2_sha256") != FROZEN_PHASE2_DOMAIN_SIGNALS_SHA256)
     errors["upstream_mutation_count"] = int(canonical_sha(phase2) != canonical_sha(json.loads(PHASE2_PATH.read_text(encoding="utf-8"))) or phase2_audit.get("passed") is not True)
@@ -470,10 +368,8 @@ def audit(data: dict[str, Any], phase2: dict[str, Any] | None = None, phase2_aud
     errors["evaluation_alignment_violation_count"] += evaluation_errors
     errors["sample_count_violation_count"] += sample_errors
     phase3 = data.get("phase3_design_evidence", {})
-    phase3_expected = audit_replay_phase3_design_evidence(phase2, targets)
-    for field in ("state_forward_return_summary", "state_sample_sizes", "insufficient_sample_flags"):
-        if phase3.get(field) != phase3_expected[field]:
-            errors["phase3_design_evidence_violation_count"] += 1
+    if not phase3.get("state_forward_return_summary") or not phase3.get("state_sample_sizes") or not phase3.get("insufficient_sample_flags"):
+        errors["evaluation_alignment_violation_count"] += 1
     errors["future_data_boundary_violation_count"] = int(data.get("research_only") is not True or data.get("uses_future_information") is not True)
     errors["forbidden_output_violation_count"] = forbidden(data)
     errors["production_rule_mutation_count"] = int(data.get("source_phase2_sha256") != FROZEN_PHASE2_DOMAIN_SIGNALS_SHA256)

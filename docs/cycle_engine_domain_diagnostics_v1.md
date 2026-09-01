@@ -15,14 +15,9 @@ labelled `evaluation` subsection. Natural-month cohorts are separated by
 `month_index % horizon`; origins inside each cohort are at least one horizon
 apart.
 
-The evaluation is descriptive. Full cohort details remain under `evaluation`.
-The `phase3_design_evidence.state_forward_return_summary` is an aggregate-only
-contract: each state is summarized at `aggregation_unit="cohort"`, with
-`effective_sample_count` defined as the median of non-empty cohort sample
-counts. `insufficient_sample_flags` stores an object per state with
-`small_sample` and either `reason="effective_sample_count_lt_12"` or `null`.
-A-FEAR is not treated as a predictive efficacy claim because its history is
-immature.
+The evaluation is descriptive. Small samples are marked with
+`small_sample=true`, and A-FEAR is not treated as a predictive efficacy claim
+because its history is immature.
 
 ## Outputs
 
@@ -34,8 +29,7 @@ immature.
 - `timeline` and `window_extracts`: complete historical review timeline
 - `evaluation`: CSI300/CSI500 non-overlap ex-post summaries for 6/12/24 months
 - `phase3_design_evidence`: factual evidence for later review, with no rule
-  recommendation; its forward-return summary, cohort sample-size contract,
-  and insufficient-sample flags are independently replayed by the audit
+  recommendation
 
 Generate with:
 
@@ -43,22 +37,5 @@ Generate with:
 python scripts/cycle_engine_domain_diagnostics.py --generate
 ```
 
-## Freeze drift audit
-
-The Phase 2.5 output is audited against the pre-drift Git artifact without
-running the production diagnostics generator:
-
-```bash
-python scripts/cycle_freeze_drift_audit.py --audit
-```
-
-The audit classifies every changed leaf as identity/provenance,
-representation-only, audit-strengthening, or statistical-semantic change. It
-also compares the complete historical facts that must remain frozen, including
-coverage, state distributions, transitions, combinations, conflicts, timeline,
-windows, evaluation benchmarks, and cohort rules. It is read-only with respect
-to source artifacts; `--audit` only writes the machine-readable report.
-
-The audit has its own snapshot, cohort-evaluation, Phase 3 evidence, run-length
-and conflict-duration replays. This layer never emits a score, global cycle
-state, regime, position, allocation, signal, or ETF recommendation.
+This layer never emits a score, global cycle state, regime, position,
+allocation, signal, or ETF recommendation.
