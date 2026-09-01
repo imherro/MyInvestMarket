@@ -43,4 +43,15 @@ class DiagnosticsTests(unittest.TestCase):
   self.assertTrue(paths)
   for p in paths:
    for era in ('A','B','C'): self.assertIn('boolean_diagnostics',self.data['feature_diagnostics'][p]['era_diagnostics'][era])
+ def test_correlation_counter_is_explicit(self):
+  x=copy.deepcopy(self.data); p=next(p for p,v in x['feature_diagnostics'].items() if v['feature_family']=='trend_momentum'); x['feature_diagnostics'][p]['target_diagnostics']['forward_12m_return_pct']['spearman_rho']=999
+  self.assertGreater(d.audit(x)['correlation_formula_violation_count'],0)
+ def test_evidence_and_evaluation_source_mutations_hit_counter(self):
+  for field in ('source_evidence_sha','source_evaluation_sha'):
+   x=copy.deepcopy(self.data); x[field]='bad'; self.assertGreater(d.audit(x)['source_mutation_count'],0)
+ def test_source_audit_failure_is_a_hard_gate(self):
+  class FakePath:
+   def read_text(self,**kwargs): return '{"passed":false}'
+  with patch.object(d,'load',return_value=(self.e,self.t)), patch.object(d,'EVIDENCE_AUDIT',FakePath()):
+   self.assertFalse(d.audit(self.data)['passed'])
 if __name__=='__main__': unittest.main()
