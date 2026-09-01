@@ -51,6 +51,7 @@ class NonOverlapTests(unittest.TestCase):
   path=next(iter(self.data['features'])); c=self.data['features'][path]['horizons']['forward_6m']['cohorts']['cohort_0']
   x=copy.deepcopy(self.data); x['features'][path]['horizons']['forward_6m']['cohorts']['cohort_0']['origin_months']=c['origin_months'][1:]; self.assertGreater(n.audit(x)['origin_membership_violation_count'],0)
   x=copy.deepcopy(self.data); c2=x['features'][path]['horizons']['forward_6m']['cohorts']['cohort_0']; c2['origin_months'] += [c2['origin_months'][0]]; self.assertGreater(n.audit(x)['origin_membership_violation_count'],0)
+  x=copy.deepcopy(self.data); c3=x['features'][path]['horizons']['forward_6m']['cohorts']['cohort_0']; c3['origin_months'][0]='2020-07'; self.assertGreater(n.audit(x)['origin_membership_violation_count'],0)
  def test_continuous_mutation_counter(self):
   x=copy.deepcopy(self.data); f=next(v for v in x['features'].values() if v['feature_type']=='continuous'); f['horizons']['forward_6m']['cohorts']['cohort_0']['continuous']['forward_return']['spearman_rho']=999; self.assertGreater(n.audit(x)['correlation_formula_violation_count'],0)
  def test_boolean_mutation_counter(self):
@@ -77,11 +78,14 @@ class NonOverlapTests(unittest.TestCase):
   with patch.object(n,'upstream_file_hashes',side_effect=[n.upstream_file_hashes(),{}]):
    self.assertGreater(n.audit(self.data)['upstream_mutation_count'],0)
  def test_forbidden_output_counter(self):
-  for key in ('score','ranking','selection','state','regime','weight','threshold','allocation','position','signal','backtest'):
+  for key in ('score','ranking','selection','state','regime','weight','threshold','allocation','position','signal','trade','recommendation','backtest'):
    x=copy.deepcopy(self.data); x[key]=1; self.assertGreater(n.audit(x)['forbidden_output_violation_count'],0)
  def test_research_boundary_counter(self):
   x=copy.deepcopy(self.data); x['research_only']=False; self.assertGreater(n.audit(x)['research_boundary_violation_count'],0)
   x=copy.deepcopy(self.data); x['uses_future_information']=False; self.assertGreater(n.audit(x)['research_boundary_violation_count'],0)
+ def test_schema_counters(self):
+  x=copy.deepcopy(self.data); x['feature_count']=34; self.assertGreater(n.audit(x)['schema_violation_count'],0)
+  x=copy.deepcopy(self.data); x['candidate_feature_count']=33; self.assertGreater(n.audit(x)['schema_violation_count'],0)
  def test_research_only_boundary(self):
   self.assertTrue(self.data['research_only']); self.assertNotIn('score',self.data); self.assertNotIn('position',self.data); self.assertNotIn('signal',self.data)
 if __name__=='__main__': unittest.main()

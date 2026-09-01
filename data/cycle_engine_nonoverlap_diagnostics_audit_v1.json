@@ -11,6 +11,7 @@
   "origin_membership_violation_count": 0,
   "candidate_scope_violation_count": 0,
   "feature_scope_violation_count": 0,
+  "schema_violation_count": 0,
   "readiness_rule_violation_count": 0,
   "target_availability_violation_count": 0,
   "sample_alignment_violation_count": 0,
