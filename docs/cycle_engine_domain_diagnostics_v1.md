@@ -43,6 +43,22 @@ Generate with:
 python scripts/cycle_engine_domain_diagnostics.py --generate
 ```
 
+## Freeze drift audit
+
+The Phase 2.5 output is audited against the pre-drift Git artifact without
+running the production diagnostics generator:
+
+```bash
+python scripts/cycle_freeze_drift_audit.py --audit
+```
+
+The audit classifies every changed leaf as identity/provenance,
+representation-only, audit-strengthening, or statistical-semantic change. It
+also compares the complete historical facts that must remain frozen, including
+coverage, state distributions, transitions, combinations, conflicts, timeline,
+windows, evaluation benchmarks, and cohort rules. It is read-only with respect
+to source artifacts; `--audit` only writes the machine-readable report.
+
 The audit has its own snapshot, cohort-evaluation, Phase 3 evidence, run-length
 and conflict-duration replays. This layer never emits a score, global cycle
 state, regime, position, allocation, signal, or ETF recommendation.
