@@ -73,10 +73,19 @@ def build(evidence:dict[str,Any],targets:dict[str,Any])->dict[str,Any]:
                 vals=[target_value(tm[m],h,'max_drawdown_pct') for m,v in members if target_value(tm[m],h,'max_drawdown_pct') is not None]; item[f'median_forward_{h}m_max_drawdown']=quantile(vals,.5)
             diag['bucket_diagnostics'][f'{lo}-{hi}']=item
         med=[diag['bucket_diagnostics'][f'{lo}-{hi}']['median_forward_12m_return'] for lo,hi in ((0,20),(20,40),(40,60),(60,80),(80,100))]; med=[x for x in med if x is not None]
-        diag['monotonic_step_count']=sum((med[i+1]-med[i])*(med[1]-med[0] if len(med)>1 else 1)>=0 for i in range(len(med)-1))
+        steps=[med[i+1]-med[i] for i in range(len(med)-1)]
+        diag['increasing_step_count']=sum(x>0 for x in steps); diag['decreasing_step_count']=sum(x<0 for x in steps)
+        diag['monotonic_step_count']=max(diag['increasing_step_count'],diag['decreasing_step_count'])
         for era,(start,end) in ERAS.items():
-            er=[(m,v) for m,v,has_rank,_ in rows if has_rank and start<=m<=end and target_value(tm[m],12,'forward_return_pct') is not None]
-            diag['era_diagnostics'][era]={'sample_count':len(er),'spearman_rho':spearman([v for _,v in er],[target_value(tm[m],12,'forward_return_pct') for m,_ in er])}
+            er=[(m,v) for m,v,has_rank,_ in rows if has_rank and start<=m<=end]
+            era_diag={'target_diagnostics':{},'bucket_diagnostics':{}}
+            for h in HORIZONS:
+                for key in ('forward_return_pct','max_drawdown_pct'):
+                    pairs=[(v,target_value(tm[m],h,key)) for m,v in er if target_value(tm[m],h,key) is not None]
+                    era_diag['target_diagnostics'][f'forward_{h}m_{key}']={'sample_count':len(pairs),'spearman_rho':spearman([x for x,_ in pairs],[y for _,y in pairs])}
+            for lo,hi in ((0,20),(20,40),(40,60),(60,80),(80,100)):
+                members=[(m,v) for m,v in er if lo<=v<(hi if hi<100 else 101)]; era_diag['bucket_diagnostics'][f'{lo}-{hi}']={'sample_count':len(members),**{f'median_{h}m_{key}':quantile([target_value(tm[m],h,key) for m,_ in members if target_value(tm[m],h,key) is not None],.5) for h in HORIZONS for key in ('forward_return_pct','max_drawdown_pct')}}
+            diag['era_diagnostics'][era]=era_diag
         features[path]=diag
     candidates=sorted(features); redundancy=[]
     for a,b in combinations(candidates,2):
@@ -93,6 +102,7 @@ def audit(d:dict[str,Any])->dict[str,Any]:
     e,t=load(); expected=build(e,t); errors={'unauthorized_feature_count':0,'future_target_used_as_feature_count':0,'non_candidate_feature_analyzed_count':0,'sample_alignment_violation_count':0,'readiness_rule_violation_count':0,'bucket_assignment_violation_count':0,'correlation_formula_violation_count':0,'redundancy_formula_violation_count':0,'era_boundary_violation_count':0,'source_mutation_count':0}
     if d.get('source_evidence_sha')!=canonical_sha(e) or d.get('source_evaluation_sha')!=canonical_sha(t): errors['source_mutation_count']+=1
     if d.get('feature_diagnostics')!=expected.get('feature_diagnostics') or d.get('redundancy_matrix')!=expected.get('redundancy_matrix'): errors['correlation_formula_violation_count']+=1
+    if d.get('family_diagnostics')!=expected.get('family_diagnostics'): errors['redundancy_formula_violation_count']+=1
     feature_paths=list(d.get('feature_diagnostics',{}))
     if any(token in path for path in feature_paths for token in FORBIDDEN): errors['future_target_used_as_feature_count']+=1
     return {'schema':'cycle_engine_feature_diagnostics_audit_v1','feature_count':len(e['records'][-1]['features']),'candidate_feature_count':len(expected['feature_diagnostics']),'source_evidence_hash_match':d.get('source_evidence_sha')==canonical_sha(e),'source_evaluation_hash_match':d.get('source_evaluation_sha')==canonical_sha(t),'evidence_audit_passed':True,'evaluation_audit_passed':True,**errors,'passed':sum(errors.values())==0}
