@@ -15,6 +15,7 @@ if str(SCRIPTS) not in sys.path:
     sys.path.insert(0, str(SCRIPTS))
 
 import a_fear  # noqa: E402
+import audit_a_fear_v1  # noqa: E402
 
 
 def observation(day: date, value: float, include_iv: bool = True) -> dict:
@@ -112,6 +113,25 @@ class AFearScoringTests(unittest.TestCase):
         records = a_fear.score_observation_series(self.observations, minimum_sample=3)
         self.assertIsNotNone(records[-1]["change_1d"])
         self.assertIsNotNone(records[-1]["change_3d"])
+
+
+class AFearAuditTests(unittest.TestCase):
+    def test_broad_panic_confirmation_only_applies_to_extreme_scores(self) -> None:
+        normal = audit_a_fear_v1.latest_broad_panic_check(
+            {
+                "fear_score": 53.86,
+                "components": {"market_breadth": {"score": 50}, "tail_loss": {"score": 0}},
+            }
+        )
+        unconfirmed_extreme = audit_a_fear_v1.latest_broad_panic_check(
+            {
+                "fear_score": 89.0,
+                "components": {"market_breadth": {"score": 50}, "tail_loss": {"score": 0}},
+            }
+        )
+
+        self.assertTrue(normal["passed"])
+        self.assertFalse(unconfirmed_extreme["passed"])
 
 
 class AFearPersistenceTests(unittest.TestCase):

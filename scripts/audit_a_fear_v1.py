@@ -25,6 +25,29 @@ def rounded(value: Any, digits: int = 4) -> float | None:
         return None
 
 
+def latest_broad_panic_check(latest: dict[str, Any]) -> dict[str, Any]:
+    """Require breadth/tail confirmation only when the latest score is extreme."""
+    fear_score = rounded(latest.get("fear_score"))
+    components = latest.get("components") or {}
+    breadth_score = rounded((components.get("market_breadth") or {}).get("score")) or 0.0
+    tail_score = rounded((components.get("tail_loss") or {}).get("score")) or 0.0
+    if fear_score is None or fear_score < 80:
+        return {
+            "key": "latest_broad_panic_consistency",
+            "passed": True,
+            "detail": "Latest score is below the extreme-panic threshold; breadth/tail confirmation is not required.",
+        }
+    return {
+        "key": "latest_broad_panic_consistency",
+        "passed": breadth_score >= 80 and tail_score >= 80,
+        "detail": (
+            "Latest extreme reading is confirmed by both breadth and tail-loss components."
+            if breadth_score >= 80 and tail_score >= 80
+            else "Latest extreme reading lacks simultaneous breadth and tail-loss confirmation."
+        ),
+    }
+
+
 def build_audit() -> dict[str, Any]:
     history = a_fear.load_history(a_fear.DEFAULT_HISTORY_PATH)
     records = history.get("records", [])
@@ -114,14 +137,7 @@ def build_audit() -> dict[str, Any]:
             "passed": bool(jump_ratio is not None and jump_ratio <= 0.05),
             "detail": f"Absolute one-day changes above 30: {len(jumps)}/{len(official)} ({rounded((jump_ratio or 0) * 100, 2)}%).",
         },
-        {
-            "key": "latest_broad_panic_consistency",
-            "passed": bool(
-                ((latest.get("components") or {}).get("market_breadth") or {}).get("score", 0) >= 80
-                and ((latest.get("components") or {}).get("tail_loss") or {}).get("score", 0) >= 80
-            ),
-            "detail": "Latest extreme reading is confirmed by both breadth and tail-loss components.",
-        },
+        latest_broad_panic_check(latest),
     ]
 
     return {
