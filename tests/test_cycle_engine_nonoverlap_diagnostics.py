@@ -1,5 +1,6 @@
 from __future__ import annotations
 import copy, json, sys, unittest
+from unittest.mock import patch
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]; sys.path.insert(0,str(ROOT/'scripts'))
 import cycle_engine_nonoverlap_diagnostics as n
@@ -41,23 +42,34 @@ class NonOverlapTests(unittest.TestCase):
  def test_source_mutation_counter(self):
   x=copy.deepcopy(self.data); x['source_evidence_sha']='bad'; self.assertGreater(n.audit(x)['source_mutation_count'],0)
  def test_cohort_rule_mutation_counter(self):
-  x=copy.deepcopy(self.data); x['cohort_rule']='record_position % horizon'; self.assertGreater(n.audit(x)['cohort_rule_violation_count'],0)
+  x=copy.deepcopy(self.data); x['cohort_rule']='record_position % horizon'; self.assertGreater(n.audit(x)['natural_month_cohort_violation_count'],0)
  def test_feature_scope_mutation_counter(self):
-  x=copy.deepcopy(self.data); x['features']['fake.feature']={}; self.assertGreater(n.audit(x)['feature_scope_violation_count'],0)
+  x=copy.deepcopy(self.data); x['features']['fake.feature']={}; self.assertGreater(n.audit(x)['candidate_scope_violation_count'],0)
  def test_spacing_mutation_counter(self):
-  x=copy.deepcopy(self.data); f=next(iter(x['features'].values())); f['horizons']['forward_6m']['cohorts']['cohort_0']['origin_months']=['2020-01','2020-02']; self.assertGreater(n.audit(x)['cohort_spacing_violation_count'],0)
+  x=copy.deepcopy(self.data); f=next(iter(x['features'].values())); f['horizons']['forward_6m']['cohorts']['cohort_0']['origin_months']=['2020-01','2020-02']; self.assertGreater(n.audit(x)['overlapping_origin_violation_count'],0)
  def test_continuous_mutation_counter(self):
-  x=copy.deepcopy(self.data); f=next(v for v in x['features'].values() if v['feature_type']=='continuous'); f['horizons']['forward_6m']['cohorts']['cohort_0']['continuous']['forward_return']['spearman_rho']=999; self.assertGreater(n.audit(x)['continuous_formula_violation_count'],0)
+  x=copy.deepcopy(self.data); f=next(v for v in x['features'].values() if v['feature_type']=='continuous'); f['horizons']['forward_6m']['cohorts']['cohort_0']['continuous']['forward_return']['spearman_rho']=999; self.assertGreater(n.audit(x)['correlation_formula_violation_count'],0)
  def test_boolean_mutation_counter(self):
   x=copy.deepcopy(self.data); f=next(v for v in x['features'].values() if v['feature_type']=='boolean'); f['horizons']['forward_6m']['cohorts']['cohort_0']['boolean']['forward_return']['true_minus_false_median']=999; self.assertGreater(n.audit(x)['boolean_formula_violation_count'],0)
  def test_stability_mutation_counter(self):
-  x=copy.deepcopy(self.data); f=next(iter(x['features'].values())); f['horizons']['forward_6m']['stability']['forward_return']['median_rho']=999; self.assertGreater(n.audit(x)['stability_formula_violation_count'],0)
+  x=copy.deepcopy(self.data); f=next(iter(x['features'].values())); f['horizons']['forward_6m']['stability']['forward_return']['median_rho']=999; self.assertGreater(n.audit(x)['stability_summary_violation_count'],0)
  def test_overlap_mutation_counter(self):
   x=copy.deepcopy(self.data); f=next(iter(x['features'].values())); f['horizons']['forward_6m']['overlap_comparison']['forward_return']['same_sign']=not f['horizons']['forward_6m']['overlap_comparison']['forward_return']['same_sign']; self.assertGreater(n.audit(x)['overlap_comparison_violation_count'],0)
  def test_era_boundary_mutation_counter(self):
   x=copy.deepcopy(self.data); x['eras']['A'][1]='2015-01'; self.assertGreater(n.audit(x)['era_boundary_violation_count'],0)
  def test_upstream_gate_is_required(self):
   self.assertTrue(json.loads((ROOT/'data/cycle_engine_walk_forward_diagnostics_audit_v1.json').read_text())['passed'])
+ def test_target_availability_mutation_counter(self):
+  x=copy.deepcopy(self.data); f=next(iter(x['features'].values())); f['horizons']['forward_6m']['cohorts']['cohort_0']['origin_months'].append('2026-08'); self.assertGreater(n.audit(x)['target_availability_violation_count'],0)
+ def test_sample_alignment_mutation_counter(self):
+  evidence,targets,phase3=n.load(); changed=copy.deepcopy(targets); changed['records'][0]['month']='2018-02'
+  with patch.object(n,'load',return_value=(evidence,changed,phase3)): self.assertGreater(n.audit(self.data)['sample_alignment_violation_count'],0)
+ def test_upstream_audit_failure_counter(self):
+  class FakePath:
+   def read_text(self,**kwargs): return '{"passed":false}'
+  with patch.object(n,'EA',FakePath()): self.assertGreater(n.audit(self.data)['upstream_mutation_count'],0)
+ def test_forbidden_output_counter(self):
+  x=copy.deepcopy(self.data); x['score']=1; self.assertGreater(n.audit(x)['forbidden_output_violation_count'],0)
  def test_research_only_boundary(self):
   self.assertTrue(self.data['research_only']); self.assertNotIn('score',self.data); self.assertNotIn('position',self.data); self.assertNotIn('signal',self.data)
 if __name__=='__main__': unittest.main()
