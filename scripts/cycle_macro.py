@@ -53,6 +53,17 @@ def next_month(month: str) -> date:
     return (value.replace(day=28) + timedelta(days=4)).replace(day=1)
 
 
+def shifted_month(month: str, offset: int) -> str:
+    value = month_date(month)
+    if offset >= 0:
+        for _ in range(offset):
+            value = next_month(value.strftime("%Y-%m"))
+    else:
+        for _ in range(-offset):
+            value = value.replace(day=1) - timedelta(days=1)
+    return value.strftime("%Y-%m")
+
+
 def release_window(month: str) -> tuple[date, date]:
     start = month_date(month).replace(day=RELEASE_WINDOW_START_DAY)
     return start, next_month(month) + timedelta(days=RELEASE_WINDOW_END_DAYS)
@@ -352,10 +363,10 @@ def snapshot(records: list[dict[str, Any]] | None, conflicts: list[dict[str, Any
     if not visible:
         return unavailable(basis, refresh_error or "no PMI publication visible at or before basis trade date")
     current = visible[-1]
-    index = len(visible) - 1
     published = parse_date(current["publish_date"])
-    prior_1 = visible[index - 1] if index >= 1 else None
-    prior_3 = visible[index - 3] if index >= 3 else None
+    visible_by_month = {row["data_month"]: row for row in visible}
+    prior_1 = visible_by_month.get(shifted_month(current["data_month"], -1))
+    prior_3 = visible_by_month.get(shifted_month(current["data_month"], -3))
     result = {
         "value": round(float(current["pmi"]), 4),
         "data_month": current["data_month"],

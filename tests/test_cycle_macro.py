@@ -123,6 +123,20 @@ class CycleMacroTests(unittest.TestCase):
         self.assertEqual(result["change_1m"], 1.0)
         self.assertEqual(result["change_3m"], None)
 
+    def test_changes_require_natural_month_targets_when_a_month_is_blocked(self) -> None:
+        rows = [
+            {"data_month": "2024-01", "pmi": 50.0, "publish_date": "2024-01-31"},
+            {"data_month": "2024-02", "pmi": 51.0, "publish_date": "2024-02-29"},
+            {"data_month": "2024-02", "pmi": 52.0, "publish_date": "2024-03-01"},
+            {"data_month": "2024-03", "pmi": 53.0, "publish_date": "2024-03-31"},
+            {"data_month": "2024-04", "pmi": 54.0, "publish_date": "2024-04-30"},
+        ]
+        conflicts = [{"identity": {"data_month": "2024-02"}, "publish_dates": ["2024-02-29", "2024-03-01"]}]
+        result = cycle_macro.snapshot(rows, conflicts, date(2024, 3, 31))
+        self.assertEqual(result["data_month"], "2024-03")
+        self.assertIsNone(result["change_1m"])
+        self.assertIsNone(result["change_3m"])
+
     def test_cache_duplicate_refresh_and_failure_keeps_old_file(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "pmi.json"
