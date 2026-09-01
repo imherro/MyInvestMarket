@@ -256,6 +256,87 @@ def _audit_replay(records: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return output
 
 
+def _audit_diagnostics(rows: list[dict[str, Any]]) -> dict[str, Any]:
+    """Recompute every published diagnostic without using production diagnostics."""
+    ready = [row for row in rows if row["core_ready"]]
+    raw_values = [row["raw_candidate_state"] for row in ready]
+    stable_values = [row["stable_state"] for row in ready]
+    raw_changes = sum(a != b for a, b in zip(raw_values, raw_values[1:]))
+    stable_changes = sum(a != b for a, b in zip(stable_values, stable_values[1:]))
+    raw_rate = raw_changes / (len(raw_values) - 1) * 100 if len(raw_values) > 1 else None
+    stable_rate = stable_changes / (len(stable_values) - 1) * 100 if len(stable_values) > 1 else None
+    distribution = {}
+    for state in STATES:
+        months = [row["month"] for row in ready if row["stable_state"] == state]
+        lengths = _runs(stable_values, state)
+        distribution[state] = {
+            "month_count": len(months),
+            "percentage_of_core_ready_months": round(len(months) / len(ready) * 100, 6) if ready else 0.0,
+            "first_month": min(months) if months else None,
+            "last_month": max(months) if months else None,
+            "longest_run": max(lengths, default=0),
+            "median_run": median([float(value) for value in lengths]) if lengths else None,
+        }
+    events = []
+    for index, row in enumerate(ready):
+        if row["transition_status"] == "transition_confirmed":
+            prior = ready[index - 1] if index else row
+            used_grace = prior["raw_candidate_state"] == "ambiguous"
+            first_month = ready[index - 2]["month"] if used_grace and index >= 2 else prior["month"]
+            first_index = next((j for j, item in enumerate(ready) if item["month"] == first_month), index)
+            events.append({
+                "from": row["transition_from"],
+                "to": row["transition_to"],
+                "first_evidence_month": first_month,
+                "confirmation_month": row["month"],
+                "confirmation_delay_months": max(0, index - first_index),
+                "used_ambiguous_grace": used_grace,
+                "trigger_raw_candidate": row["raw_candidate_state"],
+            })
+    transitions = Counter(f"{a}->{b}" for a, b in zip(stable_values, stable_values[1:]))
+    raw_stable = Counter(f"{row['raw_candidate_state']}->{row['stable_state']}" for row in ready)
+    status_counts = Counter(row["transition_status"] for row in rows)
+    pending_started = sum(row["transition_status"] == "pending_started" for row in rows)
+    pending_confirmed = sum(row["transition_status"] == "transition_confirmed" for row in rows)
+    pending_replaced = sum(row["transition_status"] == "pending_replaced" for row in rows)
+    pending_expired = sum(row["transition_status"] == "pending_expired" for row in rows)
+    pending_cancelled = sum("pending_cancelled_by_current_state" in row.get("stable_reason_codes", []) for row in rows)
+    windows = {
+        name: [{key: row[key] for key in ("month", "raw_candidate_state", "stable_state", "pending_target", "transition_status")} for row in rows if start <= row["month"] <= end]
+        for name, (start, end) in WINDOWS.items()
+    }
+    return {
+        "raw_vs_stable": {
+            "raw_monthly_state_change_rate": round(raw_rate, 6) if raw_rate is not None else None,
+            "stable_monthly_state_change_rate": round(stable_rate, 6) if stable_rate is not None else None,
+            "absolute_reduction": round(raw_rate - stable_rate, 6) if raw_rate is not None and stable_rate is not None else None,
+            "relative_reduction_pct": round((raw_rate - stable_rate) / raw_rate * 100, 6) if raw_rate else None,
+        },
+        "ambiguous": {
+            "raw_month_count": raw_values.count("ambiguous"),
+            "raw_pct": round(raw_values.count("ambiguous") / len(raw_values) * 100, 6) if raw_values else 0.0,
+            "stable_month_count": stable_values.count("ambiguous"),
+            "stable_after_initialization_count": sum(row["stable_state"] == "ambiguous" and row["initialized"] for row in ready),
+        },
+        "stable_state_distribution": distribution,
+        "transitions": {
+            "confirmed_transition_count": len(events),
+            "transition_matrix": {key: {"transition_count": value} for key, value in sorted(transitions.items())},
+            "transition_events": events,
+        },
+        "pending": {
+            "pending_started_count": pending_started,
+            "pending_confirmed_count": pending_confirmed,
+            "pending_replaced_count": pending_replaced,
+            "pending_expired_count": pending_expired,
+            "pending_cancelled_by_current_state_count": pending_cancelled,
+            "status_counts": dict(sorted(status_counts.items())),
+        },
+        "raw_to_stable_matrix": {key: value for key, value in sorted(raw_stable.items())},
+        "window_extracts": windows,
+    }
+
+
 def _contains_forbidden(value: Any) -> bool:
     forbidden = ("cycle_score", "bull_bear_score", "market_score", "recommended_position", "equity_position", "allocation", "buy_signal", "sell_signal", "trade_signal")
     if isinstance(value, dict):
@@ -306,7 +387,7 @@ def audit(data: dict[str, Any], candidate: dict[str, Any], candidate_audit: dict
             errors["macro_core_leakage_count"] += 1
         if left.get("sentiment_overlay") != right.get("sentiment_overlay"):
             errors["sentiment_core_leakage_count"] += 1
-    expected_diag = _diagnostics(expected)
+    expected_diag = _audit_diagnostics(expected)
     diagnostics = data.get("diagnostics", {})
     if diagnostics.get("raw_vs_stable") != expected_diag["raw_vs_stable"]:
         errors["stability_improvement_violation_count"] += 1

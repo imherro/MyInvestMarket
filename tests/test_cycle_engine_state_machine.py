@@ -6,6 +6,7 @@ import inspect
 import json
 import sys
 import unittest
+from unittest import mock
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -128,12 +129,17 @@ class StateMachineTests(unittest.TestCase):
         self.assertFalse(result["passed"])
 
     def test_audit_replay_is_independent_and_output_is_restricted(self) -> None:
-        source = inspect.getsource(machine.audit) + inspect.getsource(machine._audit_replay)
+        source = inspect.getsource(machine.audit) + inspect.getsource(machine._audit_replay) + inspect.getsource(machine._audit_diagnostics)
         for token in ("build(", "_step(", "state_machine(", "transition_step(", "update_pending("):
             self.assertNotIn(token, source)
         text = json.dumps(self.output, ensure_ascii=False).lower()
         for token in ("cycle_score", "position", "allocation", "buy_signal", "sell_signal", "backtest", "forward_return"):
             self.assertNotIn(token, text)
+
+    def test_audit_diagnostics_does_not_call_production_diagnostics(self) -> None:
+        with mock.patch.object(machine, "_diagnostics", side_effect=AssertionError("production diagnostics called")):
+            result = machine.audit(self.output, self.candidate, self.candidate_audit)
+        self.assertTrue(result["passed"], result)
 
     def test_candidate_artifact_is_unchanged(self) -> None:
         path = ROOT / "data/cycle_engine_cycle_state_candidate_v1.json"
