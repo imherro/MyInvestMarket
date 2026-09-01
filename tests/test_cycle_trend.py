@@ -66,6 +66,27 @@ class TrendPITTests(unittest.TestCase):
         self.assertFalse(failed["close"]["pre_inception"])
         self.assertEqual(failed["close"]["source_error"], "API failed")
 
+    def test_official_launch_date_blocks_backfilled_history_before_launch(self) -> None:
+        frame = price_frame(600, "2005-01-01")
+        before = cycle.trend_snapshot(frame, date(2014, 10, 16), "test", official_launch_date=date(2014, 10, 17))
+        self.assertTrue(before["close"]["pre_inception"])
+        self.assertFalse(before["close"]["available"])
+        self.assertEqual(before["close"]["reason"], "index not officially published at basis date")
+        after = cycle.trend_snapshot(frame, date(2014, 10, 17), "test", official_launch_date=date(2014, 10, 17))
+        self.assertTrue(after["close"]["available"])
+        self.assertTrue(after["ma250"]["history_ready"])
+        self.assertEqual(after["close"]["official_launch_date"], "2014-10-17")
+
+    def test_audit_rejects_prelaunch_available_trend(self) -> None:
+        basis = date(2014, 10, 16)
+        trend = cycle.trend_snapshot(price_frame(400, "2005-01-01"), basis, "test", official_launch_date=date(2014, 10, 17))
+        trend["close"]["available"] = True
+        trend["close"]["value"] = 1.0
+        payload = {"dataset_version": cycle.DATASET_VERSION, "trend_source_metadata": {"csi1000": {"official_launch_date": "2014-10-17", "source_conflict_count": 0}}, "records": [{"month": "2014-10", "basis_trade_date": basis.isoformat(), "valuation": {}, "earnings": {}, "trend": {"indices": {"csi1000": trend}}, "data_quality": {"coverage": {"trend_pct": 100}}}]}
+        audit = cycle.audit_dataset(payload)
+        self.assertGreater(audit["trend_prelaunch_visibility_violation_count"], 0)
+        self.assertFalse(audit["structural_passed"])
+
     def test_chunk_windows_are_contiguous(self) -> None:
         windows = cycle.valuation_date_windows(date(2005, 1, 1), date(2026, 8, 31), 5)
         self.assertEqual(windows[0][0], date(2005, 1, 1))

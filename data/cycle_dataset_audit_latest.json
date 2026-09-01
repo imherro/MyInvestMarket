@@ -1,13 +1,13 @@
 {
   "dataset_version": "cycle_dataset_v1",
-  "generated_at": "2026-09-01T16:26:51+08:00",
+  "generated_at": "2026-09-01T16:35:16+08:00",
   "record_count": 200,
   "start_month": "2010-01",
   "end_month": "2026-08",
   "coverage_pct": {
     "valuation": 77.78,
     "earnings": 76.78,
-    "trend": 100.0,
+    "trend": 90.5,
     "a_fear": 12.5
   },
   "profit_growth_coverage_pct": {
@@ -172,9 +172,9 @@
       "source_error_count": 0
     },
     "csi1000": {
-      "coverage_pct": 100.0,
-      "history_ready_coverage_pct": 100.0,
-      "pre_inception_count": 0,
+      "coverage_pct": 71.5,
+      "history_ready_coverage_pct": 71.5,
+      "pre_inception_count": 57,
       "source_error_count": 0
     }
   },
@@ -183,10 +183,17 @@
   "trend_source_conflict_count": 0,
   "trend_formula_violation_count": 0,
   "trend_invalid_drawdown_count": 0,
+  "trend_prelaunch_visibility_violation_count": 0,
+  "trend_prelaunch_visibility_violations": [],
   "trend_first_observation_date": {
     "csi300": "2005-01-04",
     "csi500": "2005-01-04",
     "csi1000": "2005-01-04"
+  },
+  "trend_official_launch_dates": {
+    "csi300": "2005-04-08",
+    "csi500": "2007-01-15",
+    "csi1000": "2014-10-17"
   },
   "trend_future_observations": [],
   "trend_observation_alignment_violations": [],
@@ -219,7 +226,8 @@
     "Tushare.index_dailybasic": 400,
     "Tushare.income_vip": 12,
     "derived:Tushare.income_vip,Tushare.balancesheet_vip": 6,
-    "not_configured": 400
+    "not_configured": 400,
+    "Tushare.index_daily": 456
   },
   "low_confidence_periods": [],
   "structural_passed": true,
