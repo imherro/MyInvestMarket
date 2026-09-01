@@ -250,6 +250,14 @@ def _audit_replay_diagnostics(expected_records: list[dict[str, Any]]) -> dict[st
     return {"candidate_state_distribution": distribution, "monthly_state_change_rate": round(sum(a != b for a, b in zip(values, values[1:])) / (len(values) - 1) * 100, 6) if len(values) > 1 else None, "transition_matrix": transition_matrix, "ambiguous_month_count": values.count("ambiguous"), "ambiguous_pct": round(values.count("ambiguous") / len(values) * 100, 6) if values else 0.0, "rule_hit_counts": {name: hits[name] for name in rule_names}, "timeline": timeline, "window_extracts": windows}
 
 
+def _contains_future_marker(value: Any) -> bool:
+    if isinstance(value, dict):
+        return any(any(token in str(key).lower() for token in ("forward", "future_return", "evaluation_target")) or _contains_future_marker(child) for key, child in value.items())
+    if isinstance(value, list):
+        return any(_contains_future_marker(child) for child in value)
+    return False
+
+
 def audit(data: dict[str, Any], phase2: dict[str, Any], phase2_audit: dict[str, Any]) -> dict[str, Any]:
     errors = {name: 0 for name in ("source_phase2_audit_violation_count", "source_phase2_hash_violation_count", "record_alignment_violation_count", "core_readiness_violation_count", "candidate_rule_violation_count", "rule_precedence_violation_count", "rule_hit_count_violation_count", "ambiguous_summary_violation_count", "state_change_rate_violation_count", "macro_flip_violation_count", "sentiment_core_leakage_count", "run_length_violation_count", "transition_violation_count", "forbidden_output_violation_count", "future_information_dependency_count", "upstream_mutation_count")}
     actual_sha = sha256_bytes(PHASE2_PATH.read_bytes()) if phase2 == json.loads(PHASE2_PATH.read_text(encoding="utf-8")) else phase2_sha(phase2)
@@ -295,7 +303,7 @@ def audit(data: dict[str, Any], phase2: dict[str, Any], phase2_audit: dict[str, 
     forbidden = json.dumps(data, ensure_ascii=False).lower()
     if any(token in forbidden for token in ("cycle_score", "bull_bear_score", "market_score", "recommended_position", "equity_position", "allocation", "buy_signal", "sell_signal")):
         errors["forbidden_output_violation_count"] += 1
-    if any(token in key.lower() for key in data for token in ("forward", "future_return", "evaluation_target")):
+    if _contains_future_marker(data):
         errors["future_information_dependency_count"] += 1
     return {"schema": "cycle_engine_cycle_state_candidate_audit_v1", "record_count": len(expected_records), **errors, "passed": not any(errors.values())}
 

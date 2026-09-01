@@ -168,6 +168,14 @@ class CycleStateCandidateTests(unittest.TestCase):
             self.assertGreater(result["sentiment_core_leakage_count"], 0, field)
             self.assertFalse(result["passed"])
 
+    def test_nested_future_fields_are_rejected(self) -> None:
+        for field in ("forward_return", "future_return", "evaluation_target"):
+            mutated = copy.deepcopy(self.output)
+            mutated["diagnostics"]["timeline"][0][field] = 1
+            result = candidate.audit(mutated, self.phase2, self.phase2_audit)
+            self.assertGreater(result["future_information_dependency_count"], 0, field)
+            self.assertFalse(result["passed"])
+
     def test_audit_replay_does_not_call_formal_reducers(self) -> None:
         source = inspect.getsource(candidate.audit) + inspect.getsource(candidate._audit_replay_record) + inspect.getsource(candidate._audit_replay_diagnostics)
         for name in ("build(", "candidate_state(", "macro_alignment(", "rules = _rule_matches(", "BULLISH_CANDIDATES", "BEARISH_CANDIDATES", "overlay("):
