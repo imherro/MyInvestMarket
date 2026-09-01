@@ -6,9 +6,11 @@
 - Duplicate count: 0
 - Order violations: 0
 - Valuation coverage: 41.11%
-- Earnings coverage: 43.77%
+- Earnings coverage: 65.67%
 - All-A profit-growth coverage: 98.5%
 - Nonfinancial profit-growth coverage: 98.5%
+- All-A/nonfinancial ROE(TTM) coverage: 98.5%/98.5%
+- ROE PIT violations / invalid report types: 0/0
 - Earnings source-cache conflicts: 0
 - Invalid current/prior report types: 0/0
 - Earnings cache latest period: 20260630; stale: False

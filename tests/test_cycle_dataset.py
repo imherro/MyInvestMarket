@@ -16,6 +16,7 @@ if str(SCRIPTS) not in sys.path:
 
 import build_cycle_dataset as cycle  # noqa: E402
 import cycle_earnings  # noqa: E402
+import cycle_roe  # noqa: E402
 
 
 class CycleDatasetTests(unittest.TestCase):
@@ -27,6 +28,13 @@ class CycleDatasetTests(unittest.TestCase):
     def income(period: str, values: dict[str, float], ann: str, comp_type: str = "1") -> pd.DataFrame:
         return cycle_earnings.normalise_income(pd.DataFrame([
             {"ts_code": code, "ann_date": ann, "f_ann_date": ann, "end_date": period, "report_type": "1", "comp_type": comp_type, "n_income_attr_p": value, "update_flag": "0"}
+            for code, value in values.items()
+        ]))
+
+    @staticmethod
+    def balance(period: str, values: dict[str, float], ann: str, comp_type: str = "1", report_type: str = "1") -> pd.DataFrame:
+        return cycle_roe.normalise_balance(pd.DataFrame([
+            {"ts_code": code, "ann_date": ann, "f_ann_date": ann, "end_date": period, "report_type": report_type, "comp_type": comp_type, cycle_roe.EQUITY_FIELD: value, "update_flag": "0"}
             for code, value in values.items()
         ]))
 
@@ -367,6 +375,71 @@ class CycleDatasetTests(unittest.TestCase):
         unaffected = cycle.audit_dataset({**payload, "records": [{**payload["records"][0], "month": "2024-04", "basis_trade_date": "2024-04-29"}]})
         self.assertEqual(unaffected["affected_month_count"], 0)
         self.assertEqual(unaffected["affected_source_identities"], [])
+
+    def test_roe_ttm_uses_q1_formula_and_aggregate_equity(self) -> None:
+        codes = {"000001.SZ": 20, "000002.SZ": 2}
+        income = {
+            "20240331": self.income("20240331", codes, "20240430"),
+            "20231231": self.income("20231231", {"000001.SZ": 100, "000002.SZ": 10}, "20240131"),
+            "20230331": self.income("20230331", {"000001.SZ": 10, "000002.SZ": 1}, "20230430"),
+        }
+        balance = {"20240331": self.balance("20240331", {"000001.SZ": 1000, "000002.SZ": 10}, "20240430"), "20230331": self.balance("20230331", {"000001.SZ": 800, "000002.SZ": 10}, "20230430")}
+        result = cycle_roe.roe_snapshot(income, balance, self.stocks(2), date(2024, 5, 1), "20240331")["all_a"]
+        self.assertAlmostEqual(result["ttm_parent_profit"], 121.0)
+        self.assertAlmostEqual(result["average_parent_equity"], 910.0)
+        self.assertAlmostEqual(result["value"], 121 / 910 * 100, places=4)
+
+    def test_roe_ttm_formulas_for_h1_q3_and_fy(self) -> None:
+        def frame(period: str, value: float) -> pd.DataFrame:
+            return self.income(period, {"000001.SZ": value}, "20241030")
+        income = {"20240630": frame("20240630", 30), "20240930": frame("20240930", 50), "20241231": frame("20241231", 120), "20230630": frame("20230630", 15), "20230930": frame("20230930", 25), "20231231": frame("20231231", 100)}
+        self.assertEqual(float(cycle_roe.ttm_profit_by_code(income, "20240630", date(2024, 11, 1))[0].iloc[0]), 115)
+        self.assertEqual(float(cycle_roe.ttm_profit_by_code(income, "20240930", date(2024, 11, 1))[0].iloc[0]), 125)
+        self.assertEqual(float(cycle_roe.ttm_profit_by_code(income, "20241231", date(2024, 11, 1))[0].iloc[0]), 120)
+
+    def test_roe_prior_equity_prefers_visible_adjusted_statement(self) -> None:
+        income = {"20240331": self.income("20240331", {"000001.SZ": 20}, "20240430"), "20231231": self.income("20231231", {"000001.SZ": 100}, "20240131"), "20230331": self.income("20230331", {"000001.SZ": 10}, "20230430")}
+        balance = {"20240331": self.balance("20240331", {"000001.SZ": 1000}, "20240430"), "20230331": cycle_roe.normalise_balance(pd.concat([self.balance("20230331", {"000001.SZ": 800}, "20230430"), self.balance("20230331", {"000001.SZ": 900}, "20240501", report_type="4")], ignore_index=True))}
+        early = cycle_roe.roe_snapshot(income, balance, self.stocks(1), date(2024, 5, 1), "20240331")["all_a"]
+        self.assertEqual(early["prior_equity_report_types_used"], ["4"])
+        self.assertEqual(early["prior_year_parent_equity"], 900.0)
+
+    def test_roe_rejects_future_component_and_nonpositive_aggregate_equity(self) -> None:
+        income = {"20240331": self.income("20240331", {"000001.SZ": 20}, "20240430"), "20231231": self.income("20231231", {"000001.SZ": 100}, "20240601"), "20230331": self.income("20230331", {"000001.SZ": 10}, "20230430")}
+        balance = {"20240331": self.balance("20240331", {"000001.SZ": -10}, "20240430"), "20230331": self.balance("20230331", {"000001.SZ": -10}, "20230430")}
+        future = cycle_roe.roe_snapshot(income, balance, self.stocks(1), date(2024, 5, 1), "20240331")["all_a"]
+        self.assertFalse(future["available"])
+        income["20231231"] = self.income("20231231", {"000001.SZ": 100}, "20240131")
+        negative = cycle_roe.roe_snapshot(income, balance, self.stocks(1), date(2024, 5, 1), "20240331")["all_a"]
+        self.assertFalse(negative["available"])
+        self.assertEqual(negative["reason"], "non-positive aggregate average equity")
+
+    def test_roe_nonfinancial_excludes_financial_and_unknown_comp_types(self) -> None:
+        income = {
+            "20240331": cycle_earnings.normalise_income(pd.concat([self.income("20240331", {"000001.SZ": 20}, "20240430", "1"), self.income("20240331", {"000002.SZ": 20}, "20240430", "2"), self.income("20240331", {"000003.SZ": 20}, "20240430", "")], ignore_index=True)),
+            "20231231": cycle_earnings.normalise_income(pd.concat([self.income("20231231", {"000001.SZ": 100}, "20240131", "1"), self.income("20231231", {"000002.SZ": 100}, "20240131", "2"), self.income("20231231", {"000003.SZ": 100}, "20240131", "")], ignore_index=True)),
+            "20230331": cycle_earnings.normalise_income(pd.concat([self.income("20230331", {"000001.SZ": 10}, "20230430", "1"), self.income("20230331", {"000002.SZ": 10}, "20230430", "2"), self.income("20230331", {"000003.SZ": 10}, "20230430", "")], ignore_index=True)),
+        }
+        balance = {period: cycle_roe.normalise_balance(pd.concat([self.balance(period, {"000001.SZ": 100}, ann, "1"), self.balance(period, {"000002.SZ": 100}, ann, "2"), self.balance(period, {"000003.SZ": 100}, ann, "")], ignore_index=True)) for period, ann in (("20240331", "20240430"), ("20230331", "20230430"))}
+        roe = cycle_roe.roe_snapshot(income, balance, self.stocks(3), date(2024, 5, 1), "20240331")
+        self.assertEqual(roe["nonfinancial_a"]["eligible_stock_count"], 1)
+        self.assertEqual(roe["nonfinancial_a"]["matched_stock_count"], 1)
+
+    def test_roe_balance_cache_failure_uses_existing_rows(self) -> None:
+        class BrokenPro:
+            def balancesheet_vip(self, **_: object) -> pd.DataFrame:
+                raise RuntimeError("balance endpoint unavailable")
+
+        balance = self.balance("20260630", {"000001.SZ": 100}, "20260820")
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "roe.json"
+            path.write_text(__import__("json").dumps(cycle_roe.cache_payload(balance, [], date(2026, 8, 15))), encoding="utf-8")
+            before = path.read_bytes()
+            returned, _, _, error = cycle_roe.source_from_cache_or_api_status(BrokenPro(), path, 2026, 2026, date(2026, 8, 31))
+            after = path.read_bytes()
+        self.assertEqual(len(returned), 1)
+        self.assertIn("balance endpoint unavailable", error)
+        self.assertEqual(after, before)
 
 
 if __name__ == "__main__":

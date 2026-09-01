@@ -35,6 +35,14 @@ The stock denominator is historical: `list_date <= report_period` and no delisti
 
 The cache freshness check only requires a period after its statutory reporting deadline: Q1 on April 30, H1 on August 31, Q3 on October 31, and annual results on April 30 of the following year. A live refresh failure never overwrites the source cache: existing cached earnings remain usable for historical research, while the run records `refresh_error` and returns `freshness_passed=false`. Offline rebuilds do not access or change the source cache and are explicitly marked `offline=true`, so they cannot pass as a live freshness verification.
 
+## Aggregate ROE(TTM) PIT v1
+
+`earnings.all_a_roe_ttm_pct` and `earnings.nonfinancial_a_roe_ttm_pct` are amount-aggregated market ROE measures, not arithmetic averages of company `roe` values. The definition is `aggregate attributable net profit TTM / average aggregate attributable equity * 100`, calculated from one identical matched company set. TTM profit uses current cumulative profit for annual reports; Q1/H1/Q3 use `current cumulative + prior FY - prior-year same-period cumulative`.
+
+Equity comes from `Tushare.balancesheet_vip`, using `total_hldr_eqy_exc_min_int` (attributable parent equity excluding minority interest). Each profit component and equity observation must have an effective announcement date at or before the monthly basis date. Current balance sheets only use `report_type == 1`; prior-year comparable equity prefers PIT-visible adjusted consolidated `report_type == 4`, otherwise `report_type == 1`. The existing historical listed-stock universe and `comp_type == 1` nonfinancial classification are shared with earnings growth. If the matched coverage is below 65% or aggregate average equity is non-positive, ROE is unavailable rather than imputed.
+
+`data/cycle_roe_source_cache.json` contains only append-only balance-sheet source rows and its independent refresh metadata. Income data stays exclusively in `cycle_earnings_source_cache.json`. The ROE cache has the same failure, offline, conflict, and metadata round-trip semantics as the earnings cache. `fina_indicator_vip` fields can be used only for separate sanity checks and are not the formal ROE input.
+
 ## Output and audit
 
 Run:

@@ -282,7 +282,7 @@ def aggregate_side(current: pd.DataFrame, prior: pd.DataFrame, universe: set[str
     return {"value": round(yoy, 4) if yoy is not None else None, "observation_date": None, "announcement_date": iso(latest_ann), "source": SOURCE, "lag_days": (basis - latest_ann).days if latest_ann else None, "available": yoy is not None and latest_ann is not None and latest_ann <= basis, "pit_safe": latest_ann <= basis if latest_ann else False, "reason": reason, "current_aggregate_profit": round(current_profit, 2) if current_profit is not None else None, "prior_aggregate_profit": round(prior_profit, 2) if prior_profit is not None else None, "matched_stock_count": len(matched), "eligible_stock_count": eligible_count, "all_a_eligible_stock_count": len(universe), "classified_nonfinancial_eligible_stock_count": len(nonfinancial_universe), "unknown_comp_type_count": len(universe - classified_codes), "current_period_coverage_rate": round(current_coverage * 100, 4), "matched_coverage_rate": round(matched_coverage * 100, 4), "report_period": current_period, "prior_year_report_period": prior_year_period(current_period), "current_statement_report_type": CURRENT_REPORT_TYPE, "prior_comparator_report_types": list(PRIOR_REPORT_TYPES), "prior_comparator_report_types_used": used_prior_types, "classification_coverage_rate": round(len(classified_codes) / len(universe) * 100, 4) if universe else 0.0}
 
 
-def profit_growth_snapshot(income_by_period: dict[str, pd.DataFrame], stocks: pd.DataFrame, basis: date) -> dict[str, Any]:
+def select_cycle_report_period(income_by_period: dict[str, pd.DataFrame], stocks: pd.DataFrame, basis: date) -> tuple[str | None, pd.DataFrame | None, pd.DataFrame | None, set[str] | None]:
     for period in [item for item in sorted(income_by_period, reverse=True) if period_date(item) <= basis]:
         prior_period = prior_year_period(period)
         if prior_period not in income_by_period:
@@ -291,6 +291,13 @@ def profit_growth_snapshot(income_by_period: dict[str, pd.DataFrame], stocks: pd
         if (len(current.loc[current["ts_code"].isin(universe)]) / len(universe) if universe else 0.0) < MIN_CURRENT_COVERAGE:
             continue
         prior = select_prior_comparable_statement(income_by_period[prior_period], basis)
+        return period, current, prior, universe
+    return None, None, None, None
+
+
+def profit_growth_snapshot(income_by_period: dict[str, pd.DataFrame], stocks: pd.DataFrame, basis: date) -> dict[str, Any]:
+    period, current, prior, universe = select_cycle_report_period(income_by_period, stocks, basis)
+    if period is not None and current is not None and prior is not None and universe is not None:
         return {"all_a": aggregate_side(current, prior, universe, False, basis, period), "nonfinancial_a": aggregate_side(current, prior, universe, True, basis, period)}
     reason = "no quarterly report period reached current coverage threshold"
     unavailable = {"value": None, "observation_date": None, "announcement_date": None, "source": SOURCE, "lag_days": None, "available": False, "pit_safe": False, "reason": reason, "current_aggregate_profit": None, "prior_aggregate_profit": None, "matched_stock_count": 0, "eligible_stock_count": 0, "all_a_eligible_stock_count": 0, "classified_nonfinancial_eligible_stock_count": 0, "unknown_comp_type_count": 0, "current_period_coverage_rate": 0.0, "matched_coverage_rate": 0.0, "report_period": None, "prior_year_report_period": None, "current_statement_report_type": None, "prior_comparator_report_types": [], "prior_comparator_report_types_used": [], "classification_coverage_rate": 0.0}

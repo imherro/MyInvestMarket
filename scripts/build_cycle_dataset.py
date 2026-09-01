@@ -17,12 +17,14 @@ import pandas as pd
 
 import build_market_dataset
 import cycle_earnings
+import cycle_roe
 
 
 ROOT = Path(__file__).resolve().parents[1]
 DATA_DIR = ROOT / "data"
 DATASET_VERSION = "cycle_dataset_v1"
 EARNINGS_CACHE_PATH = DATA_DIR / "cycle_earnings_source_cache.json"
+ROE_CACHE_PATH = DATA_DIR / "cycle_roe_source_cache.json"
 START_MONTH = "2010-01"
 WARMUP_START = "2005-01-01"
 INDEXES = {
@@ -292,6 +294,7 @@ def record_for_month(
     valuation_errors: dict[str, str],
     earnings_income_by_period: dict[str, pd.DataFrame] | None,
     earnings_stocks: pd.DataFrame | None,
+    roe_balance_by_period: dict[str, pd.DataFrame] | None = None,
 ) -> dict[str, Any]:
     valuation_indices: dict[str, Any] = {}
     trend_indices: dict[str, Any] = {}
@@ -327,6 +330,10 @@ def record_for_month(
         earnings["all_a_net_profit_yoy_pct"] = aggregation["all_a"]
         earnings["nonfinancial_a_net_profit_yoy_pct"] = aggregation["nonfinancial_a"]
         earnings["profit_growth_aggregation"] = aggregation
+        if roe_balance_by_period is not None:
+            roe = cycle_roe.roe_snapshot(earnings_income_by_period, roe_balance_by_period, earnings_stocks, basis, aggregation["all_a"].get("report_period"))
+            earnings["all_a_roe_ttm_pct"] = roe["all_a"]
+            earnings["nonfinancial_a_roe_ttm_pct"] = roe["nonfinancial_a"]
         earnings["coverage"] = {
             "available": aggregation["all_a"]["available"],
             "stock_count": aggregation["all_a"]["matched_stock_count"],
@@ -387,8 +394,12 @@ def audit_dataset(payload: dict[str, Any]) -> dict[str, Any]:
     domain_totals = {"valuation": [], "earnings": [], "trend": [], "a_fear": []}
     profit_growth_counts = {"all_a": 0, "nonfinancial_a": 0, "months": 0}
     profit_growth_samples: dict[str, list[dict[str, float]]] = {"all_a": [], "nonfinancial_a": []}
+    roe_counts = {"all_a": 0, "nonfinancial_a": 0, "months": 0}
+    roe_samples: dict[str, list[dict[str, float]]] = {"all_a": [], "nonfinancial_a": []}
     current_invalid_report_types = 0
     prior_invalid_report_types = 0
+    roe_pit_violations: list[dict[str, Any]] = []
+    roe_invalid_report_types = 0
     for record in records:
         basis = parse_date(record.get("basis_trade_date"))
         if not basis:
@@ -422,6 +433,19 @@ def audit_dataset(payload: dict[str, Any]) -> dict[str, Any]:
                     "matched_stock_count": float(row.get("matched_stock_count", 0)),
                     "matched_coverage_rate": float(row.get("matched_coverage_rate", 0)),
                 })
+        roe_counts["months"] += 1
+        for name, field in (("all_a", "all_a_roe_ttm_pct"), ("nonfinancial_a", "nonfinancial_a_roe_ttm_pct")):
+            row = earnings.get(field, {})
+            roe_counts[name] += bool(row.get("available"))
+            announcement = parse_date(row.get("announcement_date"))
+            if row.get("available") and announcement and announcement > basis:
+                roe_pit_violations.append({"month": record["month"], "field": field, "date": iso(announcement), "basis": iso(basis)})
+            if row.get("available") and row.get("current_statement_report_type") != cycle_earnings.CURRENT_REPORT_TYPE:
+                roe_invalid_report_types += 1
+            if row.get("available") and any(item not in cycle_earnings.PRIOR_REPORT_TYPES for item in row.get("prior_equity_report_types_used", [])):
+                roe_invalid_report_types += 1
+            if row.get("available"):
+                roe_samples[name].append({"eligible_stock_count": float(row.get("eligible_stock_count", 0)), "matched_stock_count": float(row.get("matched_stock_count", 0)), "matched_coverage_rate": float(row.get("matched_coverage_rate", 0))})
     coverage = {key: finite(sum(values) / len(values), 2) if values else 0.0 for key, values in domain_totals.items()}
     duplicate_count = len(months) - len(set(months)) + len(basis_dates) - len(set(basis_dates))
     cache = payload.get("earnings_source_cache", {})
@@ -438,8 +462,9 @@ def audit_dataset(payload: dict[str, Any]) -> dict[str, Any]:
                 if conflict not in affected_identities:
                     affected_identities.append(conflict)
                 break
-    structural_passed = len(pit_violations) == 0 and duplicate_count == 0 and order_violation_count == 0 and current_invalid_report_types == 0 and prior_invalid_report_types == 0
-    freshness_passed = not bool(cache.get("stale")) and not bool(cache.get("refresh_error")) and not bool(cache.get("offline"))
+    roe_cache = payload.get("roe_source_cache", {})
+    structural_passed = len(pit_violations) == 0 and len(roe_pit_violations) == 0 and duplicate_count == 0 and order_violation_count == 0 and current_invalid_report_types == 0 and prior_invalid_report_types == 0 and roe_invalid_report_types == 0
+    freshness_passed = not bool(cache.get("stale")) and not bool(cache.get("refresh_error")) and not bool(cache.get("offline")) and not bool(roe_cache.get("stale")) and not bool(roe_cache.get("refresh_error")) and not bool(roe_cache.get("offline"))
     return {
         "dataset_version": payload.get("dataset_version"),
         "generated_at": datetime.now(build_market_dataset.TZ).isoformat(timespec="seconds"),
@@ -459,6 +484,15 @@ def audit_dataset(payload: dict[str, Any]) -> dict[str, Any]:
             }
             for name, rows in profit_growth_samples.items()
         },
+        "roe_coverage_pct": {"all_a": finite(roe_counts["all_a"] / roe_counts["months"] * 100, 2) if roe_counts["months"] else 0.0, "nonfinancial_a": finite(roe_counts["nonfinancial_a"] / roe_counts["months"] * 100, 2) if roe_counts["months"] else 0.0},
+        "roe_sample_averages": {name: {"eligible_stock_count": finite(sum(row["eligible_stock_count"] for row in rows) / len(rows), 2) if rows else None, "matched_stock_count": finite(sum(row["matched_stock_count"] for row in rows) / len(rows), 2) if rows else None, "matched_coverage_rate": finite(sum(row["matched_coverage_rate"] for row in rows) / len(rows), 2) if rows else None} for name, rows in roe_samples.items()},
+        "roe_pit_violation_count": len(roe_pit_violations),
+        "roe_pit_violations": roe_pit_violations,
+        "roe_invalid_report_type_count": roe_invalid_report_types,
+        "roe_source_conflict_count": int(roe_cache.get("conflict_count", 0)),
+        "roe_cache_latest_period": roe_cache.get("metadata", {}).get("latest_period"),
+        "roe_cache_stale": bool(roe_cache.get("stale")),
+        "roe_cache_refresh_error": roe_cache.get("refresh_error"),
         "earnings_source_cache_conflict_count": int(payload.get("earnings_source_cache", {}).get("conflict_count", 0)),
         "current_statement_invalid_report_type_count": current_invalid_report_types,
         "prior_statement_invalid_report_type_count": prior_invalid_report_types,
@@ -501,6 +535,8 @@ def audit_markdown(audit: dict[str, Any]) -> str:
             f"- Earnings coverage: {coverage['earnings']}%",
             f"- All-A profit-growth coverage: {audit['profit_growth_coverage_pct']['all_a_net_profit_yoy_pct']}%",
             f"- Nonfinancial profit-growth coverage: {audit['profit_growth_coverage_pct']['nonfinancial_a_net_profit_yoy_pct']}%",
+            f"- All-A/nonfinancial ROE(TTM) coverage: {audit['roe_coverage_pct']['all_a']}%/{audit['roe_coverage_pct']['nonfinancial_a']}%",
+            f"- ROE PIT violations / invalid report types: {audit['roe_pit_violation_count']}/{audit['roe_invalid_report_type_count']}",
             f"- Earnings source-cache conflicts: {audit['earnings_source_cache_conflict_count']}",
             f"- Invalid current/prior report types: {audit['current_statement_invalid_report_type_count']}/{audit['prior_statement_invalid_report_type_count']}",
             f"- Earnings cache latest period: {audit['earnings_cache_latest_period']}; stale: {audit['earnings_cache_stale']}",
@@ -533,8 +569,14 @@ def build_dataset(as_of: date, refresh_earnings_cache: bool = True) -> dict[str,
         earnings_freshness = cycle_earnings.audit_cache_freshness(earnings_income if earnings_income is not None else pd.DataFrame(columns=["end_date"]), earnings_cache_meta, end, refresh_error=refresh_error)
     except Exception as exc:
         earnings_income_by_period, earnings_stocks, cache_conflicts, earnings_cache_meta, earnings_freshness = None, None, [{"source_error": str(exc)}], {}, {"stale": True, "missing_expected_periods": [], "refresh_error": str(exc)}
+    try:
+        roe_balance, roe_conflicts, roe_cache_meta, roe_refresh_error = cycle_roe.source_from_cache_or_api_status(pro, ROE_CACHE_PATH, 2008, end.year, end, refresh=refresh_earnings_cache)
+        roe_balance_by_period = cycle_roe.prepare_balance_by_period(roe_balance) if roe_balance is not None else None
+        roe_freshness = cycle_roe.audit_cache_freshness(roe_balance if roe_balance is not None else pd.DataFrame(columns=["end_date"]), roe_cache_meta, end, roe_refresh_error)
+    except Exception as exc:
+        roe_balance_by_period, roe_conflicts, roe_cache_meta, roe_freshness = None, [{"source_error": str(exc)}], {}, {"stale": True, "missing_expected_periods": [], "refresh_error": str(exc)}
     records = [
-        record_for_month(month, month_basis[month], prices, valuations, price_errors, valuation_errors, earnings_income_by_period, earnings_stocks)
+        record_for_month(month, month_basis[month], prices, valuations, price_errors, valuation_errors, earnings_income_by_period, earnings_stocks, roe_balance_by_period)
         for month in months
     ]
     payload = {
@@ -544,6 +586,7 @@ def build_dataset(as_of: date, refresh_earnings_cache: bool = True) -> dict[str,
         "period": {"start_month": months[0], "end_month": months[-1], "warmup_start": WARMUP_START},
         "sources": ["Tushare.trade_cal", "Tushare.index_daily", "Tushare.index_dailybasic", "Tushare.income_vip", "A-FEAR local history (optional)"],
         "earnings_source_cache": {"path": str(EARNINGS_CACHE_PATH.relative_to(ROOT)), "conflict_count": len(cache_conflicts), "conflicts": cache_conflicts, "metadata": earnings_cache_meta, **earnings_freshness, "offline": not refresh_earnings_cache},
+        "roe_source_cache": {"path": str(ROE_CACHE_PATH.relative_to(ROOT)), "equity_field": cycle_roe.EQUITY_FIELD, "conflict_count": len(roe_conflicts), "conflicts": roe_conflicts, "metadata": roe_cache_meta, **roe_freshness, "offline": not refresh_earnings_cache},
         "records": records,
     }
     audit = audit_dataset(payload)
@@ -560,19 +603,25 @@ def rebuild_earnings_from_existing_dataset(path: Path) -> dict[str, Any]:
     """Refresh only the earnings domain when market source endpoints are unavailable."""
     payload = json.loads(path.read_text(encoding="utf-8-sig"))
     cached = cycle_earnings.load_cache(EARNINGS_CACHE_PATH)
+    roe_cached = cycle_roe.load_cache(ROE_CACHE_PATH)
     if cached is None:
         raise RuntimeError("earnings source cache is unavailable")
     income, stocks, conflicts = cached
+    balance, roe_conflicts = roe_cached if roe_cached is not None else (None, [])
     by_period = cycle_earnings.prepare_income_by_period(income)
     for record in payload.get("records", []):
         basis = parse_date(record.get("basis_trade_date"))
         if not basis:
             raise RuntimeError(f"invalid basis date in {record.get('month')}")
         aggregation = cycle_earnings.profit_growth_snapshot(by_period, stocks, basis)
-        earnings = unavailable_earnings(basis, "ROE and macro earnings fields are outside Cycle Earnings PIT v1.1")
+        earnings = unavailable_earnings(basis, "macro earnings fields are outside Cycle Earnings PIT v1")
         earnings["all_a_net_profit_yoy_pct"] = aggregation["all_a"]
         earnings["nonfinancial_a_net_profit_yoy_pct"] = aggregation["nonfinancial_a"]
         earnings["profit_growth_aggregation"] = aggregation
+        if balance is not None:
+            roe = cycle_roe.roe_snapshot(by_period, cycle_roe.prepare_balance_by_period(balance), stocks, basis, aggregation["all_a"].get("report_period"))
+            earnings["all_a_roe_ttm_pct"] = roe["all_a"]
+            earnings["nonfinancial_a_roe_ttm_pct"] = roe["nonfinancial_a"]
         earnings["coverage"] = {"available": aggregation["all_a"]["available"], "stock_count": aggregation["all_a"]["matched_stock_count"], "coverage_rate": aggregation["all_a"]["matched_coverage_rate"], "report_period": aggregation["all_a"]["report_period"], "latest_announcement_date": aggregation["all_a"]["announcement_date"], "reason": aggregation["all_a"].get("reason")}
         record["earnings"] = earnings
         record["data_quality"]["coverage"] = domain_coverage({"valuation": record.get("valuation", {}), "earnings": earnings, "trend": record.get("trend", {}), "sentiment": record.get("sentiment", {})})
@@ -581,6 +630,9 @@ def rebuild_earnings_from_existing_dataset(path: Path) -> dict[str, Any]:
     end = parse_date(payload.get("records", [])[-1].get("basis_trade_date"))
     freshness = cycle_earnings.audit_cache_freshness(income, metadata, end) if end else {"stale": True, "missing_expected_periods": []}
     payload["earnings_source_cache"] = {"path": str(EARNINGS_CACHE_PATH.relative_to(ROOT)), "conflict_count": len(conflicts), "conflicts": conflicts, "metadata": metadata, **freshness, "offline": True}
+    roe_metadata = cycle_roe.load_cache_metadata(ROE_CACHE_PATH)
+    roe_freshness = cycle_roe.audit_cache_freshness(balance, roe_metadata, end) if balance is not None and end else {"stale": True, "missing_expected_periods": [], "refresh_error": "ROE balance-sheet cache unavailable"}
+    payload["roe_source_cache"] = {"path": str(ROE_CACHE_PATH.relative_to(ROOT)), "equity_field": cycle_roe.EQUITY_FIELD, "conflict_count": len(roe_conflicts), "conflicts": roe_conflicts, "metadata": roe_metadata, **roe_freshness, "offline": True}
     return payload
 
 
