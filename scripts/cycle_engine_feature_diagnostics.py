@@ -125,10 +125,11 @@ def audit(d:dict[str,Any])->dict[str,Any]:
         got=d['feature_diagnostics'][p]; exp=expected['feature_diagnostics'][p]
         if got.get('target_diagnostics')!=exp.get('target_diagnostics') or got.get('era_diagnostics')!=exp.get('era_diagnostics'): errors['correlation_formula_violation_count']+=1
         if got.get('bucket_diagnostics')!=exp.get('bucket_diagnostics'): errors['bucket_assignment_violation_count']+=1
-        if got.get('increasing_step_count')!=exp.get('increasing_step_count') or got.get('decreasing_step_count')!=exp.get('decreasing_step_count'): errors['monotonicity_formula_violation_count']+=1
+        if got.get('increasing_step_count')!=exp.get('increasing_step_count') or got.get('decreasing_step_count')!=exp.get('decreasing_step_count') or got.get('monotonic_step_count')!=exp.get('monotonic_step_count'): errors['monotonicity_formula_violation_count']+=1
         expected_ready=sum(1 for r in e['records'] if r['features'].get(p,{}).get('available') and r['features'].get(p,{}).get('normalization_history_ready') is True)
         if got.get('ready_sample_count') != expected_ready: errors['readiness_rule_violation_count'] += 1
-        if got.get('era_diagnostics',{}).get('A',{}).get('boolean_diagnostics') != exp.get('era_diagnostics',{}).get('A',{}).get('boolean_diagnostics'): errors['boolean_group_violation_count'] += 1
+        for era in ('A','B','C'):
+            if got.get('era_diagnostics',{}).get(era,{}).get('boolean_diagnostics') != exp.get('era_diagnostics',{}).get(era,{}).get('boolean_diagnostics'): errors['boolean_group_violation_count'] += 1
     feature_paths=list(d.get('feature_diagnostics',{}))
     if any(token in path for path in feature_paths for token in FORBIDDEN): errors['future_target_used_as_feature_count']+=1
     source_ok=d.get('source_evidence_sha')==canonical_sha(e) and d.get('source_evaluation_sha')==canonical_sha(t)
