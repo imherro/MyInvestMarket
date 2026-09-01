@@ -1554,12 +1554,14 @@ def cycle_engine_position_policy_result() -> dict[str, object]:
     except (OSError, json.JSONDecodeError) as exc:
         return {"available": False, "error": f"cycle position policy unavailable: {exc}"}
     latest = policy.get("latest") if isinstance(policy.get("latest"), dict) else {}
+    records = policy.get("records") if isinstance(policy.get("records"), list) else []
     return {
         "available": True,
         "schema": policy.get("schema"),
         "record_count": policy.get("record_count"),
         "source_state_machine_sha256": policy.get("source_state_machine_sha256"),
         "latest": latest,
+        "records": records,
     }
 
 

@@ -175,6 +175,27 @@ function renderCycleEnginePolicy() {
   setText("cycleEngineMonth", `基准月 ${latest.latest_month || "--"}`);
   setText("cycleEngineRecords", available ? `${formatNumber(payload.record_count, 0)} 个月` : "--");
   setText("cycleEngineSource", available ? "Phase 3.1 stable_state" : payload.error || "--");
+  const rows = document.getElementById("cycleEngineHistoryRows");
+  if (!rows) return;
+  const history = Array.isArray(payload.records) ? payload.records : [];
+  rows.innerHTML = history.length
+    ? history
+        .slice()
+        .reverse()
+        .map(
+          (item) => `
+            <tr>
+              <td>${escapeHtml(item.month || "--")}</td>
+              <td>${escapeHtml(item.basis_trade_date || "--")}</td>
+              <td><strong>${escapeHtml(item.stable_state || "--")}</strong></td>
+              <td>${item.equity_min_pct === null || item.equity_min_pct === undefined ? "不可用" : `${escapeHtml(item.equity_min_pct)}%`}</td>
+              <td>${item.equity_max_pct === null || item.equity_max_pct === undefined ? "不可用" : `${escapeHtml(item.equity_max_pct)}%`}</td>
+              <td>${escapeHtml(item.policy_reason || "--")}</td>
+            </tr>
+          `,
+        )
+        .join("")
+    : `<tr><td colspan="6">暂无周期仓位历史</td></tr>`;
 }
 
 function renderBasisStatus() {

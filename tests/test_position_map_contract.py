@@ -99,6 +99,8 @@ class PositionMapContractTest(unittest.TestCase):
         self.assertEqual(cycle["latest"]["latest_month"], "2026-08")
         self.assertEqual(cycle["latest"]["latest_state"], "late_bull")
         self.assertEqual(cycle["latest"]["recommended_equity_range"], "60%-80%")
+        self.assertEqual(len(cycle["records"]), 200)
+        self.assertEqual(cycle["records"][-1]["month"], "2026-08")
 
     def test_market_cycle_profile_marks_hot_capped_market_without_wave_prediction(self) -> None:
         record = {

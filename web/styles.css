@@ -190,6 +190,23 @@ select {
   color: var(--muted);
 }
 
+.cycle-engine-history {
+  margin-top: 16px;
+  border-top: 1px solid var(--line);
+  padding-top: 14px;
+}
+
+.cycle-engine-history summary {
+  color: var(--blue);
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.cycle-engine-history .table-wrap {
+  max-height: 520px;
+  margin-top: 12px;
+}
+
 .fear-band {
   margin-bottom: 16px;
   padding: 18px;
