@@ -115,11 +115,17 @@ def audit(d:dict[str,Any])->dict[str,Any]:
     errors['unauthorized_feature_count'] += len(actual_paths-all_paths); errors['non_candidate_feature_analyzed_count'] += len((actual_paths&all_paths)-formal)
     if d.get('redundancy_matrix')!=expected.get('redundancy_matrix'): errors['redundancy_formula_violation_count']+=1
     if d.get('family_diagnostics')!=expected.get('family_diagnostics'): errors['family_diagnostics_violation_count']+=1
+    evidence_months={r['month'] for r in e['records']}; target_months={r['month'] for r in t['records']}
+    if evidence_months != target_months: errors['sample_alignment_violation_count'] += 1
+    if d.get('era_diagnostics') != ERAS: errors['era_boundary_violation_count'] += 1
     for p in actual_paths & formal:
         got=d['feature_diagnostics'][p]; exp=expected['feature_diagnostics'][p]
         if got.get('target_diagnostics')!=exp.get('target_diagnostics') or got.get('era_diagnostics')!=exp.get('era_diagnostics'): errors['correlation_formula_violation_count']+=1
         if got.get('bucket_diagnostics')!=exp.get('bucket_diagnostics'): errors['bucket_assignment_violation_count']+=1
         if got.get('increasing_step_count')!=exp.get('increasing_step_count') or got.get('decreasing_step_count')!=exp.get('decreasing_step_count'): errors['monotonicity_formula_violation_count']+=1
+        expected_ready=sum(1 for r in e['records'] if r['features'].get(p,{}).get('available') and r['features'].get(p,{}).get('normalization_history_ready') is True)
+        if got.get('ready_sample_count') != expected_ready: errors['readiness_rule_violation_count'] += 1
+        if got.get('era_diagnostics',{}).get('A',{}).get('boolean_diagnostics') != exp.get('era_diagnostics',{}).get('A',{}).get('boolean_diagnostics'): errors['boolean_group_violation_count'] += 1
     feature_paths=list(d.get('feature_diagnostics',{}))
     if any(token in path for path in feature_paths for token in FORBIDDEN): errors['future_target_used_as_feature_count']+=1
     source_ok=d.get('source_evidence_sha')==canonical_sha(e) and d.get('source_evaluation_sha')==canonical_sha(t)
