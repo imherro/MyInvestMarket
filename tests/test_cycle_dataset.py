@@ -165,13 +165,94 @@ class CycleDatasetTests(unittest.TestCase):
         self.assertEqual(cycle_earnings.visible_deduped(frame, date(2024, 5, 30)).iloc[0]["n_income_attr_p"], 20)
 
     def test_cache_conflicts_are_retained_not_silently_discarded(self) -> None:
-        income = self.income("20240331", {"000001.SZ": 1}, "20240430")
-        conflicts = [{"identity": {"ts_code": "000001.SZ"}, "value_count": 2}]
+        income = cycle_earnings.normalise_income(pd.DataFrame([
+            {"ts_code": "000001.SZ", "ann_date": "20240430", "f_ann_date": "20240430", "end_date": "20240331", "report_type": "1", "comp_type": "1", "n_income_attr_p": 1, "update_flag": "0"},
+            {"ts_code": "000001.SZ", "ann_date": "20240430", "f_ann_date": "20240430", "end_date": "20240331", "report_type": "1", "comp_type": "1", "n_income_attr_p": 2, "update_flag": "0"},
+        ]))
+        conflicts = cycle_earnings.source_conflicts(income)
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "cache.json"
             path.write_text(__import__("json").dumps(cycle_earnings.cache_payload(income, self.stocks(1), conflicts)), encoding="utf-8")
             _, _, loaded_conflicts = cycle_earnings.load_cache(path)
         self.assertEqual(loaded_conflicts, conflicts)
+
+    def test_current_selector_rejects_later_single_quarter_and_parent_company_types(self) -> None:
+        frame = cycle_earnings.normalise_income(pd.DataFrame([
+            {"ts_code": "000001.SZ", "ann_date": "20240420", "f_ann_date": "20240420", "end_date": "20240331", "report_type": "1", "comp_type": "1", "n_income_attr_p": 100, "update_flag": "0"},
+            {"ts_code": "000001.SZ", "ann_date": "20240430", "f_ann_date": "20240430", "end_date": "20240331", "report_type": "2", "comp_type": "1", "n_income_attr_p": 20, "update_flag": "0"},
+            {"ts_code": "000001.SZ", "ann_date": "20240501", "f_ann_date": "20240501", "end_date": "20240331", "report_type": "6", "comp_type": "1", "n_income_attr_p": 999, "update_flag": "0"},
+        ]))
+        selected = cycle_earnings.select_current_statement(frame, date(2024, 5, 2))
+        self.assertEqual(selected.iloc[0]["report_type"], "1")
+        self.assertEqual(selected.iloc[0]["n_income_attr_p"], 100)
+
+    def test_prior_selector_prefers_visible_adjusted_consolidated_statement(self) -> None:
+        frame = cycle_earnings.normalise_income(pd.DataFrame([
+            {"ts_code": "000001.SZ", "ann_date": "20230430", "f_ann_date": "20230430", "end_date": "20230331", "report_type": "1", "comp_type": "1", "n_income_attr_p": 100, "update_flag": "0"},
+            {"ts_code": "000001.SZ", "ann_date": "20240430", "f_ann_date": "20240430", "end_date": "20230331", "report_type": "4", "comp_type": "1", "n_income_attr_p": 120, "update_flag": "0"},
+        ]))
+        early = cycle_earnings.select_prior_comparable_statement(frame, date(2024, 4, 1))
+        late = cycle_earnings.select_prior_comparable_statement(frame, date(2024, 5, 1))
+        self.assertEqual(early.iloc[0]["report_type"], "1")
+        self.assertEqual(late.iloc[0]["report_type"], "4")
+
+    def test_ambiguous_source_conflict_is_excluded_from_statement_selection(self) -> None:
+        frame = cycle_earnings.normalise_income(pd.DataFrame([
+            {"ts_code": "000001.SZ", "ann_date": "20240430", "f_ann_date": "20240430", "end_date": "20240331", "report_type": "1", "comp_type": "1", "n_income_attr_p": 100, "update_flag": "0"},
+            {"ts_code": "000001.SZ", "ann_date": "20240430", "f_ann_date": "20240430", "end_date": "20240331", "report_type": "1", "comp_type": "1", "n_income_attr_p": 200, "update_flag": "0"},
+        ]))
+        self.assertTrue(cycle_earnings.select_current_statement(frame, date(2024, 5, 1)).empty)
+
+    def test_selector_is_independent_of_api_order(self) -> None:
+        rows = [
+            {"ts_code": "000001.SZ", "ann_date": "20240420", "f_ann_date": "20240420", "end_date": "20240331", "report_type": "1", "comp_type": "1", "n_income_attr_p": 100, "update_flag": "0"},
+            {"ts_code": "000001.SZ", "ann_date": "20240425", "f_ann_date": "20240425", "end_date": "20240331", "report_type": "1", "comp_type": "1", "n_income_attr_p": 120, "update_flag": "1"},
+        ]
+        left = cycle_earnings.select_current_statement(cycle_earnings.normalise_income(pd.DataFrame(rows)), date(2024, 5, 1))
+        right = cycle_earnings.select_current_statement(cycle_earnings.normalise_income(pd.DataFrame(list(reversed(rows)))), date(2024, 5, 1))
+        self.assertEqual(left.iloc[0]["n_income_attr_p"], right.iloc[0]["n_income_attr_p"])
+
+    def test_nonfinancial_denominator_is_classified_nonfinancial_universe(self) -> None:
+        current = cycle_earnings.normalise_income(pd.DataFrame([
+            {"ts_code": "000001.SZ", "ann_date": "20240430", "f_ann_date": "20240430", "end_date": "20240331", "report_type": "1", "comp_type": "1", "n_income_attr_p": 110, "update_flag": "0"},
+            {"ts_code": "000002.SZ", "ann_date": "20240430", "f_ann_date": "20240430", "end_date": "20240331", "report_type": "1", "comp_type": "2", "n_income_attr_p": 100, "update_flag": "0"},
+            {"ts_code": "000003.SZ", "ann_date": "20240430", "f_ann_date": "20240430", "end_date": "20240331", "report_type": "1", "comp_type": "", "n_income_attr_p": 100, "update_flag": "0"},
+        ]))
+        prior = current.copy(); prior["end_date"] = "20230331"
+        result = cycle_earnings.aggregate_side(current, prior, {"000001.SZ", "000002.SZ", "000003.SZ"}, True, date(2024, 5, 1), "20240331")
+        self.assertEqual(result["eligible_stock_count"], 1)
+        self.assertEqual(result["unknown_comp_type_count"], 1)
+
+    def test_incremental_cache_appends_new_quarter_and_deduplicates_repeat_refresh(self) -> None:
+        class FakePro:
+            def income_vip(self, period: str, fields: str) -> pd.DataFrame:
+                if period != "20260930":
+                    return pd.DataFrame()
+                return pd.DataFrame([{"ts_code": "000001.SZ", "ann_date": "20261020", "f_ann_date": "20261020", "end_date": period, "report_type": "1", "comp_type": "1", "n_income_attr_p": 100, "update_flag": "0"}])
+
+            def stock_basic(self, **_: object) -> pd.DataFrame:
+                return pd.DataFrame()
+
+        q2 = self.income("20260630", {"000001.SZ": 90}, "20260820")
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "cache.json"
+            path.write_text(__import__("json").dumps(cycle_earnings.cache_payload(q2, self.stocks(1), [], date(2026, 8, 31))), encoding="utf-8")
+            first, _, _ = cycle_earnings.source_from_cache_or_api(FakePro(), path, 2026, 2026, date(2026, 10, 31))
+            second, _, _ = cycle_earnings.source_from_cache_or_api(FakePro(), path, 2026, 2026, date(2026, 10, 31))
+            self.assertIn("20260930", set(first["end_date"]))
+            self.assertEqual(len(first), len(second))
+            self.assertEqual(cycle_earnings.load_cache_metadata(path)["latest_period"], "20260930")
+
+    def test_new_revision_only_changes_months_after_its_announcement_date(self) -> None:
+        current = self.income("20240331", {"000001.SZ": 120}, "20240430")
+        prior_original = self.income("20230331", {"000001.SZ": 100}, "20230430")
+        revision = cycle_earnings.normalise_income(pd.DataFrame([{"ts_code": "000001.SZ", "ann_date": "20240520", "f_ann_date": "20240520", "end_date": "20230331", "report_type": "4", "comp_type": "1", "n_income_attr_p": 110, "update_flag": "1"}]))
+        periods = {"20240331": current, "20230331": cycle_earnings.append_income(prior_original, revision)}
+        before = cycle_earnings.profit_growth_snapshot(periods, self.stocks(1), date(2024, 5, 1))["all_a"]
+        after = cycle_earnings.profit_growth_snapshot(periods, self.stocks(1), date(2024, 5, 31))["all_a"]
+        self.assertEqual(before["value"], 20.0)
+        self.assertNotEqual(after["value"], before["value"])
+        self.assertEqual(after["prior_comparator_report_types_used"], ["4"])
 
 
 if __name__ == "__main__":

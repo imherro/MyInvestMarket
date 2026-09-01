@@ -387,6 +387,8 @@ def audit_dataset(payload: dict[str, Any]) -> dict[str, Any]:
     domain_totals = {"valuation": [], "earnings": [], "trend": [], "a_fear": []}
     profit_growth_counts = {"all_a": 0, "nonfinancial_a": 0, "months": 0}
     profit_growth_samples: dict[str, list[dict[str, float]]] = {"all_a": [], "nonfinancial_a": []}
+    current_invalid_report_types = 0
+    prior_invalid_report_types = 0
     for record in records:
         basis = parse_date(record.get("basis_trade_date"))
         if not basis:
@@ -410,6 +412,10 @@ def audit_dataset(payload: dict[str, Any]) -> dict[str, Any]:
         profit_growth_counts["nonfinancial_a"] += bool(earnings.get("nonfinancial_a_net_profit_yoy_pct", {}).get("available"))
         for name, field in (("all_a", "all_a_net_profit_yoy_pct"), ("nonfinancial_a", "nonfinancial_a_net_profit_yoy_pct")):
             row = earnings.get(field, {})
+            if row.get("available") and row.get("current_statement_report_type") != cycle_earnings.CURRENT_REPORT_TYPE:
+                current_invalid_report_types += 1
+            if row.get("available") and any(item not in cycle_earnings.PRIOR_REPORT_TYPES for item in row.get("prior_comparator_report_types_used", [])):
+                prior_invalid_report_types += 1
             if row.get("available"):
                 profit_growth_samples[name].append({
                     "eligible_stock_count": float(row.get("eligible_stock_count", 0)),
@@ -438,13 +444,20 @@ def audit_dataset(payload: dict[str, Any]) -> dict[str, Any]:
             for name, rows in profit_growth_samples.items()
         },
         "earnings_source_cache_conflict_count": int(payload.get("earnings_source_cache", {}).get("conflict_count", 0)),
+        "current_statement_invalid_report_type_count": current_invalid_report_types,
+        "prior_statement_invalid_report_type_count": prior_invalid_report_types,
+        "ambiguous_source_conflict_count": int(payload.get("earnings_source_cache", {}).get("conflict_count", 0)),
+        "affected_month_count": 0,
+        "earnings_cache_latest_period": payload.get("earnings_source_cache", {}).get("metadata", {}).get("latest_period"),
+        "earnings_cache_stale": bool(payload.get("earnings_source_cache", {}).get("stale")),
+        "earnings_cache_missing_expected_periods": payload.get("earnings_source_cache", {}).get("missing_expected_periods", []),
         "pit_violation_count": len(pit_violations),
         "pit_violations": pit_violations,
         "duplicate_count": duplicate_count,
         "order_violation_count": order_violation_count,
         "missing_by_source": missing_by_field,
         "low_confidence_periods": low_confidence_periods,
-        "passed": len(pit_violations) == 0 and duplicate_count == 0 and order_violation_count == 0,
+        "passed": len(pit_violations) == 0 and duplicate_count == 0 and order_violation_count == 0 and current_invalid_report_types == 0 and prior_invalid_report_types == 0,
     }
 
 
@@ -464,6 +477,8 @@ def audit_markdown(audit: dict[str, Any]) -> str:
             f"- All-A profit-growth coverage: {audit['profit_growth_coverage_pct']['all_a_net_profit_yoy_pct']}%",
             f"- Nonfinancial profit-growth coverage: {audit['profit_growth_coverage_pct']['nonfinancial_a_net_profit_yoy_pct']}%",
             f"- Earnings source-cache conflicts: {audit['earnings_source_cache_conflict_count']}",
+            f"- Invalid current/prior report types: {audit['current_statement_invalid_report_type_count']}/{audit['prior_statement_invalid_report_type_count']}",
+            f"- Earnings cache latest period: {audit['earnings_cache_latest_period']}; stale: {audit['earnings_cache_stale']}",
             f"- Trend coverage: {coverage['trend']}%",
             f"- A-FEAR coverage: {coverage['a_fear']}%",
             f"- Result: {'PASS' if audit['passed'] else 'FAIL'}",
@@ -474,7 +489,7 @@ def audit_markdown(audit: dict[str, Any]) -> str:
     )
 
 
-def build_dataset(as_of: date) -> dict[str, Any]:
+def build_dataset(as_of: date, refresh_earnings_cache: bool = True) -> dict[str, Any]:
     end = previous_month_end(as_of)
     if end < datetime.strptime(START_MONTH, "%Y-%m").date():
         raise ValueError("as_of is before the first supported month")
@@ -486,11 +501,12 @@ def build_dataset(as_of: date) -> dict[str, Any]:
     valuations, valuation_errors = fetch_valuation_history(pro, end)
     try:
         earnings_income, earnings_stocks, cache_conflicts = cycle_earnings.source_from_cache_or_api(
-            pro, EARNINGS_CACHE_PATH, 2009, end.year
+            pro, EARNINGS_CACHE_PATH, 2009, end.year, end, refresh=refresh_earnings_cache
         )
         earnings_income_by_period = cycle_earnings.prepare_income_by_period(earnings_income)
+        earnings_cache_meta = cycle_earnings.load_cache_metadata(EARNINGS_CACHE_PATH)
     except Exception as exc:
-        earnings_income_by_period, earnings_stocks, cache_conflicts = None, None, [{"source_error": str(exc)}]
+        earnings_income_by_period, earnings_stocks, cache_conflicts, earnings_cache_meta = None, None, [{"source_error": str(exc)}], {}
     records = [
         record_for_month(month, month_basis[month], prices, valuations, price_errors, valuation_errors, earnings_income_by_period, earnings_stocks)
         for month in months
@@ -501,7 +517,7 @@ def build_dataset(as_of: date) -> dict[str, Any]:
         "description": "Monthly Point-in-Time cycle research inputs. Not an official score or position decision.",
         "period": {"start_month": months[0], "end_month": months[-1], "warmup_start": WARMUP_START},
         "sources": ["Tushare.trade_cal", "Tushare.index_daily", "Tushare.index_dailybasic", "Tushare.income_vip", "A-FEAR local history (optional)"],
-        "earnings_source_cache": {"path": str(EARNINGS_CACHE_PATH.relative_to(ROOT)), "conflict_count": len(cache_conflicts), "conflicts": cache_conflicts},
+        "earnings_source_cache": {"path": str(EARNINGS_CACHE_PATH.relative_to(ROOT)), "conflict_count": len(cache_conflicts), "conflicts": cache_conflicts, "metadata": earnings_cache_meta, "stale": False, "missing_expected_periods": []},
         "records": records,
     }
     audit = audit_dataset(payload)
@@ -514,21 +530,50 @@ def build_dataset(as_of: date) -> dict[str, Any]:
     return payload
 
 
+def rebuild_earnings_from_existing_dataset(path: Path) -> dict[str, Any]:
+    """Refresh only the earnings domain when market source endpoints are unavailable."""
+    payload = json.loads(path.read_text(encoding="utf-8-sig"))
+    cached = cycle_earnings.load_cache(EARNINGS_CACHE_PATH)
+    if cached is None:
+        raise RuntimeError("earnings source cache is unavailable")
+    income, stocks, conflicts = cached
+    by_period = cycle_earnings.prepare_income_by_period(income)
+    for record in payload.get("records", []):
+        basis = parse_date(record.get("basis_trade_date"))
+        if not basis:
+            raise RuntimeError(f"invalid basis date in {record.get('month')}")
+        aggregation = cycle_earnings.profit_growth_snapshot(by_period, stocks, basis)
+        earnings = unavailable_earnings(basis, "ROE and macro earnings fields are outside Cycle Earnings PIT v1.1")
+        earnings["all_a_net_profit_yoy_pct"] = aggregation["all_a"]
+        earnings["nonfinancial_a_net_profit_yoy_pct"] = aggregation["nonfinancial_a"]
+        earnings["profit_growth_aggregation"] = aggregation
+        earnings["coverage"] = {"available": aggregation["all_a"]["available"], "stock_count": aggregation["all_a"]["matched_stock_count"], "coverage_rate": aggregation["all_a"]["matched_coverage_rate"], "report_period": aggregation["all_a"]["report_period"], "latest_announcement_date": aggregation["all_a"]["announcement_date"], "reason": aggregation["all_a"].get("reason")}
+        record["earnings"] = earnings
+        record["data_quality"]["coverage"] = domain_coverage({"valuation": record.get("valuation", {}), "earnings": earnings, "trend": record.get("trend", {}), "sentiment": record.get("sentiment", {})})
+        record["data_quality"]["confidence"] = "low" if record["data_quality"]["coverage"]["earnings_pct"] == 0 else "medium"
+    metadata = cycle_earnings.load_cache_metadata(EARNINGS_CACHE_PATH)
+    payload["earnings_source_cache"] = {"path": str(EARNINGS_CACHE_PATH.relative_to(ROOT)), "conflict_count": len(conflicts), "conflicts": conflicts, "metadata": metadata, "stale": False, "missing_expected_periods": []}
+    return payload
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Build Cycle Dataset v1 without changing official market scoring.")
     parser.add_argument("--as-of", default=datetime.now(build_market_dataset.TZ).strftime("%Y-%m-%d"))
     parser.add_argument("--out", default=str(DATA_DIR / "cycle_dataset_v1.json"))
     parser.add_argument("--audit-json", default=str(DATA_DIR / "cycle_dataset_audit_latest.json"))
     parser.add_argument("--audit-md", default=str(DATA_DIR / "cycle_dataset_audit_latest.md"))
+    parser.add_argument("--offline-cache", action="store_true", help="Rebuild from the append-only earnings cache without a live refresh.")
+    parser.add_argument("--reuse-existing-market-data", action="store_true", help="Reuse existing valuation/trend records and refresh only the earnings domain.")
     return parser.parse_args()
 
 
 def main() -> None:
     args = parse_args()
     build_market_dataset.load_dotenv(ROOT / ".env")
-    payload = build_dataset(datetime.strptime(args.as_of, "%Y-%m-%d").date())
+    output_path = Path(args.out)
+    payload = rebuild_earnings_from_existing_dataset(output_path) if args.reuse_existing_market_data else build_dataset(datetime.strptime(args.as_of, "%Y-%m-%d").date(), refresh_earnings_cache=not args.offline_cache)
     audit = audit_dataset(payload)
-    write_json(Path(args.out), payload)
+    write_json(output_path, payload)
     write_json(Path(args.audit_json), audit)
     Path(args.audit_md).write_text(audit_markdown(audit), encoding="utf-8")
     print(json.dumps({"dataset": args.out, "audit": args.audit_json, "records": audit["record_count"], "passed": audit["passed"]}, ensure_ascii=False))
