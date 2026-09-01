@@ -1,0 +1,23 @@
+{
+  "schema": "cycle_engine_state_machine_audit_v1",
+  "record_count": 200,
+  "source_candidate_audit_violation_count": 0,
+  "source_candidate_hash_violation_count": 0,
+  "record_alignment_violation_count": 0,
+  "initialization_violation_count": 0,
+  "ambiguous_hold_violation_count": 0,
+  "pending_state_violation_count": 0,
+  "confirmation_rule_violation_count": 0,
+  "pending_expiry_violation_count": 0,
+  "stable_state_violation_count": 0,
+  "transition_metadata_violation_count": 0,
+  "stable_diagnostics_violation_count": 0,
+  "transition_diagnostics_violation_count": 0,
+  "stability_improvement_violation_count": 0,
+  "macro_core_leakage_count": 0,
+  "sentiment_core_leakage_count": 0,
+  "future_information_dependency_count": 0,
+  "forbidden_output_violation_count": 0,
+  "upstream_mutation_count": 0,
+  "passed": true
+}
