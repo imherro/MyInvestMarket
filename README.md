@@ -41,6 +41,10 @@ Cycle Dataset v1 的输入契约已经冻结到 `2026-08`：
 
 运行 `python scripts/validate_cycle_dataset_contract.py` 可重验契约、PIT 结构、缺失边界、黄金样本和冻结哈希；运行 `python scripts/validate_cycle_dataset_contract.py --generate` 可在数据更新后重新生成上述审计产物。结构冻结通过不代表数据新鲜度通过；当前清单会如实记录两者状态。
 
+### Cycle Engine v1 Evidence Vector
+
+Phase 1 只把冻结数据转换为可追溯的月频 Evidence Vector，不计算周期分、牛熊状态、权重或仓位。生成前会强制验证冻结契约，结果和审计见 [docs/cycle_engine_features_v1.md](docs/cycle_engine_features_v1.md)、`data/cycle_engine_features_v1.json` 和 `data/cycle_engine_features_audit_v1.json`。
+
 `Cycle Earnings PIT v1.1` 已用 `Tushare.income_vip` 补齐全 A 与非金融 A 的利润金额聚合同比。当前期只采用累计合并报表（`report_type=1`），上年同期优先使用当时已披露的调整后合并报表（`report_type=4`），不会混入单季或母公司口径；月末优先选择披露覆盖率不低于 70% 的最新季度，并以相同公司集合同比。缓存为 append-only，新增季度和最新季度的新披露版本会追加，历史记录不被改写。它仍是研究数据，不影响当前官方 v3.4 仓位输出。
 
 ## 核心输出

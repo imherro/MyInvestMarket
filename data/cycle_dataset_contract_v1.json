@@ -19,7 +19,9 @@
       "availability_rule": "PIT-visible index valuation",
       "pit_date_field": "observation_date",
       "missing_policy": "null; never impute or proxy",
-      "description": "TTM PE level"
+      "description": "TTM PE level",
+      "feature_family": "valuation_level",
+      "model_candidate": false
     },
     {
       "path": "valuation.indices.csi300.pe_ttm.percentile_expanding",
@@ -30,7 +32,9 @@
       "availability_rule": "PIT-visible expanding history",
       "pit_date_field": "observation_date",
       "missing_policy": "null; never impute or proxy",
-      "description": "Expanding historical percentile of pe_ttm"
+      "description": "Expanding historical percentile of pe_ttm",
+      "feature_family": "valuation_level",
+      "model_candidate": true
     },
     {
       "path": "valuation.indices.csi300.pb.value",
@@ -41,7 +45,9 @@
       "availability_rule": "PIT-visible index valuation",
       "pit_date_field": "observation_date",
       "missing_policy": "null; never impute or proxy",
-      "description": "PB level"
+      "description": "PB level",
+      "feature_family": "valuation_level",
+      "model_candidate": false
     },
     {
       "path": "valuation.indices.csi300.pb.percentile_expanding",
@@ -52,7 +58,9 @@
       "availability_rule": "PIT-visible expanding history",
       "pit_date_field": "observation_date",
       "missing_policy": "null; never impute or proxy",
-      "description": "Expanding historical percentile of pb"
+      "description": "Expanding historical percentile of pb",
+      "feature_family": "valuation_level",
+      "model_candidate": true
     },
     {
       "path": "valuation.indices.csi500.pe_ttm.value",
@@ -63,7 +71,9 @@
       "availability_rule": "PIT-visible index valuation",
       "pit_date_field": "observation_date",
       "missing_policy": "null; never impute or proxy",
-      "description": "TTM PE level"
+      "description": "TTM PE level",
+      "feature_family": "valuation_level",
+      "model_candidate": false
     },
     {
       "path": "valuation.indices.csi500.pe_ttm.percentile_expanding",
@@ -74,7 +84,9 @@
       "availability_rule": "PIT-visible expanding history",
       "pit_date_field": "observation_date",
       "missing_policy": "null; never impute or proxy",
-      "description": "Expanding historical percentile of pe_ttm"
+      "description": "Expanding historical percentile of pe_ttm",
+      "feature_family": "valuation_level",
+      "model_candidate": true
     },
     {
       "path": "valuation.indices.csi500.pb.value",
@@ -85,7 +97,9 @@
       "availability_rule": "PIT-visible index valuation",
       "pit_date_field": "observation_date",
       "missing_policy": "null; never impute or proxy",
-      "description": "PB level"
+      "description": "PB level",
+      "feature_family": "valuation_level",
+      "model_candidate": false
     },
     {
       "path": "valuation.indices.csi500.pb.percentile_expanding",
@@ -96,7 +110,9 @@
       "availability_rule": "PIT-visible expanding history",
       "pit_date_field": "observation_date",
       "missing_policy": "null; never impute or proxy",
-      "description": "Expanding historical percentile of pb"
+      "description": "Expanding historical percentile of pb",
+      "feature_family": "valuation_level",
+      "model_candidate": true
     },
     {
       "path": "valuation.indices.csi1000.pe_ttm.value",
@@ -107,7 +123,9 @@
       "availability_rule": "PIT-visible index valuation",
       "pit_date_field": "observation_date",
       "missing_policy": "null; never impute or proxy",
-      "description": "TTM PE level"
+      "description": "TTM PE level",
+      "feature_family": "valuation_level",
+      "model_candidate": false
     },
     {
       "path": "valuation.indices.csi1000.pe_ttm.percentile_expanding",
@@ -118,7 +136,9 @@
       "availability_rule": "PIT-visible expanding history",
       "pit_date_field": "observation_date",
       "missing_policy": "null; never impute or proxy",
-      "description": "Expanding historical percentile of pe_ttm"
+      "description": "Expanding historical percentile of pe_ttm",
+      "feature_family": "valuation_level",
+      "model_candidate": true
     },
     {
       "path": "valuation.indices.csi1000.pb.value",
@@ -129,7 +149,9 @@
       "availability_rule": "PIT-visible index valuation",
       "pit_date_field": "observation_date",
       "missing_policy": "null; never impute or proxy",
-      "description": "PB level"
+      "description": "PB level",
+      "feature_family": "valuation_level",
+      "model_candidate": false
     },
     {
       "path": "valuation.indices.csi1000.pb.percentile_expanding",
@@ -140,7 +162,9 @@
       "availability_rule": "PIT-visible expanding history",
       "pit_date_field": "observation_date",
       "missing_policy": "null; never impute or proxy",
-      "description": "Expanding historical percentile of pb"
+      "description": "Expanding historical percentile of pb",
+      "feature_family": "valuation_level",
+      "model_candidate": true
     },
     {
       "path": "valuation.csi300_earnings_yield_pct.value",
@@ -151,7 +175,9 @@
       "availability_rule": "PIT-visible derived CSI300 earnings yield",
       "pit_date_field": "observation_date",
       "missing_policy": "null; never impute or proxy",
-      "description": "CSI300 earnings yield"
+      "description": "CSI300 earnings yield",
+      "feature_family": "valuation_lineage",
+      "model_candidate": false
     },
     {
       "path": "valuation.china_10y_government_bond_yield_pct.value",
@@ -162,7 +188,9 @@
       "availability_rule": "PIT-visible bond yield",
       "pit_date_field": "observation_date",
       "missing_policy": "null; never impute or proxy",
-      "description": "China 10-year government bond yield"
+      "description": "China 10-year government bond yield",
+      "feature_family": "valuation_lineage",
+      "model_candidate": false
     },
     {
       "path": "valuation.csi300_erp_pct.value",
@@ -173,7 +201,9 @@
       "availability_rule": "derived from PIT-visible earnings yield and bond yield",
       "pit_date_field": "observation_date",
       "missing_policy": "null; never impute or proxy",
-      "description": "CSI300 equity risk premium"
+      "description": "CSI300 equity risk premium",
+      "feature_family": "relative_valuation",
+      "model_candidate": true
     },
     {
       "path": "earnings.all_a_net_profit_yoy_pct.value",
@@ -184,7 +214,9 @@
       "availability_rule": "PIT-visible announced financial data",
       "pit_date_field": "announcement_date",
       "missing_policy": "null; never impute or proxy",
-      "description": "All-A net profit YoY"
+      "description": "All-A net profit YoY",
+      "feature_family": "earnings_growth",
+      "model_candidate": true
     },
     {
       "path": "earnings.nonfinancial_a_net_profit_yoy_pct.value",
@@ -195,7 +227,9 @@
       "availability_rule": "PIT-visible announced financial data",
       "pit_date_field": "announcement_date",
       "missing_policy": "null; never impute or proxy",
-      "description": "Nonfinancial All-A net profit YoY"
+      "description": "Nonfinancial All-A net profit YoY",
+      "feature_family": "earnings_growth",
+      "model_candidate": true
     },
     {
       "path": "earnings.all_a_roe_ttm_pct.value",
@@ -206,7 +240,9 @@
       "availability_rule": "PIT-visible announced financial data",
       "pit_date_field": "announcement_date",
       "missing_policy": "null; never impute or proxy",
-      "description": "All-A ROE TTM"
+      "description": "All-A ROE TTM",
+      "feature_family": "earnings_quality",
+      "model_candidate": true
     },
     {
       "path": "earnings.nonfinancial_a_roe_ttm_pct.value",
@@ -217,7 +253,9 @@
       "availability_rule": "PIT-visible announced financial data",
       "pit_date_field": "announcement_date",
       "missing_policy": "null; never impute or proxy",
-      "description": "Nonfinancial ROE TTM"
+      "description": "Nonfinancial ROE TTM",
+      "feature_family": "earnings_quality",
+      "model_candidate": true
     },
     {
       "path": "earnings.pmi.value",
@@ -228,7 +266,9 @@
       "availability_rule": "trusted published PMI release visible at basis",
       "pit_date_field": "publish_date",
       "missing_policy": "null; never impute or proxy",
-      "description": "Manufacturing PMI value"
+      "description": "Manufacturing PMI value",
+      "feature_family": "macro_confirmation",
+      "model_candidate": true
     },
     {
       "path": "earnings.pmi.change_1m",
@@ -239,7 +279,9 @@
       "availability_rule": "exact natural prior month must be trusted and published",
       "pit_date_field": "publish_date",
       "missing_policy": "null; never impute or proxy",
-      "description": "PMI change versus natural prior data month"
+      "description": "PMI change versus natural prior data month",
+      "feature_family": "macro_confirmation",
+      "model_candidate": true
     },
     {
       "path": "earnings.pmi.change_3m",
@@ -250,7 +292,9 @@
       "availability_rule": "exact natural three-month prior month must be trusted and published",
       "pit_date_field": "publish_date",
       "missing_policy": "null; never impute or proxy",
-      "description": "PMI change versus natural three-month prior data month"
+      "description": "PMI change versus natural three-month prior data month",
+      "feature_family": "macro_confirmation",
+      "model_candidate": true
     },
     {
       "path": "earnings.pmi.above_50",
@@ -261,7 +305,9 @@
       "availability_rule": "same as trusted PMI value",
       "pit_date_field": "publish_date",
       "missing_policy": "null; never impute or proxy",
-      "description": "PMI above 50 flag"
+      "description": "PMI above 50 flag",
+      "feature_family": "macro_confirmation",
+      "model_candidate": true
     },
     {
       "path": "trend.indices.csi300.ma250_deviation_pct.value",
@@ -272,7 +318,9 @@
       "availability_rule": "PIT-visible index history after official launch",
       "pit_date_field": "observation_date",
       "missing_policy": "null; never impute or proxy",
-      "description": "csi300 Close deviation from 250-observation mean"
+      "description": "csi300 Close deviation from 250-observation mean",
+      "feature_family": "trend_level",
+      "model_candidate": true
     },
     {
       "path": "trend.indices.csi300.above_ma250.value",
@@ -283,7 +331,9 @@
       "availability_rule": "PIT-visible index history after official launch",
       "pit_date_field": "observation_date",
       "missing_policy": "null; never impute or proxy",
-      "description": "csi300 Close above 250-observation mean"
+      "description": "csi300 Close above 250-observation mean",
+      "feature_family": "trend_level",
+      "model_candidate": true
     },
     {
       "path": "trend.indices.csi300.ma250_slope_3m_pct.value",
@@ -294,7 +344,9 @@
       "availability_rule": "PIT-visible index history after official launch",
       "pit_date_field": "observation_date",
       "missing_policy": "null; never impute or proxy",
-      "description": "csi300 250-observation mean slope over 63 observations"
+      "description": "csi300 250-observation mean slope over 63 observations",
+      "feature_family": "trend_direction",
+      "model_candidate": true
     },
     {
       "path": "trend.indices.csi300.return_6m_pct.value",
@@ -305,7 +357,9 @@
       "availability_rule": "PIT-visible index history after official launch",
       "pit_date_field": "observation_date",
       "missing_policy": "null; never impute or proxy",
-      "description": "csi300 126-observation return"
+      "description": "csi300 126-observation return",
+      "feature_family": "trend_momentum",
+      "model_candidate": true
     },
     {
       "path": "trend.indices.csi300.return_12m_pct.value",
@@ -316,7 +370,9 @@
       "availability_rule": "PIT-visible index history after official launch",
       "pit_date_field": "observation_date",
       "missing_policy": "null; never impute or proxy",
-      "description": "csi300 252-observation return"
+      "description": "csi300 252-observation return",
+      "feature_family": "trend_momentum",
+      "model_candidate": true
     },
     {
       "path": "trend.indices.csi300.drawdown_12m_high_pct.value",
@@ -327,7 +383,9 @@
       "availability_rule": "PIT-visible index history after official launch",
       "pit_date_field": "observation_date",
       "missing_policy": "null; never impute or proxy",
-      "description": "csi300 Drawdown from inclusive rolling 252-observation high"
+      "description": "csi300 Drawdown from inclusive rolling 252-observation high",
+      "feature_family": "trend_damage",
+      "model_candidate": true
     },
     {
       "path": "trend.indices.csi500.ma250_deviation_pct.value",
@@ -338,7 +396,9 @@
       "availability_rule": "PIT-visible index history after official launch",
       "pit_date_field": "observation_date",
       "missing_policy": "null; never impute or proxy",
-      "description": "csi500 Close deviation from 250-observation mean"
+      "description": "csi500 Close deviation from 250-observation mean",
+      "feature_family": "trend_level",
+      "model_candidate": true
     },
     {
       "path": "trend.indices.csi500.above_ma250.value",
@@ -349,7 +409,9 @@
       "availability_rule": "PIT-visible index history after official launch",
       "pit_date_field": "observation_date",
       "missing_policy": "null; never impute or proxy",
-      "description": "csi500 Close above 250-observation mean"
+      "description": "csi500 Close above 250-observation mean",
+      "feature_family": "trend_level",
+      "model_candidate": true
     },
     {
       "path": "trend.indices.csi500.ma250_slope_3m_pct.value",
@@ -360,7 +422,9 @@
       "availability_rule": "PIT-visible index history after official launch",
       "pit_date_field": "observation_date",
       "missing_policy": "null; never impute or proxy",
-      "description": "csi500 250-observation mean slope over 63 observations"
+      "description": "csi500 250-observation mean slope over 63 observations",
+      "feature_family": "trend_direction",
+      "model_candidate": true
     },
     {
       "path": "trend.indices.csi500.return_6m_pct.value",
@@ -371,7 +435,9 @@
       "availability_rule": "PIT-visible index history after official launch",
       "pit_date_field": "observation_date",
       "missing_policy": "null; never impute or proxy",
-      "description": "csi500 126-observation return"
+      "description": "csi500 126-observation return",
+      "feature_family": "trend_momentum",
+      "model_candidate": true
     },
     {
       "path": "trend.indices.csi500.return_12m_pct.value",
@@ -382,7 +448,9 @@
       "availability_rule": "PIT-visible index history after official launch",
       "pit_date_field": "observation_date",
       "missing_policy": "null; never impute or proxy",
-      "description": "csi500 252-observation return"
+      "description": "csi500 252-observation return",
+      "feature_family": "trend_momentum",
+      "model_candidate": true
     },
     {
       "path": "trend.indices.csi500.drawdown_12m_high_pct.value",
@@ -393,7 +461,9 @@
       "availability_rule": "PIT-visible index history after official launch",
       "pit_date_field": "observation_date",
       "missing_policy": "null; never impute or proxy",
-      "description": "csi500 Drawdown from inclusive rolling 252-observation high"
+      "description": "csi500 Drawdown from inclusive rolling 252-observation high",
+      "feature_family": "trend_damage",
+      "model_candidate": true
     },
     {
       "path": "trend.indices.csi1000.ma250_deviation_pct.value",
@@ -404,7 +474,9 @@
       "availability_rule": "PIT-visible index history after official launch",
       "pit_date_field": "observation_date",
       "missing_policy": "null; never impute or proxy",
-      "description": "csi1000 Close deviation from 250-observation mean"
+      "description": "csi1000 Close deviation from 250-observation mean",
+      "feature_family": "trend_level",
+      "model_candidate": true
     },
     {
       "path": "trend.indices.csi1000.above_ma250.value",
@@ -415,7 +487,9 @@
       "availability_rule": "PIT-visible index history after official launch",
       "pit_date_field": "observation_date",
       "missing_policy": "null; never impute or proxy",
-      "description": "csi1000 Close above 250-observation mean"
+      "description": "csi1000 Close above 250-observation mean",
+      "feature_family": "trend_level",
+      "model_candidate": true
     },
     {
       "path": "trend.indices.csi1000.ma250_slope_3m_pct.value",
@@ -426,7 +500,9 @@
       "availability_rule": "PIT-visible index history after official launch",
       "pit_date_field": "observation_date",
       "missing_policy": "null; never impute or proxy",
-      "description": "csi1000 250-observation mean slope over 63 observations"
+      "description": "csi1000 250-observation mean slope over 63 observations",
+      "feature_family": "trend_direction",
+      "model_candidate": true
     },
     {
       "path": "trend.indices.csi1000.return_6m_pct.value",
@@ -437,7 +513,9 @@
       "availability_rule": "PIT-visible index history after official launch",
       "pit_date_field": "observation_date",
       "missing_policy": "null; never impute or proxy",
-      "description": "csi1000 126-observation return"
+      "description": "csi1000 126-observation return",
+      "feature_family": "trend_momentum",
+      "model_candidate": true
     },
     {
       "path": "trend.indices.csi1000.return_12m_pct.value",
@@ -448,7 +526,9 @@
       "availability_rule": "PIT-visible index history after official launch",
       "pit_date_field": "observation_date",
       "missing_policy": "null; never impute or proxy",
-      "description": "csi1000 252-observation return"
+      "description": "csi1000 252-observation return",
+      "feature_family": "trend_momentum",
+      "model_candidate": true
     },
     {
       "path": "trend.indices.csi1000.drawdown_12m_high_pct.value",
@@ -459,7 +539,9 @@
       "availability_rule": "PIT-visible index history after official launch",
       "pit_date_field": "observation_date",
       "missing_policy": "null; never impute or proxy",
-      "description": "csi1000 Drawdown from inclusive rolling 252-observation high"
+      "description": "csi1000 Drawdown from inclusive rolling 252-observation high",
+      "feature_family": "trend_damage",
+      "model_candidate": true
     },
     {
       "path": "sentiment.a_fear.fear_score",
@@ -470,7 +552,9 @@
       "availability_rule": "available only when local A-FEAR history is present",
       "pit_date_field": "basis_trade_date",
       "missing_policy": "null; never impute or proxy",
-      "description": "A-FEAR extreme-fear overlay"
+      "description": "A-FEAR extreme-fear overlay",
+      "feature_family": "sentiment_overlay",
+      "model_candidate": true
     }
   ],
   "expected_missing_policy": [

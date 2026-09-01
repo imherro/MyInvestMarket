@@ -76,6 +76,49 @@ def build_registry() -> list[dict[str, str]]:
         for field, direction, description in (("ma250_deviation_pct", "positive is above long-term mean", "Close deviation from 250-observation mean"), ("above_ma250", "true is above long-term mean", "Close above 250-observation mean"), ("ma250_slope_3m_pct", "positive is rising", "250-observation mean slope over 63 observations"), ("return_6m_pct", "positive is upward momentum", "126-observation return"), ("return_12m_pct", "positive is upward momentum", "252-observation return"), ("drawdown_12m_high_pct", "more negative is weaker", "Drawdown from inclusive rolling 252-observation high")):
             registry.append(entry(f"trend.indices.{index}.{field}.value", "long_term_trend", "core", "percent" if field != "above_ma250" else "boolean", direction, "PIT-visible index history after official launch", "observation_date", f"{index} {description}"))
     registry.append(entry("sentiment.a_fear.fear_score", "sentiment", "overlay", "0-100", "higher is more fearful", "available only when local A-FEAR history is present", "basis_trade_date", "A-FEAR extreme-fear overlay"))
+    return annotate_registry(registry)
+
+
+def feature_family(path: str) -> str:
+    if path.startswith("valuation.indices."):
+        return "valuation_level"
+    if path == "valuation.csi300_erp_pct.value":
+        return "relative_valuation"
+    if path.startswith("valuation."):
+        return "valuation_lineage"
+    if path.startswith("earnings.all_a_net_profit") or path.startswith("earnings.nonfinancial_a_net_profit"):
+        return "earnings_growth"
+    if path.startswith("earnings.all_a_roe") or path.startswith("earnings.nonfinancial_a_roe"):
+        return "earnings_quality"
+    if path.startswith("earnings.pmi."):
+        return "macro_confirmation"
+    if path.startswith("trend.indices."):
+        field = path.rsplit(".", 2)[-2]
+        if field in ("ma250_deviation_pct", "above_ma250"):
+            return "trend_level"
+        if field == "ma250_slope_3m_pct":
+            return "trend_direction"
+        if field in ("return_6m_pct", "return_12m_pct"):
+            return "trend_momentum"
+        return "trend_damage"
+    if path == "sentiment.a_fear.fear_score":
+        return "sentiment_overlay"
+    return "unclassified"
+
+
+def model_candidate(path: str) -> bool:
+    if path.startswith("valuation.indices."):
+        return path.endswith("percentile_expanding")
+    if path in ("valuation.csi300_earnings_yield_pct.value", "valuation.china_10y_government_bond_yield_pct.value"):
+        return False
+    return True
+
+
+def annotate_registry(registry: list[dict[str, str]]) -> list[dict[str, str]]:
+    for item in registry:
+        path = item["path"]
+        item["feature_family"] = feature_family(path)
+        item["model_candidate"] = model_candidate(path)
     return registry
 
 
@@ -200,11 +243,13 @@ def validate(payload: dict[str, Any], contract: dict[str, Any], matrix: dict[str
             errors.append(f"expected missing policy range missing: {item.get('path', '<unknown>')}")
         if item.get("rule_type") == "explicit_months" and not isinstance(item.get("months"), list):
             errors.append(f"expected missing policy months missing: {item.get('path', '<unknown>')}")
-    required_keys = {"path", "domain", "role", "unit", "direction_hint", "availability_rule", "pit_date_field", "missing_policy", "description"}
+    required_keys = {"path", "domain", "role", "unit", "direction_hint", "availability_rule", "pit_date_field", "missing_policy", "description", "feature_family", "model_candidate"}
     for item in registry:
         if not required_keys.issubset(item):
             errors.append(f"registry entry missing keys: {item.get('path', '<unknown>')}")
         expected_boolean = item.get("unit") == "boolean"
+        if not isinstance(item.get("model_candidate"), bool) or not item.get("feature_family"):
+            errors.append(f"registry metadata mismatch: {item.get('path', '<unknown>')}")
         for record in records:
             if not has_path(record, item.get("path", "")):
                 errors.append(f"required path missing: {item.get('path')}")
