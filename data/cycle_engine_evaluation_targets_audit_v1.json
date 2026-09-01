@@ -1,0 +1,21 @@
+{
+  "schema_version": "cycle_engine_evaluation_targets_audit_v1",
+  "record_count": 200,
+  "start_month": "2010-01",
+  "end_month": "2026-08",
+  "source_frozen_records_sha256": "82d5e6046aa7607d1b9646cd46de02eb512def1bd93a22881b0cc4d02c2c95d0",
+  "evaluation_only": true,
+  "future_information_required": true,
+  "source_close_missing_count": 0,
+  "source_close_future_violation_count": 0,
+  "duplicate_month_count": 0,
+  "order_violation_count": 0,
+  "horizon_alignment_violation_count": 0,
+  "return_formula_violation_count": 0,
+  "broad_proxy_formula_violation_count": 0,
+  "max_drawdown_formula_violation_count": 0,
+  "tail_availability_violation_count": 0,
+  "evidence_contamination_count": 0,
+  "frozen_layer_mutation_count": 0,
+  "passed": true
+}

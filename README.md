@@ -47,6 +47,12 @@ Phase 1 只把冻结数据转换为可追溯的月频 Evidence Vector，不计�
 
 `Cycle Earnings PIT v1.1` 已用 `Tushare.income_vip` 补齐全 A 与非金融 A 的利润金额聚合同比。当前期只采用累计合并报表（`report_type=1`），上年同期优先使用当时已披露的调整后合并报表（`report_type=4`），不会混入单季或母公司口径；月末优先选择披露覆盖率不低于 70% 的最新季度，并以相同公司集合同比。缓存为 append-only，新增季度和最新季度的新披露版本会追加，历史记录不被改写。它仍是研究数据，不影响当前官方 v3.4 仓位输出。
 
+### Cycle Engine v1 Ex-post Evaluation Targets
+
+事后评价层已与 Evidence Vector 隔离，使用冻结数据中的 CSI300、CSI500 月末收盘价生成 3/6/12/24 个自然月的未来收益、路径最好/最差收益、未来最大回撤和到达月份。它明确标记 `evaluation_only=true`、`uses_future_information=true`，不生成周期分、标签、权重或仓位，也不得作为模型输入。
+
+运行 `python scripts/cycle_engine_evaluation_targets.py --generate` 可生成评价目标与审计文件：`data/cycle_engine_evaluation_targets_v1.json`、`data/cycle_engine_evaluation_targets_audit_v1.json`。不完整的未来窗口保留为 `target_available=false` 和空值；宽基代理从 100 起按 CSI300/CSI500 月收益各 50% 复利，不平均指数点位。说明见 [docs/cycle_engine_evaluation_targets_v1.md](docs/cycle_engine_evaluation_targets_v1.md)。
+
 ## 核心输出
 
 - `market_opportunity_score`：市场机会分，衡量趋势、宽度、流动性、资金、主线、估值和宏观环境。
