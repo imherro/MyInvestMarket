@@ -78,13 +78,23 @@ def build(evidence:dict[str,Any],targets:dict[str,Any])->dict[str,Any]:
         diag['monotonic_step_count']=max(diag['increasing_step_count'],diag['decreasing_step_count'])
         for era,(start,end) in ERAS.items():
             er=[(m,v) for m,v,has_rank,_ in rows if has_rank and start<=m<=end]
-            era_diag={'target_diagnostics':{},'bucket_diagnostics':{}}
+            era_diag={'target_diagnostics':{},'bucket_diagnostics':{},'boolean_diagnostics':{}}
             for h in HORIZONS:
                 for key in ('forward_return_pct','max_drawdown_pct'):
                     pairs=[(v,target_value(tm[m],h,key)) for m,v in er if target_value(tm[m],h,key) is not None]
                     era_diag['target_diagnostics'][f'forward_{h}m_{key}']={'sample_count':len(pairs),'spearman_rho':spearman([x for x,_ in pairs],[y for _,y in pairs])}
             for lo,hi in ((0,20),(20,40),(40,60),(60,80),(80,100)):
                 members=[(m,v) for m,v in er if lo<=v<(hi if hi<100 else 101)]; era_diag['bucket_diagnostics'][f'{lo}-{hi}']={'sample_count':len(members),**{f'median_{h}m_{key}':quantile([target_value(tm[m],h,key) for m,_ in members if target_value(tm[m],h,key) is not None],.5) for h in HORIZONS for key in ('forward_return_pct','max_drawdown_pct')}}
+            bool_er=[(m,int(v)) for m,v,_,is_bool in rows if is_bool and start<=m<=end]
+            for h in HORIZONS:
+                for key in ('forward_return_pct','max_drawdown_pct'):
+                    groups={}
+                    for state in (1,0):
+                        vals=[target_value(tm[m],h,key) for m,v in bool_er if v==state and target_value(tm[m],h,key) is not None]
+                        groups['true' if state else 'false']=stats(vals)
+                    tmed=groups['true']['median']; fmed=groups['false']['median']
+                    groups['true_minus_false_median']=None if tmed is None or fmed is None else round(tmed-fmed,6)
+                    era_diag['boolean_diagnostics'][f'forward_{h}m_{key}']=groups
             diag['era_diagnostics'][era]=era_diag
         features[path]=diag
     candidates=sorted(features); redundancy=[]

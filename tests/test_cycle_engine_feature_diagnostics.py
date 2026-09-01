@@ -16,4 +16,9 @@ class DiagnosticsTests(unittest.TestCase):
  def test_no_score_or_recommendation_fields(self):
   self.assertNotIn('score',self.data); self.assertNotIn('recommendation',self.data)
   self.assertFalse(any(k in self.data['feature_diagnostics'] for k in ('feature_rank','best_features','recommended_features')))
+ def test_boolean_era_diagnostics_are_present(self):
+  paths=[p for p in self.data['feature_diagnostics'] if 'above_ma250' in p or 'above_50' in p]
+  self.assertTrue(paths)
+  for p in paths:
+   for era in ('A','B','C'): self.assertIn('boolean_diagnostics',self.data['feature_diagnostics'][p]['era_diagnostics'][era])
 if __name__=='__main__': unittest.main()
