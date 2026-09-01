@@ -1,0 +1,483 @@
+from __future__ import annotations
+
+"""Build the monthly, point-in-time input dataset for the future cycle engine.
+
+This module deliberately contains no cycle score, position rule, or API wiring.  It
+is a research dataset only; the production v3.4 market score remains untouched.
+"""
+
+import argparse
+import json
+import math
+from datetime import date, datetime, timedelta
+from pathlib import Path
+from typing import Any, Callable
+
+import pandas as pd
+
+import build_market_dataset
+
+
+ROOT = Path(__file__).resolve().parents[1]
+DATA_DIR = ROOT / "data"
+DATASET_VERSION = "cycle_dataset_v1"
+START_MONTH = "2010-01"
+WARMUP_START = "2005-01-01"
+INDEXES = {
+    "csi300": {"ts_code": "000300.SH", "name": "CSI 300"},
+    "csi500": {"ts_code": "000905.SH", "name": "CSI 500"},
+    "csi1000": {"ts_code": "000852.SH", "name": "CSI 1000"},
+}
+
+
+def write_json(path: Path, payload: Any) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = path.with_suffix(path.suffix + ".tmp")
+    temporary.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    temporary.replace(path)
+
+
+def api_call(call: Callable[..., pd.DataFrame], **kwargs: Any) -> pd.DataFrame:
+    """Keep live errors explicit.  A missing source never becomes a neutral value."""
+    return call(**kwargs)
+
+
+def parse_date(value: Any) -> date | None:
+    return build_market_dataset.parse_observation_date(value)
+
+
+def iso(value: date) -> str:
+    return value.isoformat()
+
+
+def finite(value: Any, digits: int = 4) -> float | None:
+    return build_market_dataset.finite_float(value, digits)
+
+
+def month_floor(value: date) -> date:
+    return value.replace(day=1)
+
+
+def previous_month_end(value: date) -> date:
+    return value.replace(day=1) - timedelta(days=1)
+
+
+def month_range(start: str, end: date) -> list[str]:
+    current = datetime.strptime(start, "%Y-%m").date()
+    terminal = month_floor(end)
+    months: list[str] = []
+    while current <= terminal:
+        months.append(current.strftime("%Y-%m"))
+        current = (current.replace(day=28) + timedelta(days=4)).replace(day=1)
+    return months
+
+
+def feature(
+    value: float | None,
+    basis: date,
+    source: str,
+    observation_date: date | None = None,
+    announcement_date: date | None = None,
+    reason: str | None = None,
+    extra: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    effective_date = announcement_date or observation_date
+    available = value is not None and effective_date is not None and effective_date <= basis
+    result: dict[str, Any] = {
+        "value": value if available else None,
+        "observation_date": iso(observation_date) if observation_date else None,
+        "announcement_date": iso(announcement_date) if announcement_date else None,
+        "source": source,
+        "lag_days": (basis - effective_date).days if effective_date else None,
+        "available": available,
+        "pit_safe": effective_date <= basis if effective_date else False,
+    }
+    if reason:
+        result["reason"] = reason
+    if extra:
+        result.update(extra)
+    return result
+
+
+def unavailable(basis: date, source: str, reason: str) -> dict[str, Any]:
+    return feature(None, basis, source, reason=reason)
+
+
+def standardised_feature(values: pd.Series, basis: date, source: str, observation: date) -> dict[str, Any]:
+    value = finite(values.iloc[-1]) if not values.empty else None
+    row = feature(value, basis, source, observation_date=observation)
+    clean = pd.to_numeric(values, errors="coerce").dropna()
+    if value is None or clean.empty:
+        row.update({"percentile_expanding": None, "zscore_expanding": None, "history_observations": len(clean)})
+        return row
+    row["percentile_expanding"] = finite((clean <= value).sum() / len(clean) * 100, 2)
+    row["zscore_expanding"] = finite((value - clean.mean()) / clean.std(ddof=0), 4) if len(clean) >= 24 and clean.std(ddof=0) else None
+    row["history_observations"] = int(len(clean))
+    return row
+
+
+def fetch_open_calendar(pro: Any, start: date, end: date) -> list[str]:
+    frame = api_call(
+        pro.trade_cal,
+        exchange="SSE",
+        start_date=start.strftime("%Y%m%d"),
+        end_date=end.strftime("%Y%m%d"),
+        is_open="1",
+    )
+    if frame.empty:
+        raise RuntimeError("Tushare.trade_cal returned no open SSE dates")
+    return sorted(frame["cal_date"].astype(str).tolist())
+
+
+def fetch_index_history(pro: Any, end: date) -> tuple[dict[str, pd.DataFrame], dict[str, str]]:
+    frames: dict[str, pd.DataFrame] = {}
+    errors: dict[str, str] = {}
+    for name, meta in INDEXES.items():
+        try:
+            frame = api_call(
+                pro.index_daily,
+                ts_code=meta["ts_code"],
+                start_date=WARMUP_START.replace("-", ""),
+                end_date=end.strftime("%Y%m%d"),
+            )
+            if frame.empty:
+                raise RuntimeError("empty index_daily response")
+            frame = frame.copy()
+            frame["trade_date"] = frame["trade_date"].astype(str)
+            frame["close"] = pd.to_numeric(frame["close"], errors="coerce")
+            frames[name] = frame.dropna(subset=["close"]).sort_values("trade_date").reset_index(drop=True)
+        except Exception as exc:
+            frames[name] = pd.DataFrame(columns=["trade_date", "close"])
+            errors[name] = str(exc)
+    return frames, errors
+
+
+def fetch_valuation_history(pro: Any, end: date) -> tuple[dict[str, pd.DataFrame], dict[str, str]]:
+    frames: dict[str, pd.DataFrame] = {}
+    errors: dict[str, str] = {}
+    for name, meta in INDEXES.items():
+        try:
+            frame = api_call(
+                pro.index_dailybasic,
+                ts_code=meta["ts_code"],
+                start_date="20100101",
+                end_date=end.strftime("%Y%m%d"),
+            )
+            if frame.empty:
+                raise RuntimeError("empty index_dailybasic response")
+            frame = frame.copy()
+            frame["trade_date"] = frame["trade_date"].astype(str)
+            for column in ("pe_ttm", "pe", "pb"):
+                if column in frame:
+                    frame[column] = pd.to_numeric(frame[column], errors="coerce")
+            frames[name] = frame.sort_values("trade_date").reset_index(drop=True)
+        except Exception as exc:
+            frames[name] = pd.DataFrame(columns=["trade_date", "pe_ttm", "pe", "pb"])
+            errors[name] = str(exc)
+    return frames, errors
+
+
+def last_trade_date_by_month(open_dates: list[str], end: date) -> dict[str, date]:
+    result: dict[str, date] = {}
+    for raw in open_dates:
+        current = datetime.strptime(raw, "%Y%m%d").date()
+        if current <= end:
+            result[current.strftime("%Y-%m")] = current
+    return result
+
+
+def trend_snapshot(frame: pd.DataFrame, basis: date, source: str, reason: str | None = None) -> dict[str, Any]:
+    eligible = frame.loc[frame["trade_date"] <= basis.strftime("%Y%m%d")].copy()
+    if eligible.empty:
+        why = reason or "no index observation at or before basis trade date"
+        return {
+            "close": unavailable(basis, source, why),
+            "ma250_deviation_pct": unavailable(basis, source, why),
+            "return_6m_pct": unavailable(basis, source, why),
+            "return_12m_pct": unavailable(basis, source, why),
+            "drawdown_prev_12m_high_pct": unavailable(basis, source, why),
+        }
+    close = pd.to_numeric(eligible["close"], errors="coerce").dropna().reset_index(drop=True)
+    observation = datetime.strptime(str(eligible.iloc[-1]["trade_date"]), "%Y%m%d").date()
+    latest = float(close.iloc[-1])
+    def metric(value: float | None) -> dict[str, Any]:
+        return feature(finite(value), basis, source, observation_date=observation)
+    ma250 = close.tail(250).mean() if len(close) >= 250 else None
+    return_6m = (latest / close.iloc[-127] - 1) * 100 if len(close) >= 127 else None
+    return_12m = (latest / close.iloc[-253] - 1) * 100 if len(close) >= 253 else None
+    prior_high = close.tail(252).max() if len(close) >= 1 else None
+    drawdown = (latest / prior_high - 1) * 100 if prior_high else None
+    return {
+        "close": metric(latest),
+        "ma250_deviation_pct": metric((latest / ma250 - 1) * 100 if ma250 else None),
+        "return_6m_pct": metric(return_6m),
+        "return_12m_pct": metric(return_12m),
+        "drawdown_prev_12m_high_pct": metric(drawdown),
+    }
+
+
+def valuation_snapshot(frame: pd.DataFrame, basis: date, source: str, reason: str | None = None) -> dict[str, Any]:
+    eligible = frame.loc[frame["trade_date"] <= basis.strftime("%Y%m%d")].copy()
+    if eligible.empty:
+        why = reason or "no valuation observation at or before basis trade date"
+        return {"pe_ttm": unavailable(basis, source, why), "pb": unavailable(basis, source, why)}
+    observation = datetime.strptime(str(eligible.iloc[-1]["trade_date"]), "%Y%m%d").date()
+    pe_column = "pe_ttm" if "pe_ttm" in eligible.columns else "pe"
+    return {
+        "pe_ttm": standardised_feature(eligible[pe_column], basis, source, observation),
+        "pb": standardised_feature(eligible["pb"], basis, source, observation),
+    }
+
+
+def latest_financial_observation(frame: pd.DataFrame, basis: date) -> pd.Series | None:
+    """Return only an already announced report; used by the PIT financial adapter."""
+    if frame.empty or "ann_date" not in frame:
+        return None
+    eligible = frame.copy()
+    eligible["_ann_date"] = eligible["ann_date"].map(parse_date)
+    eligible = eligible.loc[eligible["_ann_date"].notna() & (eligible["_ann_date"] <= basis)]
+    if eligible.empty:
+        return None
+    return eligible.sort_values(["_ann_date", "end_date" if "end_date" in eligible else "ann_date"]).iloc[-1]
+
+
+def unavailable_earnings(basis: date, source_reason: str) -> dict[str, Any]:
+    source = "Tushare.fina_indicator/income"
+    fields = {
+        "all_a_net_profit_yoy_pct": unavailable(basis, source, source_reason),
+        "nonfinancial_a_net_profit_yoy_pct": unavailable(basis, source, source_reason),
+        "all_a_roe_ttm_pct": unavailable(basis, source, source_reason),
+        "nonfinancial_a_roe_ttm_pct": unavailable(basis, source, source_reason),
+        "industrial_profit_yoy_pct": unavailable(basis, "not_configured", source_reason),
+        "pmi": unavailable(basis, "not_configured", source_reason),
+        "ppi_yoy_pct": unavailable(basis, "not_configured", source_reason),
+    }
+    return {
+        **fields,
+        "coverage": {
+            "available": False,
+            "stock_count": None,
+            "coverage_rate": None,
+            "report_period": None,
+            "latest_announcement_date": None,
+            "reason": source_reason,
+        },
+        "methodology": "Financial-industry exclusion must use each report-period constituent/industry metadata; current broad-market PIT source is unavailable, so no retrospective listed-set substitution is used.",
+    }
+
+
+def a_fear_snapshot(basis: date) -> dict[str, Any]:
+    path = DATA_DIR / "a_fear_history.json"
+    if not path.exists():
+        return {"basis_trade_date": None, "fear_score": None, "confidence": "unavailable", "available": False}
+    try:
+        records = json.loads(path.read_text(encoding="utf-8-sig")).get("records", [])
+        candidates = [row for row in records if str(row.get("basis_trade_date", "")) <= basis.isoformat()]
+        if not candidates:
+            return {"basis_trade_date": None, "fear_score": None, "confidence": "unavailable", "available": False}
+        row = sorted(candidates, key=lambda item: item["basis_trade_date"])[-1]
+        return {"basis_trade_date": row["basis_trade_date"], "fear_score": row.get("fear_score"), "confidence": row.get("confidence", "unknown"), "available": row.get("fear_score") is not None}
+    except Exception:
+        return {"basis_trade_date": None, "fear_score": None, "confidence": "unavailable", "available": False}
+
+
+def record_for_month(
+    month: str,
+    basis: date,
+    prices: dict[str, pd.DataFrame],
+    valuations: dict[str, pd.DataFrame],
+    price_errors: dict[str, str],
+    valuation_errors: dict[str, str],
+    earnings_reason: str,
+) -> dict[str, Any]:
+    valuation_indices: dict[str, Any] = {}
+    trend_indices: dict[str, Any] = {}
+    warnings: list[str] = []
+    for name, meta in INDEXES.items():
+        valuation_indices[name] = valuation_snapshot(valuations[name], basis, "Tushare.index_dailybasic", valuation_errors.get(name))
+        trend_indices[name] = trend_snapshot(prices[name], basis, "Tushare.index_daily", price_errors.get(name))
+        if valuation_errors.get(name):
+            warnings.append(f"valuation.{name}: {valuation_errors[name]}")
+        if price_errors.get(name):
+            warnings.append(f"trend.{name}: {price_errors[name]}")
+    csi300_pe = valuation_indices["csi300"]["pe_ttm"]
+    earnings_yield = None
+    if csi300_pe.get("available") and csi300_pe.get("value") and csi300_pe["value"] > 0:
+        earnings_yield = 100 / csi300_pe["value"]
+    valuation = {
+        "indices": valuation_indices,
+        "china_10y_government_bond_yield_pct": unavailable(
+            basis,
+            "Tushare.yc_cb",
+            "historical yc_cb permission is unavailable; no second PIT source is configured",
+        ),
+        "csi300_earnings_yield_pct": feature(finite(earnings_yield), basis, "derived:Tushare.index_dailybasic", observation_date=basis) if earnings_yield is not None else unavailable(basis, "derived:Tushare.index_dailybasic", "CSI 300 PE TTM unavailable"),
+        "csi300_erp_pct": unavailable(
+            basis,
+            "derived:Tushare.index_dailybasic,Tushare.yc_cb",
+            "requires both CSI 300 earnings yield and a PIT China 10-year government yield",
+        ),
+    }
+    earnings = unavailable_earnings(basis, earnings_reason)
+    warnings.append(f"earnings: {earnings_reason}")
+    domains = {"valuation": valuation, "earnings": earnings, "trend": {"indices": trend_indices}, "sentiment": {"a_fear": a_fear_snapshot(basis)}}
+    coverage = domain_coverage(domains)
+    return {
+        "month": month,
+        "basis_trade_date": iso(basis),
+        "valuation": valuation,
+        "earnings": earnings,
+        "trend": {"indices": trend_indices},
+        "sentiment": {"a_fear": a_fear_snapshot(basis)},
+        "data_quality": {
+            "warnings": warnings,
+            "coverage": coverage,
+            "confidence": "low" if coverage["earnings_pct"] == 0 else "medium",
+        },
+    }
+
+
+def walk_feature_rows(value: Any) -> list[dict[str, Any]]:
+    if isinstance(value, dict):
+        if {"available", "pit_safe", "source"}.issubset(value):
+            return [value]
+        rows: list[dict[str, Any]] = []
+        for nested in value.values():
+            rows.extend(walk_feature_rows(nested))
+        return rows
+    return []
+
+
+def domain_coverage(domains: dict[str, Any]) -> dict[str, float]:
+    result: dict[str, float] = {}
+    for domain in ("valuation", "earnings", "trend"):
+        rows = walk_feature_rows(domains.get(domain, {}))
+        result[f"{domain}_pct"] = finite(sum(bool(row.get("available")) for row in rows) / len(rows) * 100, 2) if rows else 0.0
+    sentiment = domains.get("sentiment", {}).get("a_fear", {})
+    result["a_fear_pct"] = 100.0 if sentiment.get("available") else 0.0
+    return result
+
+
+def audit_dataset(payload: dict[str, Any]) -> dict[str, Any]:
+    records = payload.get("records", [])
+    months = [row.get("month") for row in records]
+    basis_dates = [row.get("basis_trade_date") for row in records]
+    order_violation_count = sum(left >= right for left, right in zip(months, months[1:]))
+    pit_violations: list[dict[str, Any]] = []
+    missing_by_field: dict[str, int] = {}
+    low_confidence_periods: list[str] = []
+    domain_totals = {"valuation": [], "earnings": [], "trend": [], "a_fear": []}
+    for record in records:
+        basis = parse_date(record.get("basis_trade_date"))
+        if not basis:
+            pit_violations.append({"month": record.get("month"), "field": "basis_trade_date", "reason": "invalid basis"})
+            continue
+        for domain in ("valuation", "earnings", "trend"):
+            for row in walk_feature_rows(record.get(domain, {})):
+                observed = parse_date(row.get("announcement_date") or row.get("observation_date"))
+                if observed and observed > basis:
+                    pit_violations.append({"month": record["month"], "field": domain, "date": iso(observed), "basis": iso(basis)})
+                if not row.get("available"):
+                    key = row.get("source", "unknown")
+                    missing_by_field[key] = missing_by_field.get(key, 0) + 1
+            domain_totals[domain].append(record.get("data_quality", {}).get("coverage", {}).get(f"{domain}_pct", 0.0))
+        domain_totals["a_fear"].append(record.get("data_quality", {}).get("coverage", {}).get("a_fear_pct", 0.0))
+        if record.get("data_quality", {}).get("confidence") == "low":
+            low_confidence_periods.append(record["month"])
+    coverage = {key: finite(sum(values) / len(values), 2) if values else 0.0 for key, values in domain_totals.items()}
+    duplicate_count = len(months) - len(set(months)) + len(basis_dates) - len(set(basis_dates))
+    return {
+        "dataset_version": payload.get("dataset_version"),
+        "generated_at": datetime.now(build_market_dataset.TZ).isoformat(timespec="seconds"),
+        "record_count": len(records),
+        "start_month": min(months) if months else None,
+        "end_month": max(months) if months else None,
+        "coverage_pct": coverage,
+        "pit_violation_count": len(pit_violations),
+        "pit_violations": pit_violations,
+        "duplicate_count": duplicate_count,
+        "order_violation_count": order_violation_count,
+        "missing_by_source": missing_by_field,
+        "low_confidence_periods": low_confidence_periods,
+        "passed": len(pit_violations) == 0 and duplicate_count == 0 and order_violation_count == 0,
+    }
+
+
+def audit_markdown(audit: dict[str, Any]) -> str:
+    coverage = audit["coverage_pct"]
+    return "\n".join(
+        [
+            "# Cycle Dataset v1 Audit",
+            "",
+            f"- Dataset version: `{audit['dataset_version']}`",
+            f"- Records: {audit['record_count']} ({audit['start_month']} to {audit['end_month']})",
+            f"- PIT violations: {audit['pit_violation_count']}",
+            f"- Duplicate count: {audit['duplicate_count']}",
+            f"- Order violations: {audit['order_violation_count']}",
+            f"- Valuation coverage: {coverage['valuation']}%",
+            f"- Earnings coverage: {coverage['earnings']}%",
+            f"- Trend coverage: {coverage['trend']}%",
+            f"- A-FEAR coverage: {coverage['a_fear']}%",
+            f"- Result: {'PASS' if audit['passed'] else 'FAIL'}",
+            "",
+            "Unavailable fields are retained as unavailable with an explicit source reason; they are never assigned neutral values.",
+            "",
+        ]
+    )
+
+
+def build_dataset(as_of: date) -> dict[str, Any]:
+    end = previous_month_end(as_of)
+    if end < datetime.strptime(START_MONTH, "%Y-%m").date():
+        raise ValueError("as_of is before the first supported month")
+    pro = build_market_dataset.tushare_client()
+    open_dates = fetch_open_calendar(pro, datetime.strptime(WARMUP_START, "%Y-%m-%d").date(), end)
+    month_basis = last_trade_date_by_month(open_dates, end)
+    months = [month for month in month_range(START_MONTH, end) if month in month_basis]
+    prices, price_errors = fetch_index_history(pro, end)
+    valuations, valuation_errors = fetch_valuation_history(pro, end)
+    earnings_reason = "broad-market point-in-time financial source is not configured for this Tushare entitlement; no neutral fallback is permitted"
+    records = [
+        record_for_month(month, month_basis[month], prices, valuations, price_errors, valuation_errors, earnings_reason)
+        for month in months
+    ]
+    payload = {
+        "schema_version": 1,
+        "dataset_version": DATASET_VERSION,
+        "description": "Monthly Point-in-Time cycle research inputs. Not an official score or position decision.",
+        "period": {"start_month": months[0], "end_month": months[-1], "warmup_start": WARMUP_START},
+        "sources": ["Tushare.trade_cal", "Tushare.index_daily", "Tushare.index_dailybasic", "A-FEAR local history (optional)"],
+        "records": records,
+    }
+    audit = audit_dataset(payload)
+    if not audit["passed"]:
+        raise RuntimeError(
+            "Cycle dataset audit failed: "
+            f"{audit['pit_violation_count']} PIT violations, {audit['duplicate_count']} duplicates, "
+            f"{audit['order_violation_count']} order violations"
+        )
+    return payload
+
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Build Cycle Dataset v1 without changing official market scoring.")
+    parser.add_argument("--as-of", default=datetime.now(build_market_dataset.TZ).strftime("%Y-%m-%d"))
+    parser.add_argument("--out", default=str(DATA_DIR / "cycle_dataset_v1.json"))
+    parser.add_argument("--audit-json", default=str(DATA_DIR / "cycle_dataset_audit_latest.json"))
+    parser.add_argument("--audit-md", default=str(DATA_DIR / "cycle_dataset_audit_latest.md"))
+    return parser.parse_args()
+
+
+def main() -> None:
+    args = parse_args()
+    build_market_dataset.load_dotenv(ROOT / ".env")
+    payload = build_dataset(datetime.strptime(args.as_of, "%Y-%m-%d").date())
+    audit = audit_dataset(payload)
+    write_json(Path(args.out), payload)
+    write_json(Path(args.audit_json), audit)
+    Path(args.audit_md).write_text(audit_markdown(audit), encoding="utf-8")
+    print(json.dumps({"dataset": args.out, "audit": args.audit_json, "records": audit["record_count"], "passed": audit["passed"]}, ensure_ascii=False))
+
+
+if __name__ == "__main__":
+    main()
