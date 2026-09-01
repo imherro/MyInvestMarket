@@ -28,7 +28,7 @@ class DiagnosticsTests(unittest.TestCase):
   x=copy.deepcopy(self.data); x['feature_diagnostics']['valuation.indices.csi300.pe_ttm.value']={}; self.assertGreater(d.audit(x)['non_candidate_feature_analyzed_count'],0)
  def test_boolean_redundancy_family_and_monotonicity_counters(self):
   p=next(p for p,v in self.data['feature_diagnostics'].items() if 'above_ma250' in p or 'above_50' in p)
-  x=copy.deepcopy(self.data); x['feature_diagnostics'][p]['era_diagnostics']['B']['boolean_diagnostics']['forward_12m_return_pct']['true_minus_false_median']=999; self.assertGreater(d.audit(x)['boolean_group_violation_count'],0)
+  x=copy.deepcopy(self.data); x['feature_diagnostics'][p]['era_diagnostics']['B']['boolean_diagnostics']['forward_12m_forward_return_pct']['true_minus_false_median']=999; self.assertGreater(d.audit(x)['boolean_group_violation_count'],0)
   x=copy.deepcopy(self.data); x['redundancy_matrix'][0]['spearman_rho']=999; self.assertGreater(d.audit(x)['redundancy_formula_violation_count'],0)
   x=copy.deepcopy(self.data); x['family_diagnostics']['valuation_level']['candidate_count']+=1; self.assertGreater(d.audit(x)['family_diagnostics_violation_count'],0)
   x=copy.deepcopy(self.data); p=next(iter(x['feature_diagnostics'])); x['feature_diagnostics'][p]['monotonic_step_count']=999; self.assertGreater(d.audit(x)['monotonicity_formula_violation_count'],0)
