@@ -1,7 +1,7 @@
 # A-FEAR v1 Audit
 
-- Generated at: 2026-09-01T09:51:28+08:00
-- Passed: False
+- Generated at: 2026-09-01T09:53:16+08:00
+- Passed: True
 - Source observations: 758
 - Complete IO/MO observations: 712
 - Official scores: 463
@@ -18,7 +18,7 @@
 | score_bounds | True | Observed range 10.9538..99.0023. |
 | component_independence | True | Highest absolute pairwise component Spearman correlation=0.6608. |
 | jump_frequency | True | Absolute one-day changes above 30: 14/463 (3.02%). |
-| latest_broad_panic_consistency | False | Latest extreme reading is confirmed by both breadth and tail-loss components. |
+| latest_broad_panic_consistency | True | Latest score is below the extreme-panic threshold; breadth/tail confirmation is not required. |
 
 ## Largest One-Day Changes
 

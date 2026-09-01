@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "version": "a_fear_v1",
-  "generated_at": "2026-09-01T09:51:28+08:00",
-  "passed": false,
+  "generated_at": "2026-09-01T09:53:16+08:00",
+  "passed": true,
   "summary": {
     "source_observation_count": 758,
     "option_complete_observation_count": 712,
@@ -60,8 +60,8 @@
     },
     {
       "key": "latest_broad_panic_consistency",
-      "passed": false,
-      "detail": "Latest extreme reading is confirmed by both breadth and tail-loss components."
+      "passed": true,
+      "detail": "Latest score is below the extreme-panic threshold; breadth/tail confirmation is not required."
     }
   ],
   "component_correlations": [
