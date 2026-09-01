@@ -119,13 +119,15 @@ def audit(d:dict[str,Any])->dict[str,Any]:
     if d.get('redundancy_matrix')!=expected.get('redundancy_matrix'): errors['redundancy_formula_violation_count']+=1
     if d.get('family_diagnostics')!=expected.get('family_diagnostics'): errors['family_diagnostics_violation_count']+=1
     evidence_months={r['month'] for r in e['records']}; target_months={r['month'] for r in t['records']}
-    if evidence_months != target_months: errors['sample_alignment_violation_count'] += 1
+    evidence_order=[r['month'] for r in e['records']]; target_order=[r['month'] for r in t['records']]
+    if evidence_months != target_months or evidence_order != target_order or len(target_order)!=len(set(target_order)): errors['sample_alignment_violation_count'] += 1
     if d.get('era_diagnostics') != ERAS: errors['era_boundary_violation_count'] += 1
     for p in actual_paths & formal:
         got=d['feature_diagnostics'][p]; exp=expected['feature_diagnostics'][p]
         if got.get('target_diagnostics')!=exp.get('target_diagnostics') or got.get('era_diagnostics')!=exp.get('era_diagnostics'): errors['correlation_formula_violation_count']+=1
         if got.get('bucket_diagnostics')!=exp.get('bucket_diagnostics'): errors['bucket_assignment_violation_count']+=1
         if got.get('increasing_step_count')!=exp.get('increasing_step_count') or got.get('decreasing_step_count')!=exp.get('decreasing_step_count') or got.get('monotonic_step_count')!=exp.get('monotonic_step_count'): errors['monotonicity_formula_violation_count']+=1
+        if any(got.get('target_diagnostics',{}).get(f'forward_{h}m_boolean_groups') != exp.get('target_diagnostics',{}).get(f'forward_{h}m_boolean_groups') for h in (3,6,12,24)): errors['boolean_group_violation_count'] += 1
         expected_ready=sum(1 for r in e['records'] if r['features'].get(p,{}).get('available') and r['features'].get(p,{}).get('normalization_history_ready') is True)
         if got.get('ready_sample_count') != expected_ready: errors['readiness_rule_violation_count'] += 1
         for era in ('A','B','C'):

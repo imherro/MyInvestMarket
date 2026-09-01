@@ -35,6 +35,9 @@ class DiagnosticsTests(unittest.TestCase):
  def test_sample_alignment_counter(self):
   t=copy.deepcopy(self.t); t['records'][0]['month']='2018-02'
   with patch.object(d,'load',return_value=(self.e,t)): self.assertGreater(d.audit(self.data)['sample_alignment_violation_count'],0)
+ def test_boolean_overall_counter(self):
+  x=copy.deepcopy(self.data); p=next(p for p in x['feature_diagnostics'] if 'above_ma250' in p or 'above_50' in p); x['feature_diagnostics'][p]['target_diagnostics']['forward_12m_boolean_groups']['true_minus_false_median']=999
+  self.assertGreater(d.audit(x)['boolean_group_violation_count'],0)
  def test_no_score_or_recommendation_fields(self):
   self.assertNotIn('score',self.data); self.assertNotIn('recommendation',self.data)
   self.assertFalse(any(k in self.data['feature_diagnostics'] for k in ('feature_rank','best_features','recommended_features')))
