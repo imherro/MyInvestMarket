@@ -27,6 +27,8 @@ EARNINGS_CACHE_PATH = DATA_DIR / "cycle_earnings_source_cache.json"
 ROE_CACHE_PATH = DATA_DIR / "cycle_roe_source_cache.json"
 START_MONTH = "2010-01"
 WARMUP_START = "2005-01-01"
+VALUATION_CHUNK_YEARS = 5
+HISTORY_READY_OBSERVATIONS = 504
 INDEXES = {
     "csi300": {"ts_code": "000300.SH", "name": "CSI 300"},
     "csi500": {"ts_code": "000905.SH", "name": "CSI 500"},
@@ -107,16 +109,29 @@ def unavailable(basis: date, source: str, reason: str) -> dict[str, Any]:
     return feature(None, basis, source, reason=reason)
 
 
-def standardised_feature(values: pd.Series, basis: date, source: str, observation: date) -> dict[str, Any]:
-    value = finite(values.iloc[-1]) if not values.empty else None
-    row = feature(value, basis, source, observation_date=observation)
-    clean = pd.to_numeric(values, errors="coerce").dropna()
-    if value is None or clean.empty:
-        row.update({"percentile_expanding": None, "zscore_expanding": None, "history_observations": len(clean)})
+def standardised_feature(values: pd.Series, trade_dates: pd.Series, basis: date, source: str, source_first_observation: date | None = None) -> dict[str, Any]:
+    history = pd.DataFrame({"value": pd.to_numeric(values, errors="coerce"), "trade_date": trade_dates.astype(str)}).dropna(subset=["value"])
+    if history.empty:
+        row = unavailable(basis, source, "no valid valuation observation at or before basis trade date")
+        row.update({"percentile_expanding": None, "zscore_expanding": None, "history_observations": 0, "history_start_date": None, "history_end_date": None, "history_years": None, "history_ready": False, "source_first_observation_date": iso(source_first_observation) if source_first_observation else None, "pre_inception": False})
         return row
-    row["percentile_expanding"] = finite((clean <= value).sum() / len(clean) * 100, 2)
-    row["zscore_expanding"] = finite((value - clean.mean()) / clean.std(ddof=0), 4) if len(clean) >= 24 and clean.std(ddof=0) else None
-    row["history_observations"] = int(len(clean))
+    history = history.sort_values("trade_date").reset_index(drop=True)
+    observation = datetime.strptime(history.iloc[-1]["trade_date"], "%Y%m%d").date()
+    start = datetime.strptime(history.iloc[0]["trade_date"], "%Y%m%d").date()
+    clean = history["value"].astype(float)
+    value = finite(clean.iloc[-1])
+    row = feature(value, basis, source, observation_date=observation)
+    row.update({
+        "percentile_expanding": finite((clean <= value).sum() / len(clean) * 100, 2) if value is not None else None,
+        "zscore_expanding": finite((value - clean.mean()) / clean.std(ddof=0), 4) if value is not None and len(clean) >= 24 and clean.std(ddof=0) else None,
+        "history_observations": int(len(clean)),
+        "history_start_date": iso(start),
+        "history_end_date": iso(observation),
+        "history_years": finite((observation - start).days / 365.25, 2),
+        "history_ready": len(clean) >= HISTORY_READY_OBSERVATIONS,
+        "source_first_observation_date": iso(source_first_observation) if source_first_observation else iso(start),
+        "pre_inception": False,
+    })
     return row
 
 
@@ -156,17 +171,32 @@ def fetch_index_history(pro: Any, end: date) -> tuple[dict[str, pd.DataFrame], d
     return frames, errors
 
 
+def valuation_date_windows(start: date, end: date, years: int = VALUATION_CHUNK_YEARS) -> list[tuple[date, date]]:
+    """Keep each Tushare request beneath its single-response row limit."""
+    windows: list[tuple[date, date]] = []
+    current = start
+    while current <= end:
+        terminal = min(current.replace(year=current.year + years) - timedelta(days=1), end)
+        windows.append((current, terminal))
+        current = terminal + timedelta(days=1)
+    return windows
+
+
 def fetch_valuation_history(pro: Any, end: date) -> tuple[dict[str, pd.DataFrame], dict[str, str]]:
     frames: dict[str, pd.DataFrame] = {}
     errors: dict[str, str] = {}
     for name, meta in INDEXES.items():
         try:
-            frame = api_call(
-                pro.index_dailybasic,
-                ts_code=meta["ts_code"],
-                start_date="20100101",
-                end_date=end.strftime("%Y%m%d"),
-            )
+            parts = [
+                api_call(
+                    pro.index_dailybasic,
+                    ts_code=meta["ts_code"],
+                    start_date=start.strftime("%Y%m%d"),
+                    end_date=terminal.strftime("%Y%m%d"),
+                )
+                for start, terminal in valuation_date_windows(datetime.strptime(WARMUP_START, "%Y-%m-%d").date(), end)
+            ]
+            frame = pd.concat([part for part in parts if not part.empty], ignore_index=True) if any(not part.empty for part in parts) else pd.DataFrame()
             if frame.empty:
                 raise RuntimeError("empty index_dailybasic response")
             frame = frame.copy()
@@ -174,7 +204,7 @@ def fetch_valuation_history(pro: Any, end: date) -> tuple[dict[str, pd.DataFrame
             for column in ("pe_ttm", "pe", "pb"):
                 if column in frame:
                     frame[column] = pd.to_numeric(frame[column], errors="coerce")
-            frames[name] = frame.sort_values("trade_date").reset_index(drop=True)
+            frames[name] = frame.sort_values("trade_date").drop_duplicates(subset=["trade_date"], keep="last").reset_index(drop=True)
         except Exception as exc:
             frames[name] = pd.DataFrame(columns=["trade_date", "pe_ttm", "pe", "pb"])
             errors[name] = str(exc)
@@ -223,13 +253,64 @@ def trend_snapshot(frame: pd.DataFrame, basis: date, source: str, reason: str | 
 def valuation_snapshot(frame: pd.DataFrame, basis: date, source: str, reason: str | None = None) -> dict[str, Any]:
     eligible = frame.loc[frame["trade_date"] <= basis.strftime("%Y%m%d")].copy()
     if eligible.empty:
-        why = reason or "no valuation observation at or before basis trade date"
-        return {"pe_ttm": unavailable(basis, source, why), "pb": unavailable(basis, source, why)}
-    observation = datetime.strptime(str(eligible.iloc[-1]["trade_date"]), "%Y%m%d").date()
+        source_first = parse_date(frame.iloc[0]["trade_date"]) if not frame.empty else None
+        pre_inception = source_first is not None and source_first > basis
+        why = "valuation history not yet available for index" if pre_inception else (reason or "no valuation observation at or before basis trade date")
+
+        def missing() -> dict[str, Any]:
+            row = unavailable(basis, source, why)
+            row.update({"percentile_expanding": None, "zscore_expanding": None, "history_observations": 0, "history_start_date": None, "history_end_date": None, "history_years": None, "history_ready": False, "source_first_observation_date": iso(source_first) if source_first else None, "pre_inception": pre_inception, "source_error": reason if reason and not pre_inception else None})
+            return row
+
+        return {"pe_ttm": missing(), "pb": missing()}
+    source_first = parse_date(frame.iloc[0]["trade_date"])
     pe_column = "pe_ttm" if "pe_ttm" in eligible.columns else "pe"
     return {
-        "pe_ttm": standardised_feature(eligible[pe_column], basis, source, observation),
-        "pb": standardised_feature(eligible["pb"], basis, source, observation),
+        "pe_ttm": standardised_feature(eligible[pe_column], eligible["trade_date"], basis, source, source_first),
+        "pb": standardised_feature(eligible["pb"], eligible["trade_date"], basis, source, source_first),
+    }
+
+
+def valuation_source_metadata(valuations: dict[str, pd.DataFrame], errors: dict[str, str]) -> dict[str, Any]:
+    metadata: dict[str, Any] = {}
+    for name, frame in valuations.items():
+        first = parse_date(frame.iloc[0]["trade_date"]) if not frame.empty else None
+        metadata[name] = {
+            "source_first_observation_date": iso(first) if first else None,
+            "source_error": errors.get(name),
+        }
+    return metadata
+
+
+def valuation_domain(valuations: dict[str, pd.DataFrame], errors: dict[str, str], basis: date) -> dict[str, Any]:
+    valuation_indices = {
+        name: valuation_snapshot(valuations[name], basis, "Tushare.index_dailybasic", errors.get(name))
+        for name in INDEXES
+    }
+    csi300_pe = valuation_indices["csi300"]["pe_ttm"]
+    observation = parse_date(csi300_pe.get("observation_date"))
+    earnings_yield = None
+    if csi300_pe.get("available") and csi300_pe.get("value") and csi300_pe["value"] > 0:
+        earnings_yield = 100 / csi300_pe["value"]
+    return {
+        "indices": valuation_indices,
+        "china_10y_government_bond_yield_pct": unavailable(
+            basis,
+            "Tushare.yc_cb",
+            "historical yc_cb permission is unavailable; no second PIT source is configured",
+        ),
+        "csi300_earnings_yield_pct": feature(
+            finite(earnings_yield),
+            basis,
+            "derived:Tushare.index_dailybasic",
+            observation_date=observation,
+            extra={"derived_from": "valuation.indices.csi300.pe_ttm"},
+        ) if earnings_yield is not None and observation else unavailable(basis, "derived:Tushare.index_dailybasic", "CSI 300 PE TTM unavailable"),
+        "csi300_erp_pct": unavailable(
+            basis,
+            "derived:Tushare.index_dailybasic,Tushare.yc_cb",
+            "requires both CSI 300 earnings yield and a PIT China 10-year government yield",
+        ),
     }
 
 
@@ -296,34 +377,15 @@ def record_for_month(
     earnings_stocks: pd.DataFrame | None,
     roe_balance_by_period: dict[str, pd.DataFrame] | None = None,
 ) -> dict[str, Any]:
-    valuation_indices: dict[str, Any] = {}
     trend_indices: dict[str, Any] = {}
     warnings: list[str] = []
     for name, meta in INDEXES.items():
-        valuation_indices[name] = valuation_snapshot(valuations[name], basis, "Tushare.index_dailybasic", valuation_errors.get(name))
         trend_indices[name] = trend_snapshot(prices[name], basis, "Tushare.index_daily", price_errors.get(name))
         if valuation_errors.get(name):
             warnings.append(f"valuation.{name}: {valuation_errors[name]}")
         if price_errors.get(name):
             warnings.append(f"trend.{name}: {price_errors[name]}")
-    csi300_pe = valuation_indices["csi300"]["pe_ttm"]
-    earnings_yield = None
-    if csi300_pe.get("available") and csi300_pe.get("value") and csi300_pe["value"] > 0:
-        earnings_yield = 100 / csi300_pe["value"]
-    valuation = {
-        "indices": valuation_indices,
-        "china_10y_government_bond_yield_pct": unavailable(
-            basis,
-            "Tushare.yc_cb",
-            "historical yc_cb permission is unavailable; no second PIT source is configured",
-        ),
-        "csi300_earnings_yield_pct": feature(finite(earnings_yield), basis, "derived:Tushare.index_dailybasic", observation_date=basis) if earnings_yield is not None else unavailable(basis, "derived:Tushare.index_dailybasic", "CSI 300 PE TTM unavailable"),
-        "csi300_erp_pct": unavailable(
-            basis,
-            "derived:Tushare.index_dailybasic,Tushare.yc_cb",
-            "requires both CSI 300 earnings yield and a PIT China 10-year government yield",
-        ),
-    }
+    valuation = valuation_domain(valuations, valuation_errors, basis)
     if earnings_income_by_period is not None and earnings_stocks is not None:
         aggregation = cycle_earnings.profit_growth_snapshot(earnings_income_by_period, earnings_stocks, basis)
         earnings = unavailable_earnings(basis, "ROE and macro earnings fields are outside Cycle Earnings Growth PIT v1")
@@ -383,6 +445,36 @@ def domain_coverage(domains: dict[str, Any]) -> dict[str, float]:
     return result
 
 
+def valuation_warmup_audit(payload: dict[str, Any]) -> dict[str, Any]:
+    records = payload.get("records", [])
+    january_2010 = next((record for record in records if record.get("month") == "2010-01"), {})
+    source_metadata = payload.get("valuation_source_metadata", {})
+    output: dict[str, Any] = {}
+    for name in INDEXES:
+        january_index = january_2010.get("valuation", {}).get("indices", {}).get(name, {})
+        pe = january_index.get("pe_ttm", {})
+        pb = january_index.get("pb", {})
+        ready_months = {
+            field: next((record.get("month") for record in records if record.get("valuation", {}).get("indices", {}).get(name, {}).get(field, {}).get("history_ready")), None)
+            for field in ("pe_ttm", "pb")
+        }
+        output[name] = {
+            "source_first_observation_date": source_metadata.get(name, {}).get("source_first_observation_date") or pe.get("source_first_observation_date") or pb.get("source_first_observation_date"),
+            "2010_01": {
+                "basis_trade_date": january_2010.get("basis_trade_date"),
+                "pe_history_observations": pe.get("history_observations"),
+                "pe_percentile_expanding": pe.get("percentile_expanding"),
+                "pe_history_start_date": pe.get("history_start_date"),
+                "pb_history_observations": pb.get("history_observations"),
+                "pb_percentile_expanding": pb.get("percentile_expanding"),
+                "pb_history_start_date": pb.get("history_start_date"),
+                "pre_inception": bool(pe.get("pre_inception")) or bool(pb.get("pre_inception")),
+            },
+            "first_history_ready_month": ready_months,
+        }
+    return output
+
+
 def audit_dataset(payload: dict[str, Any]) -> dict[str, Any]:
     records = payload.get("records", [])
     months = [row.get("month") for row in records]
@@ -402,6 +494,9 @@ def audit_dataset(payload: dict[str, Any]) -> dict[str, Any]:
     roe_invalid_report_types = 0
     roe_nonfinancial_universe_violations: list[dict[str, Any]] = []
     roe_nonfinancial_matched_violations: list[dict[str, Any]] = []
+    valuation_future_observations: list[dict[str, Any]] = []
+    derived_lineage_violations: list[dict[str, Any]] = []
+    index_valuation_samples: dict[str, list[dict[str, bool]]] = {name: [] for name in INDEXES}
     for record in records:
         basis = parse_date(record.get("basis_trade_date"))
         if not basis:
@@ -416,6 +511,28 @@ def audit_dataset(payload: dict[str, Any]) -> dict[str, Any]:
                     key = row.get("source", "unknown")
                     missing_by_field[key] = missing_by_field.get(key, 0) + 1
             domain_totals[domain].append(record.get("data_quality", {}).get("coverage", {}).get(f"{domain}_pct", 0.0))
+        valuation = record.get("valuation", {})
+        for name in INDEXES:
+            index = valuation.get("indices", {}).get(name, {})
+            pe = index.get("pe_ttm", {})
+            pb = index.get("pb", {})
+            for field, row in (("pe_ttm", pe), ("pb", pb)):
+                for date_field in ("observation_date", "history_end_date"):
+                    observed = parse_date(row.get(date_field))
+                    if observed and observed > basis:
+                        valuation_future_observations.append({"month": record["month"], "index": name, "field": field, "date_field": date_field, "date": iso(observed), "basis": iso(basis)})
+            index_valuation_samples[name].append({
+                "pe_available": bool(pe.get("available")),
+                "pb_available": bool(pb.get("available")),
+                "history_ready": bool(pe.get("history_ready")) and bool(pb.get("history_ready")),
+                "pre_inception": bool(pe.get("pre_inception")) or bool(pb.get("pre_inception")),
+                "source_error": bool(pe.get("source_error")) or bool(pb.get("source_error")),
+                "history_not_ready": (bool(pe.get("available")) or bool(pb.get("available"))) and not (bool(pe.get("history_ready")) and bool(pb.get("history_ready"))),
+            })
+        pe = valuation.get("indices", {}).get("csi300", {}).get("pe_ttm", {})
+        earnings_yield = valuation.get("csi300_earnings_yield_pct", {})
+        if pe.get("available") and earnings_yield.get("available") and earnings_yield.get("observation_date") != pe.get("observation_date"):
+            derived_lineage_violations.append({"month": record["month"], "field": "csi300_earnings_yield_pct", "expected_observation_date": pe.get("observation_date"), "actual_observation_date": earnings_yield.get("observation_date")})
         domain_totals["a_fear"].append(record.get("data_quality", {}).get("coverage", {}).get("a_fear_pct", 0.0))
         if record.get("data_quality", {}).get("confidence") == "low":
             low_confidence_periods.append(record["month"])
@@ -476,7 +593,7 @@ def audit_dataset(payload: dict[str, Any]) -> dict[str, Any]:
                 break
     roe_cache = payload.get("roe_source_cache", {})
     roe_universe_violation_months = sorted({row["month"] for row in roe_nonfinancial_universe_violations + roe_nonfinancial_matched_violations})
-    structural_passed = len(pit_violations) == 0 and len(roe_pit_violations) == 0 and duplicate_count == 0 and order_violation_count == 0 and current_invalid_report_types == 0 and prior_invalid_report_types == 0 and roe_invalid_report_types == 0 and len(roe_nonfinancial_universe_violations) == 0 and len(roe_nonfinancial_matched_violations) == 0
+    structural_passed = len(pit_violations) == 0 and len(roe_pit_violations) == 0 and duplicate_count == 0 and order_violation_count == 0 and current_invalid_report_types == 0 and prior_invalid_report_types == 0 and roe_invalid_report_types == 0 and len(roe_nonfinancial_universe_violations) == 0 and len(roe_nonfinancial_matched_violations) == 0 and len(valuation_future_observations) == 0 and len(derived_lineage_violations) == 0
     freshness_passed = not bool(cache.get("stale")) and not bool(cache.get("refresh_error")) and not bool(cache.get("offline")) and not bool(roe_cache.get("stale")) and not bool(roe_cache.get("refresh_error")) and not bool(roe_cache.get("offline"))
     return {
         "dataset_version": payload.get("dataset_version"),
@@ -505,6 +622,22 @@ def audit_dataset(payload: dict[str, Any]) -> dict[str, Any]:
         "roe_nonfinancial_universe_violation_count": len(roe_nonfinancial_universe_violations),
         "roe_nonfinancial_matched_violation_count": len(roe_nonfinancial_matched_violations),
         "roe_universe_violation_months": roe_universe_violation_months,
+        "valuation_future_observation_count": len(valuation_future_observations),
+        "valuation_future_observations": valuation_future_observations,
+        "derived_lineage_violation_count": len(derived_lineage_violations),
+        "derived_lineage_violations": derived_lineage_violations,
+        "index_valuation_coverage": {
+            name: {
+                "pe_coverage_pct": finite(sum(row["pe_available"] for row in rows) / len(rows) * 100, 2) if rows else 0.0,
+                "pb_coverage_pct": finite(sum(row["pb_available"] for row in rows) / len(rows) * 100, 2) if rows else 0.0,
+                "history_ready_coverage_pct": finite(sum(row["history_ready"] for row in rows) / len(rows) * 100, 2) if rows else 0.0,
+                "pre_inception_count": sum(row["pre_inception"] for row in rows),
+                "source_error_count": sum(row["source_error"] for row in rows),
+                "history_not_ready_count": sum(row["history_not_ready"] for row in rows),
+            }
+            for name, rows in index_valuation_samples.items()
+        },
+        "valuation_warmup_audit": valuation_warmup_audit(payload),
         "roe_source_conflict_count": int(roe_cache.get("conflict_count", 0)),
         "roe_cache_latest_period": roe_cache.get("metadata", {}).get("latest_period"),
         "roe_cache_stale": bool(roe_cache.get("stale")),
@@ -548,6 +681,7 @@ def audit_markdown(audit: dict[str, Any]) -> str:
             f"- Duplicate count: {audit['duplicate_count']}",
             f"- Order violations: {audit['order_violation_count']}",
             f"- Valuation coverage: {coverage['valuation']}%",
+            f"- Valuation future observations / lineage violations: {audit['valuation_future_observation_count']}/{audit['derived_lineage_violation_count']}",
             f"- Earnings coverage: {coverage['earnings']}%",
             f"- ROE nonfinancial-universe violations: {audit['roe_nonfinancial_universe_violation_count']}",
             f"- ROE nonfinancial-matched violations: {audit['roe_nonfinancial_matched_violation_count']}",
@@ -603,6 +737,7 @@ def build_dataset(as_of: date, refresh_earnings_cache: bool = True) -> dict[str,
         "description": "Monthly Point-in-Time cycle research inputs. Not an official score or position decision.",
         "period": {"start_month": months[0], "end_month": months[-1], "warmup_start": WARMUP_START},
         "sources": ["Tushare.trade_cal", "Tushare.index_daily", "Tushare.index_dailybasic", "Tushare.income_vip", "A-FEAR local history (optional)"],
+        "valuation_source_metadata": valuation_source_metadata(valuations, valuation_errors),
         "earnings_source_cache": {"path": str(EARNINGS_CACHE_PATH.relative_to(ROOT)), "conflict_count": len(cache_conflicts), "conflicts": cache_conflicts, "metadata": earnings_cache_meta, **earnings_freshness, "offline": not refresh_earnings_cache},
         "roe_source_cache": {"path": str(ROE_CACHE_PATH.relative_to(ROOT)), "equity_field": cycle_roe.EQUITY_FIELD, "conflict_count": len(roe_conflicts), "conflicts": roe_conflicts, "metadata": roe_cache_meta, **roe_freshness, "offline": not refresh_earnings_cache},
         "records": records,
@@ -655,6 +790,23 @@ def rebuild_earnings_from_existing_dataset(path: Path) -> dict[str, Any]:
     return payload
 
 
+def rebuild_valuation_from_existing_dataset(path: Path, as_of: date) -> dict[str, Any]:
+    """Refresh only PIT valuation fields without rewriting other Cycle domains."""
+    payload = json.loads(path.read_text(encoding="utf-8-sig"))
+    end = previous_month_end(as_of)
+    pro = build_market_dataset.tushare_client()
+    valuations, valuation_errors = fetch_valuation_history(pro, end)
+    for record in payload.get("records", []):
+        basis = parse_date(record.get("basis_trade_date"))
+        if not basis:
+            raise RuntimeError(f"invalid basis date in {record.get('month')}")
+        record["valuation"] = valuation_domain(valuations, valuation_errors, basis)
+        record["data_quality"]["coverage"] = domain_coverage({"valuation": record["valuation"], "earnings": record.get("earnings", {}), "trend": record.get("trend", {}), "sentiment": record.get("sentiment", {})})
+        record["data_quality"]["confidence"] = "low" if record["data_quality"]["coverage"]["earnings_pct"] == 0 else "medium"
+    payload["valuation_source_metadata"] = valuation_source_metadata(valuations, valuation_errors)
+    return payload
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Build Cycle Dataset v1 without changing official market scoring.")
     parser.add_argument("--as-of", default=datetime.now(build_market_dataset.TZ).strftime("%Y-%m-%d"))
@@ -663,6 +815,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--audit-md", default=str(DATA_DIR / "cycle_dataset_audit_latest.md"))
     parser.add_argument("--offline-cache", action="store_true", help="Rebuild from the append-only earnings cache without a live refresh.")
     parser.add_argument("--reuse-existing-market-data", action="store_true", help="Reuse existing valuation/trend records and refresh only the earnings domain.")
+    parser.add_argument("--reuse-existing-nonvaluation-data", action="store_true", help="Reuse existing nonvaluation records and refresh only PIT valuation fields.")
     return parser.parse_args()
 
 
@@ -670,7 +823,15 @@ def main() -> None:
     args = parse_args()
     build_market_dataset.load_dotenv(ROOT / ".env")
     output_path = Path(args.out)
-    payload = rebuild_earnings_from_existing_dataset(output_path) if args.reuse_existing_market_data else build_dataset(datetime.strptime(args.as_of, "%Y-%m-%d").date(), refresh_earnings_cache=not args.offline_cache)
+    as_of = datetime.strptime(args.as_of, "%Y-%m-%d").date()
+    if args.reuse_existing_market_data and args.reuse_existing_nonvaluation_data:
+        raise ValueError("choose at most one reuse mode")
+    if args.reuse_existing_market_data:
+        payload = rebuild_earnings_from_existing_dataset(output_path)
+    elif args.reuse_existing_nonvaluation_data:
+        payload = rebuild_valuation_from_existing_dataset(output_path, as_of)
+    else:
+        payload = build_dataset(as_of, refresh_earnings_cache=not args.offline_cache)
     audit = audit_dataset(payload)
     write_json(output_path, payload)
     write_json(Path(args.audit_json), audit)

@@ -61,6 +61,67 @@ class CycleDatasetTests(unittest.TestCase):
         row = cycle.valuation_snapshot(frame, date(2024, 1, 2), "test")
         self.assertEqual(row["pe_ttm"]["percentile_expanding"], 100.0)
 
+    def test_valuation_warmup_uses_pre_2010_history_and_excludes_future(self) -> None:
+        frame = pd.DataFrame([
+            {"trade_date": "20070102", "pe_ttm": 100, "pb": 10},
+            {"trade_date": "20080102", "pe_ttm": 90, "pb": 9},
+            {"trade_date": "20090102", "pe_ttm": 80, "pb": 8},
+            {"trade_date": "20100104", "pe_ttm": 85, "pb": 8.5},
+            {"trade_date": "20200102", "pe_ttm": 1, "pb": 0.1},
+        ])
+        row = cycle.valuation_snapshot(frame, date(2010, 1, 31), "test")["pe_ttm"]
+        self.assertEqual(row["history_observations"], 4)
+        self.assertEqual(row["history_start_date"], "2007-01-02")
+        self.assertEqual(row["history_end_date"], "2010-01-04")
+        self.assertEqual(row["percentile_expanding"], 50.0)
+        self.assertNotEqual(row["percentile_expanding"], 100.0)
+        self.assertFalse(row["history_ready"])
+
+    def test_valuation_history_ready_boundary_and_pre_inception_reason(self) -> None:
+        dates = pd.bdate_range("2007-01-02", periods=504)
+        frame = pd.DataFrame({"trade_date": dates.strftime("%Y%m%d"), "pe_ttm": range(504), "pb": range(504)})
+        ready = cycle.valuation_snapshot(frame, dates[-1].date(), "test")["pe_ttm"]
+        self.assertTrue(ready["history_ready"])
+        shorter = cycle.valuation_snapshot(frame.iloc[:-1], dates[-2].date(), "test")["pe_ttm"]
+        self.assertFalse(shorter["history_ready"])
+        future_only = pd.DataFrame({"trade_date": ["20141017"], "pe_ttm": [10], "pb": [1]})
+        pre = cycle.valuation_snapshot(future_only, date(2010, 1, 29), "test")["pe_ttm"]
+        self.assertFalse(pre["available"])
+        self.assertTrue(pre["pre_inception"])
+        self.assertEqual(pre["reason"], "valuation history not yet available for index")
+        failed = cycle.valuation_snapshot(pd.DataFrame(columns=["trade_date", "pe_ttm", "pb"]), date(2010, 1, 29), "test", "endpoint unavailable")["pe_ttm"]
+        self.assertFalse(failed["pre_inception"])
+        self.assertEqual(failed["source_error"], "endpoint unavailable")
+
+    def test_derived_earnings_yield_inherits_pe_observation_date(self) -> None:
+        basis = date(2026, 8, 31)
+        valuations = {name: pd.DataFrame({"trade_date": ["20260828"], "pe_ttm": [10], "pb": [1]}) for name in cycle.INDEXES}
+        valuation = cycle.valuation_domain(valuations, {}, basis)
+        pe = valuation["indices"]["csi300"]["pe_ttm"]
+        earnings_yield = valuation["csi300_earnings_yield_pct"]
+        self.assertEqual(earnings_yield["observation_date"], pe["observation_date"])
+        self.assertEqual(earnings_yield["lag_days"], 3)
+        self.assertEqual(earnings_yield["value"], 10.0)
+
+    def test_unavailable_csi1000_source_is_not_backfilled_or_used_by_derived_yield(self) -> None:
+        basis = date(2010, 1, 29)
+        valuations = {name: pd.DataFrame(columns=["trade_date", "pe_ttm", "pb"]) for name in cycle.INDEXES}
+        valuation = cycle.valuation_domain(valuations, {"csi1000": "empty index_dailybasic response"}, basis)
+        csi1000 = valuation["indices"]["csi1000"]["pe_ttm"]
+        self.assertFalse(csi1000["available"])
+        self.assertFalse(csi1000["pre_inception"])
+        self.assertEqual(csi1000["source_error"], "empty index_dailybasic response")
+        self.assertFalse(valuation["csi300_earnings_yield_pct"]["available"])
+
+    def test_valuation_audit_rejects_future_observation_and_bad_lineage(self) -> None:
+        pe = {"available": True, "observation_date": "2024-02-01", "history_end_date": "2024-02-01", "history_ready": True}
+        pb = {"available": True, "observation_date": "2024-01-31", "history_end_date": "2024-01-31", "history_ready": True}
+        payload = {"dataset_version": cycle.DATASET_VERSION, "records": [{"month": "2024-01", "basis_trade_date": "2024-01-31", "valuation": {"indices": {"csi300": {"pe_ttm": pe, "pb": pb}}, "csi300_earnings_yield_pct": {"available": True, "observation_date": "2024-01-31"}}, "earnings": {}, "trend": {}, "data_quality": {"coverage": {"valuation_pct": 0, "earnings_pct": 0, "trend_pct": 0, "a_fear_pct": 0}}}]}
+        audit = cycle.audit_dataset(payload)
+        self.assertGreater(audit["valuation_future_observation_count"], 0)
+        self.assertEqual(audit["derived_lineage_violation_count"], 1)
+        self.assertFalse(audit["structural_passed"])
+
     def test_ma250_does_not_consume_future_prices(self) -> None:
         dates = pd.bdate_range("2023-01-02", periods=251)
         frame = pd.DataFrame({"trade_date": dates.strftime("%Y%m%d"), "close": list(range(1, 252))})

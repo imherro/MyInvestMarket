@@ -1,11 +1,11 @@
 {
   "dataset_version": "cycle_dataset_v1",
-  "generated_at": "2026-09-01T15:11:39+08:00",
+  "generated_at": "2026-09-01T15:23:03+08:00",
   "record_count": 200,
   "start_month": "2010-01",
   "end_month": "2026-08",
   "coverage_pct": {
-    "valuation": 41.11,
+    "valuation": 55.56,
     "earnings": 65.67,
     "trend": 100.0,
     "a_fear": 12.5
@@ -48,6 +48,89 @@
   "roe_nonfinancial_universe_violation_count": 0,
   "roe_nonfinancial_matched_violation_count": 0,
   "roe_universe_violation_months": [],
+  "valuation_future_observation_count": 0,
+  "valuation_future_observations": [],
+  "derived_lineage_violation_count": 0,
+  "derived_lineage_violations": [],
+  "index_valuation_coverage": {
+    "csi300": {
+      "pe_coverage_pct": 100.0,
+      "pb_coverage_pct": 100.0,
+      "history_ready_coverage_pct": 100.0,
+      "pre_inception_count": 0,
+      "source_error_count": 0,
+      "history_not_ready_count": 0
+    },
+    "csi500": {
+      "pe_coverage_pct": 100.0,
+      "pb_coverage_pct": 100.0,
+      "history_ready_coverage_pct": 100.0,
+      "pre_inception_count": 0,
+      "source_error_count": 0,
+      "history_not_ready_count": 0
+    },
+    "csi1000": {
+      "pe_coverage_pct": 0.0,
+      "pb_coverage_pct": 0.0,
+      "history_ready_coverage_pct": 0.0,
+      "pre_inception_count": 0,
+      "source_error_count": 200,
+      "history_not_ready_count": 0
+    }
+  },
+  "valuation_warmup_audit": {
+    "csi300": {
+      "source_first_observation_date": "2005-04-08",
+      "2010_01": {
+        "basis_trade_date": "2010-01-29",
+        "pe_history_observations": 1174,
+        "pe_percentile_expanding": 55.54,
+        "pe_history_start_date": "2005-04-08",
+        "pb_history_observations": 1174,
+        "pb_percentile_expanding": 52.81,
+        "pb_history_start_date": "2005-04-08",
+        "pre_inception": false
+      },
+      "first_history_ready_month": {
+        "pe_ttm": "2010-01",
+        "pb": "2010-01"
+      }
+    },
+    "csi500": {
+      "source_first_observation_date": "2007-01-15",
+      "2010_01": {
+        "basis_trade_date": "2010-01-29",
+        "pe_history_observations": 745,
+        "pe_percentile_expanding": 81.07,
+        "pe_history_start_date": "2007-01-15",
+        "pb_history_observations": 745,
+        "pb_percentile_expanding": 62.01,
+        "pb_history_start_date": "2007-01-15",
+        "pre_inception": false
+      },
+      "first_history_ready_month": {
+        "pe_ttm": "2010-01",
+        "pb": "2010-01"
+      }
+    },
+    "csi1000": {
+      "source_first_observation_date": null,
+      "2010_01": {
+        "basis_trade_date": "2010-01-29",
+        "pe_history_observations": 0,
+        "pe_percentile_expanding": null,
+        "pe_history_start_date": null,
+        "pb_history_observations": 0,
+        "pb_percentile_expanding": null,
+        "pb_history_start_date": null,
+        "pre_inception": false
+      },
+      "first_history_ready_month": {
+        "pe_ttm": null,
+        "pb": null
+      }
+    }
+  },
   "roe_source_conflict_count": 0,
   "roe_cache_latest_period": "20260630",
   "roe_cache_stale": false,
@@ -72,9 +155,8 @@
   "duplicate_count": 0,
   "order_violation_count": 0,
   "missing_by_source": {
-    "Tushare.index_dailybasic": 608,
+    "Tushare.index_dailybasic": 400,
     "Tushare.yc_cb": 200,
-    "derived:Tushare.index_dailybasic": 52,
     "derived:Tushare.index_dailybasic,Tushare.yc_cb": 200,
     "Tushare.income_vip": 12,
     "derived:Tushare.income_vip,Tushare.balancesheet_vip": 6,

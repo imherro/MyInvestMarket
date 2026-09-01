@@ -5,7 +5,8 @@
 - PIT violations: 0
 - Duplicate count: 0
 - Order violations: 0
-- Valuation coverage: 41.11%
+- Valuation coverage: 55.56%
+- Valuation future observations / lineage violations: 0/0
 - Earnings coverage: 65.67%
 - ROE nonfinancial-universe violations: 0
 - ROE nonfinancial-matched violations: 0
