@@ -102,11 +102,11 @@ class CycleStateCandidateTests(unittest.TestCase):
     def test_diagnostic_summary_mutations_fail_independent_audit(self) -> None:
         for field, counter in (
             ("candidate_state_distribution", "run_length_violation_count"),
-            ("monthly_state_change_rate", "transition_violation_count"),
+            ("monthly_state_change_rate", "state_change_rate_violation_count"),
             ("transition_matrix", "transition_violation_count"),
-            ("ambiguous_month_count", "rule_precedence_violation_count"),
-            ("ambiguous_pct", "rule_precedence_violation_count"),
-            ("rule_hit_counts", "rule_precedence_violation_count"),
+            ("ambiguous_month_count", "ambiguous_summary_violation_count"),
+            ("ambiguous_pct", "ambiguous_summary_violation_count"),
+            ("rule_hit_counts", "rule_hit_count_violation_count"),
             ("timeline", "record_alignment_violation_count"),
             ("window_extracts", "record_alignment_violation_count"),
         ):

@@ -251,7 +251,7 @@ def _audit_replay_diagnostics(expected_records: list[dict[str, Any]]) -> dict[st
 
 
 def audit(data: dict[str, Any], phase2: dict[str, Any], phase2_audit: dict[str, Any]) -> dict[str, Any]:
-    errors = {name: 0 for name in ("source_phase2_audit_violation_count", "source_phase2_hash_violation_count", "record_alignment_violation_count", "core_readiness_violation_count", "candidate_rule_violation_count", "rule_precedence_violation_count", "macro_flip_violation_count", "sentiment_core_leakage_count", "run_length_violation_count", "transition_violation_count", "forbidden_output_violation_count", "future_information_dependency_count", "upstream_mutation_count")}
+    errors = {name: 0 for name in ("source_phase2_audit_violation_count", "source_phase2_hash_violation_count", "record_alignment_violation_count", "core_readiness_violation_count", "candidate_rule_violation_count", "rule_precedence_violation_count", "rule_hit_count_violation_count", "ambiguous_summary_violation_count", "state_change_rate_violation_count", "macro_flip_violation_count", "sentiment_core_leakage_count", "run_length_violation_count", "transition_violation_count", "forbidden_output_violation_count", "future_information_dependency_count", "upstream_mutation_count")}
     actual_sha = sha256_bytes(PHASE2_PATH.read_bytes()) if phase2 == json.loads(PHASE2_PATH.read_text(encoding="utf-8")) else phase2_sha(phase2)
     errors["source_phase2_audit_violation_count"] = int(phase2_audit.get("passed") is not True)
     errors["source_phase2_hash_violation_count"] = int(sha256_bytes(PHASE2_PATH.read_bytes()) != FROZEN_PHASE2_DOMAIN_SIGNALS_SHA256 or actual_sha != FROZEN_PHASE2_DOMAIN_SIGNALS_SHA256 or data.get("source_phase2_sha256") != FROZEN_PHASE2_DOMAIN_SIGNALS_SHA256)
@@ -264,6 +264,10 @@ def audit(data: dict[str, Any], phase2: dict[str, Any], phase2_audit: dict[str, 
             errors["candidate_rule_violation_count"] += 1
         if actual.get("reason_codes") != expected.get("reason_codes"):
             errors["rule_precedence_violation_count"] += 1
+        if actual.get("macro_alignment") != expected.get("macro_alignment"):
+            errors["macro_flip_violation_count"] += 1
+        if actual.get("sentiment_overlay") != expected.get("sentiment_overlay"):
+            errors["sentiment_core_leakage_count"] += 1
         if actual.get("core_ready") != (expected["candidate_state"] != "insufficient_history"):
             errors["core_readiness_violation_count"] += 1
         if actual.get("sentiment_overlay", {}).get("role") != "overlay_only":
@@ -278,10 +282,14 @@ def audit(data: dict[str, Any], phase2: dict[str, Any], phase2_audit: dict[str, 
     expected_diagnostic = _audit_replay_diagnostics(expected_records)
     if diagnostic.get("candidate_state_distribution") != expected_diagnostic["candidate_state_distribution"]:
         errors["run_length_violation_count"] += 1
-    if diagnostic.get("monthly_state_change_rate") != expected_diagnostic["monthly_state_change_rate"] or diagnostic.get("transition_matrix") != expected_diagnostic["transition_matrix"]:
+    if diagnostic.get("monthly_state_change_rate") != expected_diagnostic["monthly_state_change_rate"]:
+        errors["state_change_rate_violation_count"] += 1
+    if diagnostic.get("transition_matrix") != expected_diagnostic["transition_matrix"]:
         errors["transition_violation_count"] += 1
-    if diagnostic.get("ambiguous_month_count") != expected_diagnostic["ambiguous_month_count"] or diagnostic.get("ambiguous_pct") != expected_diagnostic["ambiguous_pct"] or diagnostic.get("rule_hit_counts") != expected_diagnostic["rule_hit_counts"]:
-        errors["rule_precedence_violation_count"] += 1
+    if diagnostic.get("ambiguous_month_count") != expected_diagnostic["ambiguous_month_count"] or diagnostic.get("ambiguous_pct") != expected_diagnostic["ambiguous_pct"]:
+        errors["ambiguous_summary_violation_count"] += 1
+    if diagnostic.get("rule_hit_counts") != expected_diagnostic["rule_hit_counts"]:
+        errors["rule_hit_count_violation_count"] += 1
     if diagnostic.get("timeline") != expected_diagnostic["timeline"] or diagnostic.get("window_extracts") != expected_diagnostic["window_extracts"]:
         errors["record_alignment_violation_count"] += 1
     forbidden = json.dumps(data, ensure_ascii=False).lower()
