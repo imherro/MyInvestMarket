@@ -138,6 +138,7 @@ select {
 .fear-band,
 .score-card,
 .cycle-engine-band,
+.cycle-engine-chart-band,
 .chart-band,
 .allocation-band,
 .position-map-band,
@@ -205,6 +206,74 @@ select {
 .cycle-engine-history .table-wrap {
   max-height: 520px;
   margin-top: 12px;
+}
+
+.cycle-engine-chart-band {
+  margin: 16px 0;
+  padding: 18px;
+}
+
+.cycle-engine-chart-frame {
+  min-height: 360px;
+  height: 460px;
+  overflow: hidden;
+}
+
+.cycle-engine-chart-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.cycle-index-background {
+  fill: none;
+  stroke: #aeb8b3;
+  stroke-width: 2.4;
+  stroke-dasharray: 8 7;
+  stroke-opacity: 0.85;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.cycle-position-band {
+  fill: rgba(4, 125, 115, 0.14);
+  stroke: none;
+}
+
+.cycle-position-line {
+  fill: none;
+  stroke: var(--teal);
+  stroke-width: 4.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.cycle-position-node {
+  fill: var(--surface);
+  stroke: var(--teal);
+  stroke-width: 3;
+}
+
+.cycle-state-strip {
+  opacity: 0.78;
+}
+
+.cycle-state-strip-label {
+  fill: #ffffff;
+  font-size: 9px;
+  pointer-events: none;
+}
+
+.cycle-latest-label {
+  fill: var(--ink);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.cycle-engine-chart-note {
+  margin-top: 8px;
+  color: var(--muted);
+  font-size: 0.82rem;
 }
 
 .fear-band {

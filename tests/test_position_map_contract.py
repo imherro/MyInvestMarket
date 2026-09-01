@@ -102,6 +102,16 @@ class PositionMapContractTest(unittest.TestCase):
         self.assertEqual(len(cycle["records"]), 200)
         self.assertEqual(cycle["records"][-1]["month"], "2026-08")
 
+    def test_api_index_exposes_cycle_engine_chart_history(self) -> None:
+        payload = serve_market_web.homepage_index_result()
+        chart = payload.get("cycle_engine_chart")
+
+        self.assertTrue(chart.get("available"))
+        self.assertEqual(chart.get("index_code"), "000001.SH")
+        self.assertEqual(len(chart.get("records", [])), 200)
+        self.assertEqual(chart["records"][-1]["stable_state"], "late_bull")
+        self.assertEqual(chart["records"][-1]["shanghai_composite"], 3986.298)
+
     def test_market_cycle_profile_marks_hot_capped_market_without_wave_prediction(self) -> None:
         record = {
             "market_opportunity_score": 72,

@@ -41,6 +41,7 @@ SERVICE_API_VERSION = 1
 DEFAULT_BASE_URL = f"http://127.0.0.1:{PORT}"
 POST_CLOSE_READY_TIME = time(16, 30)
 CYCLE_POSITION_POLICY_PATH = DATA_DIR / "cycle_engine_position_policy_v1.json"
+CYCLE_ENGINE_CHART_PATH = DATA_DIR / "cycle_engine_chart_v1.json"
 
 
 def stable_release_result() -> dict[str, object]:
@@ -1565,6 +1566,23 @@ def cycle_engine_position_policy_result() -> dict[str, object]:
     }
 
 
+def cycle_engine_chart_result() -> dict[str, object]:
+    if not CYCLE_ENGINE_CHART_PATH.exists():
+        return {"available": False, "error": "cycle_engine_chart_v1.json not found"}
+    try:
+        chart = json.loads(CYCLE_ENGINE_CHART_PATH.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        return {"available": False, "error": f"cycle engine chart unavailable: {exc}"}
+    return {
+        "available": True,
+        "schema": chart.get("schema"),
+        "index_code": chart.get("index_code"),
+        "index_source": chart.get("index_source"),
+        "record_count": chart.get("record_count"),
+        "records": chart.get("records", []),
+    }
+
+
 def history_api_result(include_legacy: bool = False) -> dict[str, object]:
     history = filtered_history(load_history(DEFAULT_HISTORY_PATH), include_legacy=include_legacy)
     return {
@@ -1757,6 +1775,7 @@ def homepage_index_result() -> dict[str, object]:
         },
         "api_catalog": api_catalog_summary_result(),
         "cycle_engine_position_policy": cycle_engine_position_policy_result(),
+        "cycle_engine_chart": cycle_engine_chart_result(),
         "position_policy_map": policy_map,
         "position_map": {**policy_map, "legacy_alias_of": "position_policy_map"},
         "allocation_policy": allocation_map,

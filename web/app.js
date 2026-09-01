@@ -152,6 +152,7 @@ function renderAll() {
   renderFear();
   renderSummary();
   renderCycleEnginePolicy();
+  renderCycleEngineChart();
   renderRiskOverview();
   renderContrarianOverlay();
   renderAllocationPolicy();
@@ -196,6 +197,103 @@ function renderCycleEnginePolicy() {
         )
         .join("")
     : `<tr><td colspan="6">暂无周期仓位历史</td></tr>`;
+}
+
+function renderCycleEngineChart() {
+  const container = document.getElementById("cycleEngineChart");
+  const payload = state.index?.cycle_engine_chart || {};
+  const records = Array.isArray(payload.records) ? payload.records : [];
+  setText("cycleEngineChartStatus", payload.available && records.length ? `${formatNumber(records.length, 0)} 个月 · 上证指数` : "暂无图表数据");
+  if (!container) return;
+  if (!records.length) {
+    renderEmpty(container, payload.error || "暂无周期图表数据");
+    return;
+  }
+
+  container.innerHTML = "";
+  const width = 1180;
+  const height = 470;
+  const margin = { top: 34, right: 78, bottom: 64, left: 52 };
+  const plotWidth = width - margin.left - margin.right;
+  const plotHeight = height - margin.top - margin.bottom;
+  const positionRange = { min: 0, max: 100 };
+  const indexValues = records.map((item) => numeric(item.shanghai_composite)).filter((value) => value !== null);
+  const indexRange = rangeFor(indexValues);
+  const x = (index) => xPos(index, records.length, margin, plotWidth);
+  const yPosition = (value) => yPos(value, positionRange, margin, plotHeight);
+  const yIndex = (value) => yPos(value, indexRange, margin, plotHeight);
+  const svg = createSvg("svg", { class: "cycle-engine-chart-svg", viewBox: `0 0 ${width} ${height}`, role: "img" });
+  svg.appendChild(createSvg("title", {}, "周期状态与上证指数：周期仓位区间和稳定周期状态按月份标注。"));
+
+  [0, 25, 50, 75, 100].forEach((value) => {
+    const y = yPosition(value);
+    svg.appendChild(createSvg("line", { class: "grid-line", x1: margin.left, y1: y, x2: width - margin.right, y2: y }));
+    svg.appendChild(createSvg("text", { class: "tick-label", x: 8, y: y + 4 }, `${value}%`));
+  });
+  svg.appendChild(createSvg("text", { class: "axis-label", x: 8, y: margin.top - 12 }, "权益仓位"));
+  svg.appendChild(createSvg("text", { class: "axis-label", x: width - margin.right + 10, y: margin.top - 12 }, "上证指数"));
+  svg.appendChild(createSvg("text", { class: "tick-label", x: width - margin.right + 8, y: margin.top + 4 }, formatNumber(indexRange.max, 0)));
+  svg.appendChild(createSvg("text", { class: "tick-label", x: width - margin.right + 8, y: height - margin.bottom + 4 }, formatNumber(indexRange.min, 0)));
+
+  const indexPoints = records
+    .map((item, index) => ({ x: x(index), y: numeric(item.shanghai_composite) === null ? null : yIndex(item.shanghai_composite), value: numeric(item.shanghai_composite), item }))
+    .filter((item) => item.value !== null);
+  if (indexPoints.length > 1) {
+    svg.appendChild(createSvg("path", { class: "cycle-index-background", d: smoothPath(indexPoints) }));
+  }
+
+  const positionPoints = records
+    .map((item, index) => ({ x: x(index), y: numeric(item.equity_mid_pct) === null ? null : yPosition(item.equity_mid_pct), value: numeric(item.equity_mid_pct), item }))
+    .filter((item) => item.value !== null);
+  if (positionPoints.length > 1) {
+    const upper = records.map((item, index) => ({ x: x(index), y: numeric(item.equity_max_pct) === null ? null : yPosition(item.equity_max_pct), value: numeric(item.equity_max_pct), item })).filter((item) => item.value !== null);
+    const lower = records.map((item, index) => ({ x: x(index), y: numeric(item.equity_min_pct) === null ? null : yPosition(item.equity_min_pct), value: numeric(item.equity_min_pct), item })).filter((item) => item.value !== null);
+    if (upper.length && lower.length) {
+      const bandPath = `${smoothPath(upper)} ${lower.slice().reverse().map((pointItem) => `L ${pointItem.x} ${pointItem.y}`).join(" ")} Z`;
+      svg.appendChild(createSvg("path", { class: "cycle-position-band", d: bandPath }));
+    }
+    svg.appendChild(createSvg("path", { class: "cycle-position-line", d: smoothPath(positionPoints) }));
+  }
+
+  const runs = [];
+  records.forEach((item, index) => {
+    if (!runs.length || runs[runs.length - 1].state !== item.stable_state) runs.push({ state: item.stable_state, start: index, end: index });
+    else runs[runs.length - 1].end = index;
+  });
+  const stripY = height - margin.bottom + 18;
+  runs.forEach((run) => {
+    const startX = x(run.start);
+    const endX = x(run.end) + (run.end === records.length - 1 ? 0 : plotWidth / Math.max(records.length - 1, 1));
+    const color = cycleStateColor(run.state);
+    const rect = createSvg("rect", { class: "cycle-state-strip", x: startX, y: stripY, width: Math.max(2, endX - startX), height: 14, fill: color });
+    rect.appendChild(createSvg("title", {}, `${run.state} · ${records[run.start].month} 至 ${records[run.end].month}`));
+    svg.appendChild(rect);
+    if (endX - startX >= 48) svg.appendChild(createSvg("text", { class: "cycle-state-strip-label", x: (startX + endX) / 2, y: stripY + 11, "text-anchor": "middle" }, run.state));
+  });
+
+  svg.appendChild(createSvg("line", { class: "axis-line", x1: margin.left, y1: height - margin.bottom, x2: width - margin.right, y2: height - margin.bottom }));
+  const labelStep = Math.max(1, Math.ceil(records.length / 9));
+  records.forEach((item, index) => {
+    if (index % labelStep !== 0 && index !== records.length - 1) return;
+    svg.appendChild(createSvg("text", { class: "tick-label", x: x(index), y: height - 12, "text-anchor": "middle" }, item.month));
+  });
+  positionPoints.forEach((pointItem, index) => {
+    const previous = positionPoints[index - 1];
+    const isLatest = index === positionPoints.length - 1;
+    const stateChanged = previous && previous.item.stable_state !== pointItem.item.stable_state;
+    if (!stateChanged && !isLatest) return;
+    const circle = createSvg("circle", { class: "cycle-position-node", cx: pointItem.x, cy: pointItem.y, r: isLatest ? 6 : 4 });
+    circle.appendChild(createSvg("title", {}, `${pointItem.item.month} · ${pointItem.item.stable_state} · ${pointItem.item.recommended_equity_range || "不可用"}`));
+    svg.appendChild(circle);
+    if (isLatest) {
+      svg.appendChild(createSvg("text", { class: "cycle-latest-label", x: clamp(pointItem.x - 8, margin.left + 8, width - margin.right - 120), y: pointItem.y - 14 }, `${pointItem.item.stable_state} ${pointItem.item.recommended_equity_range || "不可用"}`));
+    }
+  });
+  container.appendChild(svg);
+}
+
+function cycleStateColor(stateName) {
+  return { deep_bear: "#8d3b2f", bottoming: "#b7791f", early_bull: "#2f7d4f", bull: "#047d73", late_bull: "#2c68a0", distribution: "#bf3d2b", bear: "#6b7280", ambiguous: "#aeb8b3", insufficient_history: "#d9e1dd" }[stateName] || "#aeb8b3";
 }
 
 function renderBasisStatus() {
