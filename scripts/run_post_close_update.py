@@ -228,6 +228,98 @@ def backfill_recent_market_snapshots(as_of: date, current_trade_date: str) -> li
     return backfilled
 
 
+def complete_trade_dates_between(start_date: date, end_date: date) -> tuple[list[str], list[dict[str, str]]]:
+    """Return source-complete SSE sessions without inventing missing daily data."""
+    pro = build_market_dataset.tushare_client()
+    calendar = pro.trade_cal(
+        exchange="SSE",
+        start_date=build_market_dataset.yyyymmdd(start_date),
+        end_date=build_market_dataset.yyyymmdd(end_date),
+        is_open="1",
+    )
+    if calendar.empty:
+        return [], []
+
+    complete_dates: list[str] = []
+    unavailable: list[dict[str, str]] = []
+    for trade_date in sorted(calendar["cal_date"].astype(str).tolist()):
+        daily = pro.daily(trade_date=trade_date)
+        index_probe = pro.index_daily(ts_code="000001.SH", trade_date=trade_date)
+        if daily.empty or index_probe.empty:
+            unavailable.append(
+                {
+                    "basis_trade_date": build_market_dataset.iso_date(trade_date),
+                    "reason": "daily or Shanghai Composite source data is unavailable",
+                }
+            )
+            continue
+        complete_dates.append(build_market_dataset.iso_date(trade_date))
+    return complete_dates, unavailable
+
+
+def score_history_backfill(start_date: date, end_date: date) -> dict[str, Any]:
+    """Rebuild only absent historical sessions and keep the current latest snapshot intact."""
+    complete_dates, unavailable = complete_trade_dates_between(start_date, end_date)
+    history = market_scoring.load_history(market_scoring.DEFAULT_HISTORY_PATH)
+    existing_dates = {
+        str(record.get("basis_trade_date"))
+        for record in (history.get("records", []) or [])
+        if isinstance(record, dict) and record.get("basis_trade_date")
+    }
+    written_paths: list[Path] = []
+    scored: list[dict[str, Any]] = []
+    skipped: list[dict[str, str]] = []
+
+    for trade_iso in complete_dates:
+        if trade_iso in existing_dates:
+            skipped.append({"basis_trade_date": trade_iso, "reason": "score record already exists"})
+            continue
+
+        snapshot_path = DATA_DIR / f"market_snapshot_{trade_iso}.json"
+        snapshot = load_json(snapshot_path)
+        if snapshot is None:
+            snapshot = build_market_dataset.build_dataset(datetime.strptime(trade_iso, "%Y-%m-%d").date())
+            if snapshot.get("date") != trade_iso:
+                raise RuntimeError(f"History backfill expected {trade_iso}, got {snapshot.get('date')}")
+            snapshot_path = write_dated_snapshot(snapshot)
+            written_paths.append(snapshot_path)
+
+        score_result = append_score(snapshot, snapshot_path, snapshot_path.read_bytes())
+        record = score_result.get("record", {}) if isinstance(score_result.get("record"), dict) else {}
+        scored.append(
+            {
+                "basis_trade_date": trade_iso,
+                "snapshot": display_path(snapshot_path),
+                "run_id": record.get("run_id"),
+                "appended": bool(score_result.get("appended")),
+                "duplicate": bool(score_result.get("duplicate")),
+                "market_opportunity_score": record.get("market_opportunity_score"),
+                "market_position_score": record.get("market_position_score"),
+                "recommended_equity_position_range": record.get("recommended_equity_position_range"),
+            }
+        )
+
+    return {
+        "version": "market_history_backfill_v1",
+        "generated_at": datetime.now(TZ).isoformat(timespec="seconds"),
+        "requested_range": {"start_date": start_date.isoformat(), "end_date": end_date.isoformat()},
+        "source_complete_trade_dates": complete_dates,
+        "scored": scored,
+        "skipped": skipped,
+        "source_unavailable": unavailable,
+        "written_snapshot_paths": written_paths,
+    }
+
+
+def write_history_backfill_manifest(result: dict[str, Any]) -> Path:
+    requested = result["requested_range"]
+    path = DATA_DIR / f"market_history_backfill_{requested['start_date']}_{requested['end_date']}.json"
+    serializable = dict(result)
+    serializable["written_snapshot_paths"] = [display_path(Path(value)) for value in result["written_snapshot_paths"]]
+    path.write_text(json.dumps(serializable, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    return path
+
+
 def latest_record(history: dict[str, Any] | None) -> dict[str, Any] | None:
     records = (history or {}).get("records", [])
     if not isinstance(records, list) or not records:
@@ -809,10 +901,58 @@ def commit_and_push(paths: list[Path], trade_date: str, no_git: bool) -> dict[st
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Run the idempotent post-close MyInvestMarket update.")
     parser.add_argument("--as-of", default=datetime.now(TZ).strftime("%Y-%m-%d"), help="Calendar date, YYYY-MM-DD.")
+    parser.add_argument("--backfill-start", help="Rebuild missing market-score sessions from this date, YYYY-MM-DD.")
+    parser.add_argument("--backfill-end", help="Inclusive end date for --backfill-start, YYYY-MM-DD. Defaults to --as-of.")
     parser.add_argument("--allow-dirty", action="store_true", help="Allow running when the Git worktree is dirty.")
     parser.add_argument("--force-score", action="store_true", help="Append a new score even when the stable snapshot fingerprint is unchanged.")
     parser.add_argument("--no-git", action="store_true", help="Do not commit or push generated changes.")
     return parser.parse_args()
+
+
+def parse_backfill_range(args: argparse.Namespace, as_of: date) -> tuple[date, date] | None:
+    if not args.backfill_start:
+        if args.backfill_end:
+            raise ValueError("--backfill-end requires --backfill-start")
+        return None
+    start = datetime.strptime(args.backfill_start, "%Y-%m-%d").date()
+    end = datetime.strptime(args.backfill_end or args.as_of, "%Y-%m-%d").date()
+    if end < start:
+        raise ValueError("--backfill-end must be on or after --backfill-start")
+    if end > as_of:
+        raise ValueError("--backfill-end cannot be after --as-of")
+    return start, end
+
+
+def run_history_backfill(start_date: date, end_date: date, no_git: bool) -> None:
+    result = score_history_backfill(start_date, end_date)
+    manifest_path = write_history_backfill_manifest(result)
+    validation_report = report_generator.write_validation_report(backtest_engine_records(include_legacy=True))
+    api = verify_api()
+    audit_path = market_scoring.history_audit_log_path(market_scoring.DEFAULT_HISTORY_PATH)
+    git_result = commit_and_push(
+        [
+            *result["written_snapshot_paths"],
+            market_scoring.DEFAULT_HISTORY_PATH,
+            audit_path,
+            manifest_path,
+            Path(validation_report["markdown_path"]),
+            Path(validation_report["latest_markdown_path"]),
+            Path(validation_report["json_path"]),
+        ],
+        end_date.isoformat(),
+        no_git,
+    )
+    result["status"] = "updated"
+    result["manifest"] = display_path(manifest_path)
+    result["validation_report"] = {
+        "markdown": display_path(Path(validation_report["markdown_path"])),
+        "latest_markdown": display_path(Path(validation_report["latest_markdown_path"])),
+        "json": display_path(Path(validation_report["json_path"])),
+        "available": (validation_report.get("report") or {}).get("available"),
+    }
+    result["api"] = api
+    result["git"] = git_result
+    print(json.dumps(result, ensure_ascii=False, indent=2))
 
 
 def main() -> None:
@@ -839,6 +979,10 @@ def main() -> None:
 
     build_market_dataset.load_dotenv(ROOT / ".env")
     as_of = datetime.strptime(args.as_of, "%Y-%m-%d").date()
+    backfill_range = parse_backfill_range(args, as_of)
+    if backfill_range:
+        run_history_backfill(*backfill_range, no_git=args.no_git)
+        return
     old_snapshot = load_json(DATA_DIR / "latest_market_snapshot.json")
     old_fingerprint = stable_fingerprint(old_snapshot)
     try:

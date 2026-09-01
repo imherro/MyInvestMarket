@@ -141,6 +141,51 @@ class DataQualityOptimizationTest(unittest.TestCase):
             self.assertTrue(results[1]["duplicate"])
             self.assertEqual(results[1]["duplicate_of_run_id"], "old-run")
 
+    def test_history_backfill_only_builds_missing_score_dates(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            data_dir = Path(tmp_dir)
+
+            def dataset_for(as_of: date) -> dict:
+                return {"date": as_of.isoformat(), "data_quality": {"missing_fields": [], "warnings": []}}
+
+            def append_stub(snapshot: dict, snapshot_path: Path, snapshot_bytes: bytes) -> dict:
+                self.assertEqual(snapshot["date"], "2026-08-13")
+                self.assertTrue(snapshot_path.name.endswith("2026-08-13.json"))
+                self.assertTrue(snapshot_bytes)
+                return {
+                    "appended": True,
+                    "duplicate": False,
+                    "record": {
+                        "basis_trade_date": "2026-08-13",
+                        "run_id": "backfill-2026-08-13",
+                        "market_opportunity_score": 61.2,
+                        "market_position_score": 48.0,
+                        "recommended_equity_position_range": "40%-60%",
+                    },
+                }
+
+            with (
+                patch.object(run_post_close_update, "DATA_DIR", data_dir),
+                patch.object(
+                    run_post_close_update,
+                    "complete_trade_dates_between",
+                    return_value=(["2026-08-12", "2026-08-13"], []),
+                ),
+                patch.object(
+                    run_post_close_update.market_scoring,
+                    "load_history",
+                    return_value={"records": [{"basis_trade_date": "2026-08-12"}]},
+                ),
+                patch.object(run_post_close_update.build_market_dataset, "build_dataset", side_effect=dataset_for),
+                patch.object(run_post_close_update, "append_score", side_effect=append_stub),
+            ):
+                result = run_post_close_update.score_history_backfill(date(2026, 8, 12), date(2026, 8, 13))
+
+            self.assertEqual(result["skipped"], [{"basis_trade_date": "2026-08-12", "reason": "score record already exists"}])
+            self.assertEqual([row["basis_trade_date"] for row in result["scored"]], ["2026-08-13"])
+            self.assertEqual([path.name for path in result["written_snapshot_paths"]], ["market_snapshot_2026-08-13.json"])
+            self.assertFalse((data_dir / "latest_market_snapshot.json").exists())
+
 
 if __name__ == "__main__":
     unittest.main()
