@@ -78,14 +78,17 @@ class CycleStateCandidateTests(unittest.TestCase):
         mutated = copy.deepcopy(self.phase2)
         for row in mutated["records"]:
             if row["month"] > "2025-12":
+                row["valuation"]["state"] = "expensive"
+                row["earnings"]["state"] = "deterioration"
+                row["trend"]["state"] = "damaged"
                 row["macro_confirmation"]["state"] = "negative"
                 row["sentiment_overlay"]["state"] = "extreme_fear"
         original = candidate.build(self.phase2)
         changed = candidate.build(mutated)
         cutoff = "2025-12"
         self.assertEqual(
-            [(row["month"], row["candidate_state"]) for row in original["records"] if row["month"] <= cutoff],
-            [(row["month"], row["candidate_state"]) for row in changed["records"] if row["month"] <= cutoff],
+            [(row["month"], row["candidate_state"], row["reason_codes"], row["macro_alignment"]) for row in original["records"] if row["month"] <= cutoff],
+            [(row["month"], row["candidate_state"], row["reason_codes"], row["macro_alignment"]) for row in changed["records"] if row["month"] <= cutoff],
         )
 
     def test_mutations_of_candidate_states_fail_independent_audit(self) -> None:
@@ -147,6 +150,23 @@ class CycleStateCandidateTests(unittest.TestCase):
         result = candidate.audit(mutated, self.phase2, self.phase2_audit)
         self.assertGreater(result["rule_precedence_violation_count"], 0)
         self.assertFalse(result["passed"])
+
+    def test_macro_alignment_mutation_hits_macro_counter(self) -> None:
+        mutated = copy.deepcopy(self.output)
+        row = next(item for item in mutated["records"] if item["candidate_state"] != "insufficient_history")
+        row["macro_alignment"] = "neutral" if row["macro_alignment"] != "neutral" else "supportive"
+        result = candidate.audit(mutated, self.phase2, self.phase2_audit)
+        self.assertGreater(result["macro_flip_violation_count"], 0)
+        self.assertFalse(result["passed"])
+
+    def test_sentiment_state_and_score_mutations_hit_sentiment_counter(self) -> None:
+        for field, value in (("state", "extreme_fear"), ("score", 100)):
+            mutated = copy.deepcopy(self.output)
+            row = next(item for item in mutated["records"] if item["sentiment_overlay"]["available"])
+            row["sentiment_overlay"][field] = value
+            result = candidate.audit(mutated, self.phase2, self.phase2_audit)
+            self.assertGreater(result["sentiment_core_leakage_count"], 0, field)
+            self.assertFalse(result["passed"])
 
     def test_audit_replay_does_not_call_formal_reducers(self) -> None:
         source = inspect.getsource(candidate.audit) + inspect.getsource(candidate._audit_replay_record) + inspect.getsource(candidate._audit_replay_diagnostics)
