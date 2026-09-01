@@ -1,11 +1,11 @@
 {
   "dataset_version": "cycle_dataset_v1",
-  "generated_at": "2026-09-01T15:23:03+08:00",
+  "generated_at": "2026-09-01T15:45:12+08:00",
   "record_count": 200,
   "start_month": "2010-01",
   "end_month": "2026-08",
   "coverage_pct": {
-    "valuation": 55.56,
+    "valuation": 77.78,
     "earnings": 65.67,
     "trend": 100.0,
     "a_fear": 12.5
@@ -131,6 +131,17 @@
       }
     }
   },
+  "china_10y_coverage_pct": 100.0,
+  "csi300_erp_coverage_pct": 100.0,
+  "china_10y_future_observation_count": 0,
+  "china_10y_future_observations": [],
+  "china_10y_stale_count": 0,
+  "china_10y_source_conflict_count": 0,
+  "china_10y_first_observation_date": "2006-03-01",
+  "china_10y_latest_observation_date": "2026-08-31",
+  "china_10y_cache_refresh_error": null,
+  "erp_lineage_violation_count": 0,
+  "erp_lineage_violations": [],
   "roe_source_conflict_count": 0,
   "roe_cache_latest_period": "20260630",
   "roe_cache_stale": false,
@@ -156,8 +167,6 @@
   "order_violation_count": 0,
   "missing_by_source": {
     "Tushare.index_dailybasic": 400,
-    "Tushare.yc_cb": 200,
-    "derived:Tushare.index_dailybasic,Tushare.yc_cb": 200,
     "Tushare.income_vip": 12,
     "derived:Tushare.income_vip,Tushare.balancesheet_vip": 6,
     "not_configured": 600

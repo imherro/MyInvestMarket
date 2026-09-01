@@ -5,8 +5,11 @@
 - PIT violations: 0
 - Duplicate count: 0
 - Order violations: 0
-- Valuation coverage: 55.56%
+- Valuation coverage: 77.78%
 - Valuation future observations / lineage violations: 0/0
+- China 10Y / ERP coverage: 100.0%/100.0%
+- China 10Y future/stale/conflict: 0/0/0
+- ERP lineage violations: 0
 - Earnings coverage: 65.67%
 - ROE nonfinancial-universe violations: 0
 - ROE nonfinancial-matched violations: 0
