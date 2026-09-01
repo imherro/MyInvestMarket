@@ -1,47 +1,47 @@
 {
   "schema_version": 1,
   "version": "a_fear_v1",
-  "generated_at": "2026-09-01T09:24:22+08:00",
-  "passed": true,
+  "generated_at": "2026-09-01T09:51:28+08:00",
+  "passed": false,
   "summary": {
-    "source_observation_count": 750,
-    "option_complete_observation_count": 704,
-    "record_count": 750,
-    "official_record_count": 455,
+    "source_observation_count": 758,
+    "option_complete_observation_count": 712,
+    "record_count": 758,
+    "official_record_count": 463,
     "official_start_date": "2024-08-14",
-    "latest_basis_trade_date": "2026-08-19",
-    "latest_fear_score": 89.3386,
+    "latest_basis_trade_date": "2026-08-31",
+    "latest_fear_score": 53.8587,
     "latest_level": {
-      "code": "extreme",
-      "label": "极端恐慌"
+      "code": "watch",
+      "label": "警觉"
     },
     "latest_phase": {
-      "code": "panic_accelerating",
-      "label": "恐慌加速"
+      "code": "stable",
+      "label": "变化平稳"
     },
     "latest_confidence": "high",
     "score_min": 10.9538,
-    "score_median": 50.5605,
+    "score_median": 50.655,
     "score_max": 99.0023,
     "jump_count_over_30": 14,
-    "jump_ratio_over_30": 0.0308,
-    "highest_component_correlation": 0.666
+    "jump_ratio_over_30": 0.0302,
+    "highest_component_correlation": 0.6608
   },
   "checks": [
     {
       "key": "source_history_depth",
       "passed": true,
-      "detail": "750 source observations; target 750."
+      "detail": "758 source observations; target 750."
     },
     {
       "key": "official_history_depth",
       "passed": true,
-      "detail": "455 official daily scores after the minimum-sample warm-up."
+      "detail": "463 official daily scores after the minimum-sample warm-up."
     },
     {
       "key": "latest_is_official",
       "passed": true,
-      "detail": "Latest 2026-08-19 score=89.3386 confidence=high."
+      "detail": "Latest 2026-08-31 score=53.8587 confidence=high."
     },
     {
       "key": "score_bounds",
@@ -51,16 +51,16 @@
     {
       "key": "component_independence",
       "passed": true,
-      "detail": "Highest absolute pairwise component Spearman correlation=0.666."
+      "detail": "Highest absolute pairwise component Spearman correlation=0.6608."
     },
     {
       "key": "jump_frequency",
       "passed": true,
-      "detail": "Absolute one-day changes above 30: 14/455 (3.08%)."
+      "detail": "Absolute one-day changes above 30: 14/463 (3.02%)."
     },
     {
       "key": "latest_broad_panic_consistency",
-      "passed": true,
+      "passed": false,
       "detail": "Latest extreme reading is confirmed by both breadth and tail-loss components."
     }
   ],
@@ -68,32 +68,32 @@
     {
       "left": "implied_volatility",
       "right": "downside_volatility",
-      "spearman": 0.6071
+      "spearman": 0.6117
     },
     {
       "left": "implied_volatility",
       "right": "market_breadth",
-      "spearman": 0.1476
+      "spearman": 0.1439
     },
     {
       "left": "implied_volatility",
       "right": "tail_loss",
-      "spearman": 0.1478
+      "spearman": 0.1504
     },
     {
       "left": "downside_volatility",
       "right": "market_breadth",
-      "spearman": 0.1201
+      "spearman": 0.1159
     },
     {
       "left": "downside_volatility",
       "right": "tail_loss",
-      "spearman": 0.2359
+      "spearman": 0.2342
     },
     {
       "left": "market_breadth",
       "right": "tail_loss",
-      "spearman": 0.666
+      "spearman": 0.6608
     }
   ],
   "largest_jumps": [
