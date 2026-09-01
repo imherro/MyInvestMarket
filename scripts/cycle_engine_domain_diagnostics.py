@@ -105,14 +105,15 @@ def target_run_lengths(values: list[str], target: str) -> list[int]:
 
 
 def state_distribution(records: list[dict[str, Any]], domain: str) -> dict[str, Any]:
-    selected = [record for record in records if ready(record, domain)]
+    descriptive_available = domain == "sentiment_overlay"
+    selected = [record for record in records if (record[domain].get("available") is True if descriptive_available else ready(record, domain))]
     values = [state(record, domain) for record in selected]
     result: dict[str, Any] = {}
     for value, count in sorted(Counter(values).items()):
         state_runs = [length for length in target_run_lengths(values, value) if length]
         months = [record["month"] for record in selected if state(record, domain) == value]
-        result[value] = {"month_count": count, "percentage_of_ready_months": round(count / len(selected) * 100, 6) if selected else 0.0, "first_month": min(months) if months else None, "last_month": max(months) if months else None, "longest_consecutive_run": max(state_runs, default=0), "median_run_length": median([float(item) for item in state_runs])}
-    return {"ready_month_count": len(selected), "states": result}
+        result[value] = {"month_count": count, ("percentage_of_available_months" if descriptive_available else "percentage_of_ready_months"): round(count / len(selected) * 100, 6) if selected else 0.0, "first_month": min(months) if months else None, "last_month": max(months) if months else None, "longest_consecutive_run": max(state_runs, default=0), "median_run_length": median([float(item) for item in state_runs])}
+    return {"ready_month_count": 0 if descriptive_available else len(selected), "available_month_count": len(selected) if descriptive_available else None, "model_ready_month_count": sum(ready(record, domain) for record in selected) if descriptive_available else None, "states": result}
 
 
 def coverage(records: list[dict[str, Any]], domain: str) -> dict[str, Any]:
@@ -144,10 +145,10 @@ def combinations(records: list[dict[str, Any]]) -> dict[str, Any]:
 
 
 def conflicts(records: list[dict[str, Any]]) -> dict[str, Any]:
-    rules = {"valuation_cheap_damaged": lambda r: state(r, "valuation") == "cheap" and state(r, "trend") == "damaged", "valuation_expensive_up": lambda r: state(r, "valuation") == "expensive" and state(r, "trend") in ("up", "extended"), "earnings_deterioration_up": lambda r: state(r, "earnings") == "deterioration" and state(r, "trend") in ("up", "extended"), "earnings_recovery_damaged": lambda r: state(r, "earnings") in ("recovery", "expansion") and state(r, "trend") == "damaged", "earnings_recovery_macro_negative": lambda r: state(r, "earnings") in ("recovery", "expansion") and state(r, "macro_confirmation") == "negative", "earnings_deterioration_macro_positive": lambda r: state(r, "earnings") == "deterioration" and state(r, "macro_confirmation") == "positive"}
+    rules = {"valuation_cheap_damaged": (("valuation", "trend"), lambda r: state(r, "valuation") == "cheap" and state(r, "trend") == "damaged"), "valuation_expensive_up": (("valuation", "trend"), lambda r: state(r, "valuation") == "expensive" and state(r, "trend") in ("up", "extended")), "earnings_deterioration_up": (("earnings", "trend"), lambda r: state(r, "earnings") == "deterioration" and state(r, "trend") in ("up", "extended")), "earnings_recovery_damaged": (("earnings", "trend"), lambda r: state(r, "earnings") in ("recovery", "expansion") and state(r, "trend") == "damaged"), "earnings_recovery_macro_negative": (("earnings", "macro_confirmation"), lambda r: state(r, "earnings") in ("recovery", "expansion") and state(r, "macro_confirmation") == "negative"), "earnings_deterioration_macro_positive": (("earnings", "macro_confirmation"), lambda r: state(r, "earnings") == "deterioration" and state(r, "macro_confirmation") == "positive")}
     result = {}
-    for name, predicate in rules.items():
-        months = [record["month"] for record in records if all(ready(record, domain) for domain in CORE) and predicate(record)]
+    for name, (required_domains, predicate) in rules.items():
+        months = [record["month"] for record in records if all(ready(record, domain) for domain in required_domains) and predicate(record)]
         result[name] = {"occurrence_count": len(months), "months": months, "longest_duration": max(target_run_lengths(["hit" if month in months else "miss" for month in [record["month"] for record in records]], "hit"), default=0)}
     return result
 
@@ -183,8 +184,13 @@ def evaluation(records: list[dict[str, Any]], targets: dict[str, Any]) -> dict[s
                     for cohort, cohort_points in sorted(cohorts.items()):
                         cohort_returns = [float(target["forward_return_pct"]) for _, target in cohort_points if target.get("forward_return_pct") is not None]
                         cohort_drawdowns = [float(target["max_drawdown_pct"]) for _, target in cohort_points if target.get("max_drawdown_pct") is not None]
-                        cohort_summaries[str(cohort)] = {"sample_count": len(cohort_returns), "mean_forward_return": round(statistics.mean(cohort_returns), 6) if cohort_returns else None, "median_forward_return": median(cohort_returns), "win_rate": round(sum(value > 0 for value in cohort_returns) / len(cohort_returns) * 100, 6) if cohort_returns else None, "median_future_max_drawdown": median(cohort_drawdowns), "origin_months": [month for month, _ in cohort_points]}
-                    state_out[value] = {"sample_count": len(returns), "cohort_count": len(cohorts), "mean_forward_return": round(statistics.mean(cohort_means), 6) if cohort_means else None, "median_forward_return": median([value for value in cohort_medians if value is not None]), "win_rate": round(statistics.mean(cohort_win_rates), 6) if cohort_win_rates else None, "q25": percentile([value for value in cohort_medians if value is not None], .25), "q75": percentile([value for value in cohort_medians if value is not None], .75), "median_future_max_drawdown": median(drawdowns), "worst_future_max_drawdown": min(drawdowns) if drawdowns else None, "small_sample": len(cohorts) < 12, "origin_months": [month for month, _ in points], "cohort_summaries": cohort_summaries}
+                        cohort_summaries[str(cohort)] = {"sample_count": len(cohort_returns), "mean_forward_return": round(statistics.mean(cohort_returns), 6) if cohort_returns else None, "median_forward_return": median(cohort_returns), "win_rate": round(sum(value > 0 for value in cohort_returns) / len(cohort_returns) * 100, 6) if cohort_returns else None, "q25": percentile(cohort_returns, .25), "q75": percentile(cohort_returns, .75), "median_future_max_drawdown": median(cohort_drawdowns), "worst_future_max_drawdown": min(cohort_drawdowns) if cohort_drawdowns else None, "origin_months": [month for month, _ in cohort_points]}
+                    cohort_means = [item["mean_forward_return"] for item in cohort_summaries.values() if item["mean_forward_return"] is not None]
+                    cohort_medians = [item["median_forward_return"] for item in cohort_summaries.values() if item["median_forward_return"] is not None]
+                    cohort_win_rates = [item["win_rate"] for item in cohort_summaries.values() if item["win_rate"] is not None]
+                    cohort_sizes = [item["sample_count"] for item in cohort_summaries.values()]
+                    cohort_drawdown_medians = [item["median_future_max_drawdown"] for item in cohort_summaries.values() if item["median_future_max_drawdown"] is not None]
+                    state_out[value] = {"aggregation_unit": "cohort", "sample_count": len(returns), "total_origin_count": len(returns), "cohort_count": len(cohorts), "cohort_sample_counts": cohort_sizes, "effective_sample_count": median([float(item) for item in cohort_sizes]), "min_cohort_sample_count": min(cohort_sizes, default=0), "max_cohort_sample_count": max(cohort_sizes, default=0), "mean_of_cohort_mean_forward_return": round(statistics.mean(cohort_means), 6) if cohort_means else None, "median_of_cohort_mean_forward_return": median(cohort_means), "q25_of_cohort_mean_forward_return": percentile(cohort_means, .25), "q75_of_cohort_mean_forward_return": percentile(cohort_means, .75), "mean_of_cohort_win_rate": round(statistics.mean(cohort_win_rates), 6) if cohort_win_rates else None, "median_of_cohort_win_rate": median(cohort_win_rates), "median_of_cohort_median_drawdown": median(cohort_drawdown_medians), "global_worst_origin_drawdown": min(drawdowns) if drawdowns else None, "small_sample": (median([float(item) for item in cohort_sizes]) or 0) < 12, "origin_months": [month for month, _ in points], "cohort_summaries": cohort_summaries}
                 domains_out[domain] = state_out
             output["benchmarks"][benchmark][f"forward_{horizon}m"] = domains_out
     return output
@@ -208,6 +214,84 @@ def build(phase2: dict[str, Any], targets: dict[str, Any]) -> dict[str, Any]:
     return {"schema": "cycle_engine_domain_diagnostics_v1", "description": "Research-only historical diagnostics for frozen Phase 2 Domain Signals; no model rule changes.", "research_only": True, "uses_future_information": True, "source_phase2_sha256": sha256_bytes(PHASE2_PATH.read_bytes()), "source_phase2_audit_sha256": canonical_sha(json.loads(PHASE2_AUDIT_PATH.read_text(encoding="utf-8"))), "source_evaluation_sha256": canonical_sha(targets), "record_count": len(records), "start_month": records[0]["month"], "end_month": records[-1]["month"], "coverage": domain_coverage, "state_distribution": domain_distributions, "transitions": domain_transitions, "combinations": combinations_out, "conflicts": conflicts_out, "timeline": timeline, "window_extracts": window_extracts, "evaluation": evaluation_out, "phase3_design_evidence": phase3_evidence}
 
 
+def audit_replay_snapshot(phase2: dict[str, Any]) -> dict[str, Any]:
+    records = phase2["records"]
+    coverage_out = {}
+    distribution_out = {}
+    for domain in DOMAINS:
+        descriptive = domain == "sentiment_overlay"
+        selected = [record for record in records if (record[domain].get("available") is True if descriptive else record[domain].get("ready") is True)]
+        values = [record[domain]["state"] for record in selected]
+        states = {}
+        for value, count in sorted(Counter(values).items()):
+            lengths = target_run_lengths(values, value)
+            months = [record["month"] for record in selected if record[domain]["state"] == value]
+            states[value] = {"month_count": count, ("percentage_of_available_months" if descriptive else "percentage_of_ready_months"): round(count / len(selected) * 100, 6) if selected else 0.0, "first_month": min(months) if months else None, "last_month": max(months) if months else None, "longest_consecutive_run": max(lengths, default=0), "median_run_length": median([float(length) for length in lengths])}
+        coverage_out[domain] = {"first_ready_month": min([record["month"] for record in records if ready(record, domain)], default=None), "ready_month_count": sum(ready(record, domain) for record in records), "ready_pct": round(sum(ready(record, domain) for record in records) / len(records) * 100, 6), "unavailable_month_count": sum(record[domain]["state"] == "unavailable" for record in records), "insufficient_history_month_count": sum(record[domain]["state"] == "insufficient_history" or (descriptive and not ready(record, domain) and record[domain]["state"] != "unavailable") for record in records)}
+        distribution_out[domain] = {"ready_month_count": 0 if descriptive else len(selected), "available_month_count": len(selected) if descriptive else None, "model_ready_month_count": sum(ready(record, domain) for record in selected) if descriptive else None, "states": states}
+    transition_out = {}
+    for domain in CORE:
+        selected = [record for record in records if ready(record, domain)]
+        values = [record[domain]["state"] for record in selected]
+        counts = Counter(f"{a}->{b}" for a, b in zip(values, values[1:]))
+        outgoing = Counter(key.split("->")[0] for key in counts for _ in range(counts[key]))
+        matrix = {key: {"transition_count": count, "transition_probability": round(count / outgoing[key.split("->")[0]] * 100, 6)} for key, count in sorted(counts.items())}
+        durations = run_lengths(values)
+        transition_out[domain] = {"transition_matrix": matrix, "self_transition_probability": round(sum(count for key, count in counts.items() if key.split("->")[0] == key.split("->")[1]) / sum(counts.values()) * 100, 6) if counts else None, "monthly_state_change_rate": round(sum(a != b for a, b in zip(values, values[1:])) / (len(values) - 1) * 100, 6) if len(values) > 1 else None, "median_state_duration_months": median([float(length) for length in durations])}
+    specs = (("valuation_x_earnings", ("valuation", "earnings")), ("valuation_x_trend", ("valuation", "trend")), ("earnings_x_trend", ("earnings", "trend")), ("earnings_x_macro", ("earnings", "macro_confirmation")), ("valuation_x_earnings_x_trend", ("valuation", "earnings", "trend")))
+    combinations_out = {}
+    for name, domains in specs:
+        points = [record for record in records if all(ready(record, domain) for domain in domains)]
+        counts = Counter(" x ".join(record[domain]["state"] for domain in domains) for record in points)
+        combinations_out[name] = {"combinations": {key: {"month_count": count, "first_month": min(record["month"] for record in points if " x ".join(record[domain]["state"] for domain in domains) == key), "last_month": max(record["month"] for record in points if " x ".join(record[domain]["state"] for domain in domains) == key)} for key, count in sorted(counts.items())}, "top_20": [list(item) for item in counts.most_common(20)], "rare_1_or_2": sorted(key for key, count in counts.items() if count <= 2)}
+    rules = {"valuation_cheap_damaged": (("valuation", "trend"), lambda r: state(r, "valuation") == "cheap" and state(r, "trend") == "damaged"), "valuation_expensive_up": (("valuation", "trend"), lambda r: state(r, "valuation") == "expensive" and state(r, "trend") in ("up", "extended")), "earnings_deterioration_up": (("earnings", "trend"), lambda r: state(r, "earnings") == "deterioration" and state(r, "trend") in ("up", "extended")), "earnings_recovery_damaged": (("earnings", "trend"), lambda r: state(r, "earnings") in ("recovery", "expansion") and state(r, "trend") == "damaged"), "earnings_recovery_macro_negative": (("earnings", "macro_confirmation"), lambda r: state(r, "earnings") in ("recovery", "expansion") and state(r, "macro_confirmation") == "negative"), "earnings_deterioration_macro_positive": (("earnings", "macro_confirmation"), lambda r: state(r, "earnings") == "deterioration" and state(r, "macro_confirmation") == "positive")}
+    conflicts_out = {}
+    for name, (required, predicate) in rules.items():
+        months = [record["month"] for record in records if all(ready(record, domain) for domain in required) and predicate(record)]
+        hits = ["hit" if record["month"] in months else "miss" for record in records]
+        conflicts_out[name] = {"occurrence_count": len(months), "months": months, "longest_duration": max(target_run_lengths(hits, "hit"), default=0)}
+    timeline = [{"month": record["month"], "valuation": state(record, "valuation"), "earnings": state(record, "earnings"), "macro_confirmation": state(record, "macro_confirmation"), "trend": state(record, "trend"), "a_fear_state": state(record, "sentiment_overlay"), "a_fear_model_ready": record["sentiment_overlay"].get("model_ready") is True} for record in records]
+    windows = {name: [item for item in timeline if start <= item["month"] <= end] for name, (start, end) in WINDOWS.items()}
+    return {"coverage": coverage_out, "state_distribution": distribution_out, "transitions": transition_out, "combinations": combinations_out, "conflicts": conflicts_out, "timeline": timeline, "window_extracts": windows}
+
+
+def audit_replay_evaluation(data: dict[str, Any], phase2: dict[str, Any], targets: dict[str, Any]) -> tuple[int, int]:
+    target_map = {record["month"]: record for record in targets["records"]}
+    alignment_errors = 0
+    sample_errors = 0
+    for benchmark in ("csi300", "csi500"):
+        for horizon in HORIZONS:
+            horizon_data = data.get("evaluation", {}).get("benchmarks", {}).get(benchmark, {}).get(f"forward_{horizon}m", {})
+            for domain in CORE:
+                actual_states = horizon_data.get(domain, {})
+                expected_states: dict[str, dict[int, list[tuple[str, dict[str, Any]]]]] = defaultdict(lambda: defaultdict(list))
+                for record in phase2["records"]:
+                    if not ready(record, domain) or month_index(record["month"]) % horizon >= horizon:
+                        continue
+                    target = target_metric(target_map.get(record["month"], {}), benchmark, horizon)
+                    if target is not None:
+                        expected_states[state(record, domain)][month_index(record["month"]) % horizon].append((record["month"], target))
+                for state_name, cohorts in expected_states.items():
+                    actual = actual_states.get(state_name, {})
+                    expected_cohort_summaries = {}
+                    for cohort, points in sorted(cohorts.items()):
+                        returns = [float(target["forward_return_pct"]) for _, target in points if target.get("forward_return_pct") is not None]
+                        drawdowns = [float(target["max_drawdown_pct"]) for _, target in points if target.get("max_drawdown_pct") is not None]
+                        expected_cohort_summaries[str(cohort)] = {"sample_count": len(returns), "mean_forward_return": round(statistics.mean(returns), 6) if returns else None, "median_forward_return": median(returns), "win_rate": round(sum(value > 0 for value in returns) / len(returns) * 100, 6) if returns else None, "q25": percentile(returns, .25), "q75": percentile(returns, .75), "median_future_max_drawdown": median(drawdowns), "worst_future_max_drawdown": min(drawdowns) if drawdowns else None, "origin_months": [month for month, _ in points]}
+                    if actual.get("cohort_summaries") != expected_cohort_summaries:
+                        alignment_errors += 1
+                    cohort_sizes = [item["sample_count"] for item in expected_cohort_summaries.values()]
+                    cohort_means = [item["mean_forward_return"] for item in expected_cohort_summaries.values() if item["mean_forward_return"] is not None]
+                    cohort_win_rates = [item["win_rate"] for item in expected_cohort_summaries.values() if item["win_rate"] is not None]
+                    cohort_dd = [item["median_future_max_drawdown"] for item in expected_cohort_summaries.values() if item["median_future_max_drawdown"] is not None]
+                    expected_aggregate = {"aggregation_unit": "cohort", "sample_count": sum(cohort_sizes), "total_origin_count": sum(cohort_sizes), "cohort_count": len(cohort_sizes), "cohort_sample_counts": cohort_sizes, "effective_sample_count": median([float(item) for item in cohort_sizes]) if cohort_sizes else None, "min_cohort_sample_count": min(cohort_sizes, default=0), "max_cohort_sample_count": max(cohort_sizes, default=0), "mean_of_cohort_mean_forward_return": round(statistics.mean(cohort_means), 6) if cohort_means else None, "median_of_cohort_mean_forward_return": median(cohort_means), "q25_of_cohort_mean_forward_return": percentile(cohort_means, .25), "q75_of_cohort_mean_forward_return": percentile(cohort_means, .75), "mean_of_cohort_win_rate": round(statistics.mean(cohort_win_rates), 6) if cohort_win_rates else None, "median_of_cohort_win_rate": median(cohort_win_rates), "median_of_cohort_median_drawdown": median(cohort_dd), "global_worst_origin_drawdown": min((item["worst_future_max_drawdown"] for item in expected_cohort_summaries.values() if item["worst_future_max_drawdown"] is not None), default=None), "small_sample": (median([float(item) for item in cohort_sizes]) or 0) < 12}
+                    if any(actual.get(key) != value for key, value in expected_aggregate.items()):
+                        alignment_errors += 1
+                    if actual.get("effective_sample_count") is not None and actual.get("small_sample") != (actual["effective_sample_count"] < 12):
+                        sample_errors += 1
+    return alignment_errors, sample_errors
+
+
 def forbidden(value: Any) -> int:
     if isinstance(value, dict):
         return sum((1 if str(key).lower() in FORBIDDEN_KEYS else 0) + forbidden(child) for key, child in value.items())
@@ -220,13 +304,13 @@ def audit(data: dict[str, Any], phase2: dict[str, Any] | None = None, phase2_aud
     if phase2 is None:
         phase2, phase2_audit, targets = load_sources()
     assert phase2_audit is not None and targets is not None
-    expected = build(phase2, targets)
+    expected = audit_replay_snapshot(phase2)
     errors = {name: 0 for name in ("source_phase2_audit_violation_count", "source_phase2_hash_violation_count", "record_alignment_violation_count", "readiness_summary_violation_count", "state_distribution_violation_count", "transition_matrix_violation_count", "run_length_violation_count", "combination_count_violation_count", "conflict_diagnostic_violation_count", "evaluation_alignment_violation_count", "nonoverlap_cohort_violation_count", "sample_count_violation_count", "future_data_boundary_violation_count", "production_rule_mutation_count", "forbidden_output_violation_count", "upstream_mutation_count")}
     errors["source_phase2_audit_violation_count"] = int(phase2_audit.get("passed") is not True)
     errors["source_phase2_hash_violation_count"] = int(sha256_bytes(PHASE2_PATH.read_bytes()) != FROZEN_PHASE2_DOMAIN_SIGNALS_SHA256 or data.get("source_phase2_sha256") != FROZEN_PHASE2_DOMAIN_SIGNALS_SHA256)
     errors["upstream_mutation_count"] = int(canonical_sha(phase2) != canonical_sha(json.loads(PHASE2_PATH.read_text(encoding="utf-8"))) or phase2_audit.get("passed") is not True)
     errors["record_alignment_violation_count"] = int(data.get("record_count") != len(phase2["records"]) or data.get("start_month") != phase2["records"][0]["month"] or data.get("end_month") != phase2["records"][-1]["month"])
-    for section in ("coverage", "state_distribution", "transitions", "combinations", "conflicts", "timeline", "evaluation", "window_extracts", "phase3_design_evidence"):
+    for section in ("coverage", "state_distribution", "transitions", "combinations", "conflicts", "timeline", "window_extracts"):
         key = "readiness_summary_violation_count" if section == "coverage" else ("state_distribution_violation_count" if section == "state_distribution" else ("transition_matrix_violation_count" if section == "transitions" else ("combination_count_violation_count" if section == "combinations" else ("conflict_diagnostic_violation_count" if section == "conflicts" else "evaluation_alignment_violation_count"))))
         if data.get(section) != expected.get(section):
             errors[key] += 1
@@ -246,6 +330,22 @@ def audit(data: dict[str, Any], phase2: dict[str, Any] | None = None, phase2_aud
                         cohort_origins = sorted(month for month in origins if month_index(month) % horizon_months == cohort)
                         if any(month_index(b) - month_index(a) < horizon_months for a, b in zip(cohort_origins, cohort_origins[1:])):
                             errors["nonoverlap_cohort_violation_count"] += 1
+                    for values in horizon.get(domain, {}).values():
+                        cohort_sizes = [item.get("sample_count", 0) for item in values.get("cohort_summaries", {}).values()]
+                        if values.get("aggregation_unit") != "cohort" or values.get("total_origin_count") != len(values.get("origin_months", [])) or values.get("cohort_count") != len(cohort_sizes) or values.get("cohort_sample_counts") != cohort_sizes:
+                            errors["sample_count_violation_count"] += 1
+                        effective = median([float(item) for item in cohort_sizes]) if cohort_sizes else None
+                        if values.get("effective_sample_count") != effective or values.get("small_sample") != ((effective or 0) < 12):
+                            errors["sample_count_violation_count"] += 1
+                        required = ("sample_count", "mean_forward_return", "median_forward_return", "win_rate", "q25", "q75", "median_future_max_drawdown", "worst_future_max_drawdown", "origin_months")
+                        if any(any(key not in item for key in required) for item in values.get("cohort_summaries", {}).values()):
+                            errors["evaluation_alignment_violation_count"] += 1
+    evaluation_errors, sample_errors = audit_replay_evaluation(data, phase2, targets)
+    errors["evaluation_alignment_violation_count"] += evaluation_errors
+    errors["sample_count_violation_count"] += sample_errors
+    phase3 = data.get("phase3_design_evidence", {})
+    if not phase3.get("state_forward_return_summary") or not phase3.get("state_sample_sizes") or not phase3.get("insufficient_sample_flags"):
+        errors["evaluation_alignment_violation_count"] += 1
     errors["future_data_boundary_violation_count"] = int(data.get("research_only") is not True or data.get("uses_future_information") is not True)
     errors["forbidden_output_violation_count"] = forbidden(data)
     errors["production_rule_mutation_count"] = int(data.get("source_phase2_sha256") != FROZEN_PHASE2_DOMAIN_SIGNALS_SHA256)

@@ -32,8 +32,14 @@ class DomainDiagnosticsTests(unittest.TestCase):
         for domain in diagnostics.DOMAINS:
             coverage = self.output["coverage"][domain]
             distribution = self.output["state_distribution"][domain]
-            self.assertEqual(sum(item["month_count"] for item in distribution["states"].values()), distribution["ready_month_count"])
-            self.assertEqual(coverage["ready_month_count"], distribution["ready_month_count"])
+            denominator = distribution["available_month_count"] if domain == "sentiment_overlay" else distribution["ready_month_count"]
+            self.assertEqual(sum(item["month_count"] for item in distribution["states"].values()), denominator)
+            if domain == "sentiment_overlay":
+                self.assertEqual(distribution["available_month_count"], 25)
+                self.assertEqual(distribution["model_ready_month_count"], 0)
+                self.assertTrue(distribution["states"])
+            else:
+                self.assertEqual(coverage["ready_month_count"], distribution["ready_month_count"])
 
     def test_transition_and_run_length_fixture(self) -> None:
         records = [
