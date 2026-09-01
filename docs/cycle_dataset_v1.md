@@ -13,7 +13,7 @@
 ## Included domains
 
 - Valuation: CSI 300/500/1000 PE TTM and PB, expanding historical percentile and z-score, CSI 300 earnings yield, ChinaBond China 10-year government yield, and CSI 300 ERP.
-- Earnings: all-A/non-financial earnings and ROE, industrial profit, PMI, and PPI schema fields. The initial runtime marks them unavailable unless a broad-market, announcement-date PIT source is configured. It never backfills a neutral score or uses the current listed universe retroactively.
+- Earnings: all-A/non-financial earnings and ROE, official manufacturing PMI, industrial profit, and PPI schema fields. PMI uses a publication-date PIT source; industrial profit and PPI remain unavailable. No field is backfilled with a neutral value or with the current listed universe retroactively.
 - Trend: CSI 300/500/1000 closing level relative to MA250, six-month and twelve-month returns, and drawdown from the prior 12-month high.
 - Sentiment: optional A-FEAR snapshot. Its shorter history is non-blocking.
 
@@ -24,6 +24,8 @@ The dataset intentionally excludes short-horizon 5/20-day returns, MA20, advance
 Price, trade calendar, and index valuation history use `Tushare.trade_cal`, `Tushare.index_daily`, and `Tushare.index_dailybasic`. China 10-year government yield uses only `AKShare.bond_china_yield`, which exposes ChinaBond's `\u4e2d\u503a\u56fd\u503a\u6536\u76ca\u7387\u66f2\u7ebf` and its `10\u5e74` field. It is refreshed in sub-year windows into the append-only `data/cycle_china_10y_source_cache.json`; duplicate rows are ignored, conflicting values for the same curve/date are retained as conflicts and excluded from snapshots. `Tushare.yc_cb` is not used or blended.
 
 For each Cycle basis date, the yield observation must be on or before that date and no more than ten calendar days old. CSI 300 ERP is a non-scored derived field: `CSI 300 earnings yield - China 10Y yield`, with its observation date equal to the later input observation date. If either input is unavailable, stale, conflicted, or future-dated, ERP remains unavailable. ERP history is monthly and becomes ready after 60 available monthly observations. No value is imputed.
+
+Official manufacturing PMI uses `Tushare.cn_pmi.pmi010000` for the value. Publication dates prefer exact `Tushare.cn_schedule` PMI events; where that history is incomplete, `AKShare.macro_china_pmi_yearly` is used only when its official event value matches within 0.05 and falls inside the deterministic release window. The Cycle snapshot selects the latest record with `publish_date <= basis_trade_date`, and uses `publish_date` as `observation_date`. The cache records both source paths, cross-check values, release conflicts, and `revision_history_unavailable=true`; months without a provable release date never enter the snapshot. PMI `change_1m`, `change_3m`, and `above_50` are descriptive fields only and do not affect scoring or positions.
 
 ## Earnings growth PIT v1.1
 

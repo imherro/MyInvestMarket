@@ -1,12 +1,12 @@
 {
   "dataset_version": "cycle_dataset_v1",
-  "generated_at": "2026-09-01T15:45:12+08:00",
+  "generated_at": "2026-09-01T16:04:26+08:00",
   "record_count": 200,
   "start_month": "2010-01",
   "end_month": "2026-08",
   "coverage_pct": {
     "valuation": 77.78,
-    "earnings": 65.67,
+    "earnings": 76.78,
     "trend": 100.0,
     "a_fear": 12.5
   },
@@ -142,6 +142,22 @@
   "china_10y_cache_refresh_error": null,
   "erp_lineage_violation_count": 0,
   "erp_lineage_violations": [],
+  "pmi_coverage_pct": 100.0,
+  "pmi_future_publication_count": 0,
+  "pmi_future_publications": [],
+  "pmi_source_conflict_count": 0,
+  "pmi_release_conflict_count": 1,
+  "pmi_crosscheck_mismatch_count": 0,
+  "pmi_first_data_month": "2005-01",
+  "pmi_latest_data_month": "2026-07",
+  "pmi_first_publish_date": "2005-02-01",
+  "pmi_latest_publish_date": "2026-07-31",
+  "pmi_release_date_coverage_pct": 97.68,
+  "pmi_schedule_direct_count": 5,
+  "pmi_akshare_fallback_count": 248,
+  "pmi_untrusted_publish_date_count": 6,
+  "pmi_cache_refresh_error": null,
+  "pmi_revision_history_unavailable": true,
   "roe_source_conflict_count": 0,
   "roe_cache_latest_period": "20260630",
   "roe_cache_stale": false,
@@ -169,13 +185,9 @@
     "Tushare.index_dailybasic": 400,
     "Tushare.income_vip": 12,
     "derived:Tushare.income_vip,Tushare.balancesheet_vip": 6,
-    "not_configured": 600
+    "not_configured": 400
   },
-  "low_confidence_periods": [
-    "2010-01",
-    "2010-02",
-    "2010-03"
-  ],
+  "low_confidence_periods": [],
   "structural_passed": true,
   "freshness_passed": false,
   "passed": false

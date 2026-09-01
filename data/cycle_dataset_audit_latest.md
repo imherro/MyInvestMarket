@@ -10,7 +10,11 @@
 - China 10Y / ERP coverage: 100.0%/100.0%
 - China 10Y future/stale/conflict: 0/0/0
 - ERP lineage violations: 0
-- Earnings coverage: 65.67%
+- PMI coverage / release-date coverage: 100.0%/97.68%
+- PMI schedule/fallback/untrusted: 5/248/6
+- PMI future/source conflicts/release conflicts: 0/0/1
+- PMI crosscheck mismatches: 0
+- Earnings coverage: 76.78%
 - ROE nonfinancial-universe violations: 0
 - ROE nonfinancial-matched violations: 0
 - All-A profit-growth coverage: 98.5%

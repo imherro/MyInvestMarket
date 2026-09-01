@@ -17,6 +17,7 @@ import pandas as pd
 
 import build_market_dataset
 import cycle_earnings
+import cycle_macro
 import cycle_roe
 import cycle_rates
 
@@ -26,6 +27,7 @@ DATA_DIR = ROOT / "data"
 DATASET_VERSION = "cycle_dataset_v1"
 EARNINGS_CACHE_PATH = DATA_DIR / "cycle_earnings_source_cache.json"
 ROE_CACHE_PATH = DATA_DIR / "cycle_roe_source_cache.json"
+PMI_CACHE_PATH = DATA_DIR / "cycle_pmi_source_cache.json"
 CHINA_10Y_CACHE_PATH = DATA_DIR / "cycle_china_10y_source_cache.json"
 START_MONTH = "2010-01"
 WARMUP_START = "2005-01-01"
@@ -356,7 +358,7 @@ def latest_financial_observation(frame: pd.DataFrame, basis: date) -> pd.Series 
     return eligible.sort_values(["_ann_date", "end_date" if "end_date" in eligible else "ann_date"]).iloc[-1]
 
 
-def unavailable_earnings(basis: date, source_reason: str) -> dict[str, Any]:
+def unavailable_earnings(basis: date, source_reason: str, pmi: dict[str, Any] | None = None) -> dict[str, Any]:
     source = "Tushare.fina_indicator/income"
     fields = {
         "all_a_net_profit_yoy_pct": unavailable(basis, source, source_reason),
@@ -364,7 +366,7 @@ def unavailable_earnings(basis: date, source_reason: str) -> dict[str, Any]:
         "all_a_roe_ttm_pct": unavailable(basis, source, source_reason),
         "nonfinancial_a_roe_ttm_pct": unavailable(basis, source, source_reason),
         "industrial_profit_yoy_pct": unavailable(basis, "not_configured", source_reason),
-        "pmi": unavailable(basis, "not_configured", source_reason),
+        "pmi": pmi or unavailable(basis, "not_configured", source_reason),
         "ppi_yoy_pct": unavailable(basis, "not_configured", source_reason),
     }
     return {
@@ -408,6 +410,9 @@ def record_for_month(
     roe_balance_by_period: dict[str, pd.DataFrame] | None = None,
     china_10y_rates: pd.DataFrame | None = None,
     china_10y_error: str | None = None,
+    pmi_records: list[dict[str, Any]] | None = None,
+    pmi_conflicts: list[dict[str, Any]] | None = None,
+    pmi_error: str | None = None,
 ) -> dict[str, Any]:
     trend_indices: dict[str, Any] = {}
     warnings: list[str] = []
@@ -418,9 +423,10 @@ def record_for_month(
         if price_errors.get(name):
             warnings.append(f"trend.{name}: {price_errors[name]}")
     valuation = valuation_domain(valuations, valuation_errors, basis, china_10y_rates, china_10y_error)
+    pmi = cycle_macro.snapshot(pmi_records, pmi_conflicts or [], basis, pmi_error)
     if earnings_income_by_period is not None and earnings_stocks is not None:
         aggregation = cycle_earnings.profit_growth_snapshot(earnings_income_by_period, earnings_stocks, basis)
-        earnings = unavailable_earnings(basis, "ROE and macro earnings fields are outside Cycle Earnings Growth PIT v1")
+        earnings = unavailable_earnings(basis, "ROE and macro earnings fields are outside Cycle Earnings Growth PIT v1", pmi)
         earnings["all_a_net_profit_yoy_pct"] = aggregation["all_a"]
         earnings["nonfinancial_a_net_profit_yoy_pct"] = aggregation["nonfinancial_a"]
         earnings["profit_growth_aggregation"] = aggregation
@@ -437,7 +443,7 @@ def record_for_month(
             "reason": aggregation["all_a"].get("reason"),
         }
     else:
-        earnings = unavailable_earnings(basis, "income_vip source unavailable; no neutral fallback is permitted")
+        earnings = unavailable_earnings(basis, "income_vip source unavailable; no neutral fallback is permitted", pmi)
         warnings.append("earnings: income_vip source unavailable")
     domains = {"valuation": valuation, "earnings": earnings, "trend": {"indices": trend_indices}, "sentiment": {"a_fear": a_fear_snapshot(basis)}}
     coverage = domain_coverage(domains)
@@ -534,6 +540,8 @@ def audit_dataset(payload: dict[str, Any]) -> dict[str, Any]:
     china_10y_stale_count = 0
     erp_available = 0
     erp_lineage_violations: list[dict[str, Any]] = []
+    pmi_available = 0
+    pmi_future_publications: list[dict[str, Any]] = []
     for record in records:
         basis = parse_date(record.get("basis_trade_date"))
         if not basis:
@@ -589,6 +597,11 @@ def audit_dataset(payload: dict[str, Any]) -> dict[str, Any]:
         if record.get("data_quality", {}).get("confidence") == "low":
             low_confidence_periods.append(record["month"])
         earnings = record.get("earnings", {})
+        pmi = earnings.get("pmi", {})
+        pmi_available += bool(pmi.get("available"))
+        pmi_publication = parse_date(pmi.get("publish_date") or pmi.get("observation_date"))
+        if pmi_publication and pmi_publication > basis:
+            pmi_future_publications.append({"month": record["month"], "publish_date": iso(pmi_publication), "basis": iso(basis)})
         profit_growth_counts["months"] += 1
         profit_growth_counts["all_a"] += bool(earnings.get("all_a_net_profit_yoy_pct", {}).get("available"))
         profit_growth_counts["nonfinancial_a"] += bool(earnings.get("nonfinancial_a_net_profit_yoy_pct", {}).get("available"))
@@ -645,9 +658,10 @@ def audit_dataset(payload: dict[str, Any]) -> dict[str, Any]:
                 break
     roe_cache = payload.get("roe_source_cache", {})
     china_10y_cache = payload.get("china_10y_source_cache", {})
+    pmi_cache = payload.get("pmi_source_cache", {})
     roe_universe_violation_months = sorted({row["month"] for row in roe_nonfinancial_universe_violations + roe_nonfinancial_matched_violations})
-    structural_passed = len(pit_violations) == 0 and len(roe_pit_violations) == 0 and duplicate_count == 0 and order_violation_count == 0 and current_invalid_report_types == 0 and prior_invalid_report_types == 0 and roe_invalid_report_types == 0 and len(roe_nonfinancial_universe_violations) == 0 and len(roe_nonfinancial_matched_violations) == 0 and len(valuation_future_observations) == 0 and len(derived_lineage_violations) == 0 and len(china_10y_future_observations) == 0 and len(erp_lineage_violations) == 0
-    freshness_passed = not bool(cache.get("stale")) and not bool(cache.get("refresh_error")) and not bool(cache.get("offline")) and not bool(roe_cache.get("stale")) and not bool(roe_cache.get("refresh_error")) and not bool(roe_cache.get("offline")) and not bool(china_10y_cache.get("refresh_error")) and not bool(china_10y_cache.get("offline"))
+    structural_passed = len(pit_violations) == 0 and len(roe_pit_violations) == 0 and duplicate_count == 0 and order_violation_count == 0 and current_invalid_report_types == 0 and prior_invalid_report_types == 0 and roe_invalid_report_types == 0 and len(roe_nonfinancial_universe_violations) == 0 and len(roe_nonfinancial_matched_violations) == 0 and len(valuation_future_observations) == 0 and len(derived_lineage_violations) == 0 and len(china_10y_future_observations) == 0 and len(erp_lineage_violations) == 0 and len(pmi_future_publications) == 0
+    freshness_passed = not bool(cache.get("stale")) and not bool(cache.get("refresh_error")) and not bool(cache.get("offline")) and not bool(roe_cache.get("stale")) and not bool(roe_cache.get("refresh_error")) and not bool(roe_cache.get("offline")) and not bool(china_10y_cache.get("refresh_error")) and not bool(china_10y_cache.get("offline")) and not bool(pmi_cache.get("refresh_error")) and not bool(pmi_cache.get("offline"))
     return {
         "dataset_version": payload.get("dataset_version"),
         "generated_at": datetime.now(build_market_dataset.TZ).isoformat(timespec="seconds"),
@@ -702,6 +716,22 @@ def audit_dataset(payload: dict[str, Any]) -> dict[str, Any]:
         "china_10y_cache_refresh_error": payload.get("china_10y_source_cache", {}).get("refresh_error"),
         "erp_lineage_violation_count": len(erp_lineage_violations),
         "erp_lineage_violations": erp_lineage_violations,
+        "pmi_coverage_pct": finite(pmi_available / len(records) * 100, 2) if records else 0.0,
+        "pmi_future_publication_count": len(pmi_future_publications),
+        "pmi_future_publications": pmi_future_publications,
+        "pmi_source_conflict_count": int(pmi_cache.get("conflict_count", 0)),
+        "pmi_release_conflict_count": int(pmi_cache.get("release_conflict_count", 0)),
+        "pmi_crosscheck_mismatch_count": int(pmi_cache.get("crosscheck_mismatch_count", 0)),
+        "pmi_first_data_month": pmi_cache.get("metadata", {}).get("first_data_month"),
+        "pmi_latest_data_month": pmi_cache.get("metadata", {}).get("latest_data_month"),
+        "pmi_first_publish_date": pmi_cache.get("metadata", {}).get("first_publish_date"),
+        "pmi_latest_publish_date": pmi_cache.get("metadata", {}).get("latest_publish_date"),
+        "pmi_release_date_coverage_pct": pmi_cache.get("metadata", {}).get("release_date_coverage_pct", 0.0),
+        "pmi_schedule_direct_count": int(pmi_cache.get("audit_counters", {}).get("schedule_direct", 0)),
+        "pmi_akshare_fallback_count": int(pmi_cache.get("audit_counters", {}).get("akshare_fallback", 0)),
+        "pmi_untrusted_publish_date_count": int(pmi_cache.get("audit_counters", {}).get("untrusted", 0)),
+        "pmi_cache_refresh_error": pmi_cache.get("refresh_error"),
+        "pmi_revision_history_unavailable": bool(pmi_cache.get("audit_counters", {}).get("revision_history_unavailable", True)),
         "roe_source_conflict_count": int(roe_cache.get("conflict_count", 0)),
         "roe_cache_latest_period": roe_cache.get("metadata", {}).get("latest_period"),
         "roe_cache_stale": bool(roe_cache.get("stale")),
@@ -749,6 +779,10 @@ def audit_markdown(audit: dict[str, Any]) -> str:
             f"- China 10Y / ERP coverage: {audit['china_10y_coverage_pct']}%/{audit['csi300_erp_coverage_pct']}%",
             f"- China 10Y future/stale/conflict: {audit['china_10y_future_observation_count']}/{audit['china_10y_stale_count']}/{audit['china_10y_source_conflict_count']}",
             f"- ERP lineage violations: {audit['erp_lineage_violation_count']}",
+            f"- PMI coverage / release-date coverage: {audit['pmi_coverage_pct']}%/{audit['pmi_release_date_coverage_pct']}%",
+            f"- PMI schedule/fallback/untrusted: {audit['pmi_schedule_direct_count']}/{audit['pmi_akshare_fallback_count']}/{audit['pmi_untrusted_publish_date_count']}",
+            f"- PMI future/source conflicts/release conflicts: {audit['pmi_future_publication_count']}/{audit['pmi_source_conflict_count']}/{audit['pmi_release_conflict_count']}",
+            f"- PMI crosscheck mismatches: {audit['pmi_crosscheck_mismatch_count']}",
             f"- Earnings coverage: {coverage['earnings']}%",
             f"- ROE nonfinancial-universe violations: {audit['roe_nonfinancial_universe_violation_count']}",
             f"- ROE nonfinancial-matched violations: {audit['roe_nonfinancial_matched_violation_count']}",
@@ -790,6 +824,16 @@ def build_dataset(as_of: date, refresh_earnings_cache: bool = True) -> dict[str,
     except Exception as exc:
         china_10y_rates, china_10y_conflicts, china_10y_cache_meta, china_10y_refresh_error = None, [{"source_error": str(exc)}], {}, str(exc)
     try:
+        pmi_records, pmi_conflicts, pmi_cache_meta, pmi_refresh_error, pmi_audit_counters = cycle_macro.source_from_cache_or_api_status(
+            pro,
+            PMI_CACHE_PATH,
+            datetime.strptime(WARMUP_START, "%Y-%m-%d").date(),
+            end,
+            refresh=refresh_earnings_cache,
+        )
+    except Exception as exc:
+        pmi_records, pmi_conflicts, pmi_cache_meta, pmi_refresh_error, pmi_audit_counters = None, [{"source_error": str(exc)}], {}, str(exc), {}
+    try:
         earnings_income, earnings_stocks, cache_conflicts, earnings_cache_meta, refresh_error = cycle_earnings.source_from_cache_or_api_status(
             pro, EARNINGS_CACHE_PATH, 2009, end.year, end, refresh=refresh_earnings_cache
         )
@@ -804,7 +848,7 @@ def build_dataset(as_of: date, refresh_earnings_cache: bool = True) -> dict[str,
     except Exception as exc:
         roe_balance_by_period, roe_conflicts, roe_cache_meta, roe_freshness = None, [{"source_error": str(exc)}], {}, {"stale": True, "missing_expected_periods": [], "refresh_error": str(exc)}
     records = [
-        record_for_month(month, month_basis[month], prices, valuations, price_errors, valuation_errors, earnings_income_by_period, earnings_stocks, roe_balance_by_period, china_10y_rates, china_10y_refresh_error)
+        record_for_month(month, month_basis[month], prices, valuations, price_errors, valuation_errors, earnings_income_by_period, earnings_stocks, roe_balance_by_period, china_10y_rates, china_10y_refresh_error, pmi_records, pmi_conflicts, pmi_refresh_error)
         for month in months
     ]
     decorate_erp_history(records)
@@ -813,9 +857,10 @@ def build_dataset(as_of: date, refresh_earnings_cache: bool = True) -> dict[str,
         "dataset_version": DATASET_VERSION,
         "description": "Monthly Point-in-Time cycle research inputs. Not an official score or position decision.",
         "period": {"start_month": months[0], "end_month": months[-1], "warmup_start": WARMUP_START},
-        "sources": ["Tushare.trade_cal", "Tushare.index_daily", "Tushare.index_dailybasic", "Tushare.income_vip", "A-FEAR local history (optional)"],
+        "sources": ["Tushare.trade_cal", "Tushare.index_daily", "Tushare.index_dailybasic", "Tushare.income_vip", "Tushare.cn_pmi", "Tushare.cn_schedule", "AKShare.macro_china_pmi_yearly (release fallback)", "A-FEAR local history (optional)"],
         "valuation_source_metadata": valuation_source_metadata(valuations, valuation_errors),
         "china_10y_source_cache": {"path": str(CHINA_10Y_CACHE_PATH.relative_to(ROOT)), "conflict_count": len(china_10y_conflicts), "conflicts": china_10y_conflicts, "metadata": china_10y_cache_meta, "refresh_error": china_10y_refresh_error, "offline": not refresh_earnings_cache, "validation": cycle_rates.source_validation(china_10y_rates)},
+        "pmi_source_cache": {"path": str(PMI_CACHE_PATH.relative_to(ROOT)), "conflict_count": len([item for item in pmi_conflicts if "publish_dates" not in item]), "release_conflict_count": len([item for item in pmi_conflicts if "publish_dates" in item]), "crosscheck_mismatch_count": pmi_audit_counters.get("crosscheck_mismatch", 0), "conflicts": pmi_conflicts, "metadata": pmi_cache_meta, "refresh_error": pmi_refresh_error, "offline": not refresh_earnings_cache, "audit_counters": pmi_audit_counters},
         "earnings_source_cache": {"path": str(EARNINGS_CACHE_PATH.relative_to(ROOT)), "conflict_count": len(cache_conflicts), "conflicts": cache_conflicts, "metadata": earnings_cache_meta, **earnings_freshness, "offline": not refresh_earnings_cache},
         "roe_source_cache": {"path": str(ROE_CACHE_PATH.relative_to(ROOT)), "equity_field": cycle_roe.EQUITY_FIELD, "conflict_count": len(roe_conflicts), "conflicts": roe_conflicts, "metadata": roe_cache_meta, **roe_freshness, "offline": not refresh_earnings_cache},
         "records": records,
@@ -846,7 +891,7 @@ def rebuild_earnings_from_existing_dataset(path: Path) -> dict[str, Any]:
         if not basis:
             raise RuntimeError(f"invalid basis date in {record.get('month')}")
         aggregation = cycle_earnings.profit_growth_snapshot(by_period, stocks, basis)
-        earnings = unavailable_earnings(basis, "macro earnings fields are outside Cycle Earnings PIT v1")
+        earnings = unavailable_earnings(basis, "macro earnings fields are outside Cycle Earnings PIT v1", record.get("earnings", {}).get("pmi"))
         earnings["all_a_net_profit_yoy_pct"] = aggregation["all_a"]
         earnings["nonfinancial_a_net_profit_yoy_pct"] = aggregation["nonfinancial_a"]
         earnings["profit_growth_aggregation"] = aggregation
@@ -910,6 +955,31 @@ def rebuild_rates_from_existing_dataset(path: Path, as_of: date, refresh: bool =
     return payload
 
 
+def rebuild_pmi_from_existing_dataset(path: Path, as_of: date, refresh: bool = True) -> dict[str, Any]:
+    """Refresh only the official PMI release-date PIT field."""
+    payload = json.loads(path.read_text(encoding="utf-8-sig"))
+    end = previous_month_end(as_of)
+    pro = build_market_dataset.tushare_client()
+    records, conflicts, metadata, refresh_error, counters = cycle_macro.source_from_cache_or_api_status(
+        pro,
+        PMI_CACHE_PATH,
+        datetime.strptime(WARMUP_START, "%Y-%m-%d").date(),
+        end,
+        refresh=refresh,
+    )
+    for record in payload.get("records", []):
+        basis = parse_date(record.get("basis_trade_date"))
+        if not basis:
+            raise RuntimeError(f"invalid basis date in {record.get('month')}")
+        earnings = record.get("earnings", {})
+        earnings["pmi"] = cycle_macro.snapshot(records, conflicts, basis, refresh_error)
+        record["earnings"] = earnings
+        record["data_quality"]["coverage"] = domain_coverage({"valuation": record.get("valuation", {}), "earnings": earnings, "trend": record.get("trend", {}), "sentiment": record.get("sentiment", {})})
+        record["data_quality"]["confidence"] = "low" if record["data_quality"]["coverage"]["earnings_pct"] == 0 else "medium"
+    payload["pmi_source_cache"] = {"path": str(PMI_CACHE_PATH.relative_to(ROOT)), "conflict_count": len([item for item in conflicts if "publish_dates" not in item]), "release_conflict_count": len([item for item in conflicts if "publish_dates" in item]), "crosscheck_mismatch_count": counters.get("crosscheck_mismatch", 0), "conflicts": conflicts, "metadata": metadata, "refresh_error": refresh_error, "offline": not refresh, "audit_counters": counters}
+    return payload
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Build Cycle Dataset v1 without changing official market scoring.")
     parser.add_argument("--as-of", default=datetime.now(build_market_dataset.TZ).strftime("%Y-%m-%d"))
@@ -920,6 +990,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--reuse-existing-market-data", action="store_true", help="Reuse existing valuation/trend records and refresh only the earnings domain.")
     parser.add_argument("--reuse-existing-nonvaluation-data", action="store_true", help="Reuse existing nonvaluation records and refresh only PIT valuation fields.")
     parser.add_argument("--reuse-existing-nonrate-data", action="store_true", help="Reuse existing records and refresh only China 10Y and derived ERP fields.")
+    parser.add_argument("--reuse-existing-nonpmi-data", action="store_true", help="Reuse existing records and refresh only official PMI release-date PIT fields.")
     return parser.parse_args()
 
 
@@ -928,7 +999,7 @@ def main() -> None:
     build_market_dataset.load_dotenv(ROOT / ".env")
     output_path = Path(args.out)
     as_of = datetime.strptime(args.as_of, "%Y-%m-%d").date()
-    if sum((args.reuse_existing_market_data, args.reuse_existing_nonvaluation_data, args.reuse_existing_nonrate_data)) > 1:
+    if sum((args.reuse_existing_market_data, args.reuse_existing_nonvaluation_data, args.reuse_existing_nonrate_data, args.reuse_existing_nonpmi_data)) > 1:
         raise ValueError("choose at most one reuse mode")
     if args.reuse_existing_market_data:
         payload = rebuild_earnings_from_existing_dataset(output_path)
@@ -936,6 +1007,8 @@ def main() -> None:
         payload = rebuild_valuation_from_existing_dataset(output_path, as_of)
     elif args.reuse_existing_nonrate_data:
         payload = rebuild_rates_from_existing_dataset(output_path, as_of, refresh=not args.offline_cache)
+    elif args.reuse_existing_nonpmi_data:
+        payload = rebuild_pmi_from_existing_dataset(output_path, as_of, refresh=not args.offline_cache)
     else:
         payload = build_dataset(as_of, refresh_earnings_cache=not args.offline_cache)
     audit = audit_dataset(payload)

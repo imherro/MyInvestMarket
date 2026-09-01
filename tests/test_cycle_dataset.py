@@ -17,6 +17,7 @@ if str(SCRIPTS) not in sys.path:
 
 import build_cycle_dataset as cycle  # noqa: E402
 import cycle_earnings  # noqa: E402
+import cycle_macro  # noqa: E402
 import cycle_roe  # noqa: E402
 
 
@@ -151,6 +152,17 @@ class CycleDatasetTests(unittest.TestCase):
         result = cycle.unavailable_earnings(date(2024, 1, 31), "unavailable")
         self.assertIsNone(result["all_a_roe_ttm_pct"]["value"])
         self.assertFalse(result["all_a_roe_ttm_pct"]["available"])
+
+    def test_pmi_future_publication_fails_structural_audit(self) -> None:
+        pmi = cycle_macro.unavailable(date(2024, 1, 31), "unavailable")
+        pmi.update({"available": True, "pit_safe": True, "value": 50.2, "observation_date": "2024-02-01", "publish_date": "2024-02-01"})
+        payload = {"dataset_version": cycle.DATASET_VERSION, "records": [{
+            "month": "2024-01", "basis_trade_date": "2024-01-31", "valuation": {}, "earnings": {"pmi": pmi}, "trend": {},
+            "data_quality": {"coverage": {"valuation_pct": 0, "earnings_pct": 0, "trend_pct": 0, "a_fear_pct": 0}},
+        }], "pmi_source_cache": {"conflict_count": 0, "release_conflict_count": 0, "crosscheck_mismatch_count": 0, "metadata": {}, "audit_counters": {}}}
+        audit = cycle.audit_dataset(payload)
+        self.assertEqual(audit["pmi_future_publication_count"], 1)
+        self.assertFalse(audit["structural_passed"])
 
     def test_a_fear_unavailable_is_nonblocking(self) -> None:
         original = cycle.DATA_DIR
