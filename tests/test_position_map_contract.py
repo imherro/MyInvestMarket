@@ -135,6 +135,14 @@ class PositionMapContractTest(unittest.TestCase):
         self.assertNotIn("市场循环阶段", app_js)
         self.assertNotIn("Elliott", app_js)
 
+    def test_cycle_engine_chart_has_hover_crosshair_and_tooltip(self) -> None:
+        app_js = (ROOT / "web" / "app.js").read_text(encoding="utf-8")
+        styles = (ROOT / "web" / "styles.css").read_text(encoding="utf-8")
+
+        self.assertIn('addEventListener("pointermove", updateCrosshair)', app_js)
+        self.assertIn("cycle-engine-tooltip", app_js)
+        self.assertIn("cycle-crosshair-line", styles)
+
     def test_frontend_official_position_range_prefers_recommended_field(self) -> None:
         app_js = (ROOT / "web" / "app.js").read_text(encoding="utf-8")
         function_start = app_js.index("function officialPositionRange(record)")

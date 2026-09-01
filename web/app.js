@@ -289,6 +289,51 @@ function renderCycleEngineChart() {
       svg.appendChild(createSvg("text", { class: "cycle-latest-label", x: clamp(pointItem.x - 8, margin.left + 8, width - margin.right - 120), y: pointItem.y - 14 }, `${pointItem.item.stable_state} ${pointItem.item.recommended_equity_range || "不可用"}`));
     }
   });
+  const crosshair = createSvg("g", { class: "cycle-crosshair", "aria-hidden": "true" });
+  const crossVertical = createSvg("line", { class: "cycle-crosshair-line vertical", x1: margin.left, y1: margin.top, x2: margin.left, y2: height - margin.bottom });
+  const crossHorizontal = createSvg("line", { class: "cycle-crosshair-line horizontal", x1: margin.left, y1: margin.top, x2: width - margin.right, y2: margin.top });
+  const crossPosition = createSvg("circle", { class: "cycle-crosshair-node position", cx: margin.left, cy: margin.top, r: 5 });
+  const crossIndex = createSvg("circle", { class: "cycle-crosshair-node index", cx: margin.left, cy: margin.top, r: 4 });
+  crosshair.appendChild(crossVertical);
+  crosshair.appendChild(crossHorizontal);
+  crosshair.appendChild(crossPosition);
+  crosshair.appendChild(crossIndex);
+  svg.appendChild(crosshair);
+  const tooltip = document.createElement("div");
+  tooltip.className = "cycle-engine-tooltip";
+  tooltip.setAttribute("role", "status");
+  tooltip.hidden = true;
+  container.appendChild(tooltip);
+  const updateCrosshair = (event) => {
+    const bounds = svg.getBoundingClientRect();
+    const svgX = ((event.clientX - bounds.left) / Math.max(bounds.width, 1)) * width;
+    const selectedIndex = clamp(Math.round(((svgX - margin.left) / plotWidth) * (records.length - 1)), 0, records.length - 1);
+    const item = records[selectedIndex];
+    const selectedPosition = numeric(item.equity_mid_pct);
+    const selectedIndexValue = numeric(item.shanghai_composite);
+    const crossX = x(selectedIndex);
+    const crossY = selectedPosition === null ? (selectedIndexValue === null ? height - margin.bottom : yIndex(selectedIndexValue)) : yPosition(selectedPosition);
+    crossVertical.setAttribute("x1", crossX);
+    crossVertical.setAttribute("x2", crossX);
+    crossHorizontal.setAttribute("y1", crossY);
+    crossHorizontal.setAttribute("y2", crossY);
+    crossPosition.setAttribute("cx", crossX);
+    crossPosition.setAttribute("cy", selectedPosition === null ? crossY : yPosition(selectedPosition));
+    crossPosition.style.display = selectedPosition === null ? "none" : "";
+    crossIndex.setAttribute("cx", crossX);
+    crossIndex.setAttribute("cy", selectedIndexValue === null ? crossY : yIndex(selectedIndexValue));
+    crossIndex.style.display = selectedIndexValue === null ? "none" : "";
+    tooltip.innerHTML = `<strong>${escapeHtml(item.month || "--")}</strong><span>上证指数：${selectedIndexValue === null ? "不可用" : formatNumber(selectedIndexValue, 3)}</span><span>周期状态：${escapeHtml(item.stable_state || "--")}</span><span>权益仓位：${item.recommended_equity_range ? escapeHtml(item.recommended_equity_range) : "不可用"}</span>`;
+    const containerBounds = container.getBoundingClientRect();
+    tooltip.style.left = `${clamp(event.clientX - containerBounds.left + 14, 8, Math.max(8, container.clientWidth - 190))}px`;
+    tooltip.style.top = `${clamp(event.clientY - containerBounds.top - 18, 8, Math.max(8, container.clientHeight - 104))}px`;
+    tooltip.hidden = false;
+  };
+  svg.addEventListener("pointermove", updateCrosshair);
+  svg.addEventListener("pointerenter", updateCrosshair);
+  svg.addEventListener("pointerleave", () => {
+    tooltip.hidden = true;
+  });
   container.appendChild(svg);
 }
 

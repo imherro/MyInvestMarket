@@ -214,9 +214,58 @@ select {
 }
 
 .cycle-engine-chart-frame {
+  position: relative;
   min-height: 360px;
   height: 460px;
   overflow: hidden;
+}
+
+.cycle-engine-chart-frame svg {
+  touch-action: none;
+}
+
+.cycle-crosshair {
+  pointer-events: none;
+}
+
+.cycle-crosshair-line {
+  stroke: var(--ink);
+  stroke-width: 1;
+  stroke-dasharray: 4 4;
+  stroke-opacity: 0.5;
+}
+
+.cycle-crosshair-node.position {
+  fill: var(--surface);
+  stroke: var(--teal);
+  stroke-width: 3;
+}
+
+.cycle-crosshair-node.index {
+  fill: #aeb8b3;
+  stroke: var(--surface);
+  stroke-width: 2;
+}
+
+.cycle-engine-tooltip {
+  position: absolute;
+  z-index: 2;
+  display: grid;
+  min-width: 174px;
+  gap: 4px;
+  padding: 9px 11px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: var(--shadow);
+  color: var(--ink);
+  font-size: 0.78rem;
+  line-height: 1.35;
+  pointer-events: none;
+}
+
+.cycle-engine-tooltip strong {
+  font-size: 0.86rem;
 }
 
 .cycle-engine-chart-svg {
