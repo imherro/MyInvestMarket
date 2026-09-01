@@ -128,12 +128,25 @@ class DomainDiagnosticsTests(unittest.TestCase):
         self.assertGreater(diagnostics.audit(mutated, self.phase2, self.phase2_audit, self.targets)["evaluation_alignment_violation_count"], 0)
         mutated = copy.deepcopy(self.output)
         mutated["phase3_design_evidence"]["state_sample_sizes"] = {}
-        self.assertGreater(diagnostics.audit(mutated, self.phase2, self.phase2_audit, self.targets)["evaluation_alignment_violation_count"], 0)
+        self.assertGreater(diagnostics.audit(mutated, self.phase2, self.phase2_audit, self.targets)["phase3_design_evidence_violation_count"], 0)
+        mutated = copy.deepcopy(self.output)
+        mutated["phase3_design_evidence"]["insufficient_sample_flags"]["csi300"]["forward_6m"]["valuation"]["cheap"]["small_sample"] = not mutated["phase3_design_evidence"]["insufficient_sample_flags"]["csi300"]["forward_6m"]["valuation"]["cheap"]["small_sample"]
+        self.assertGreater(diagnostics.audit(mutated, self.phase2, self.phase2_audit, self.targets)["phase3_design_evidence_violation_count"], 0)
+        mutated = copy.deepcopy(self.output)
+        mutated["phase3_design_evidence"]["state_forward_return_summary"]["csi300"]["forward_6m"]["valuation"]["cheap"]["mean_of_cohort_mean_forward_return"] += 1
+        self.assertGreater(diagnostics.audit(mutated, self.phase2, self.phase2_audit, self.targets)["phase3_design_evidence_violation_count"], 0)
 
     def test_audit_replay_is_not_production_diagnostics(self) -> None:
-        source = inspect.getsource(diagnostics.audit) + inspect.getsource(diagnostics.audit_replay_snapshot) + inspect.getsource(diagnostics.audit_replay_evaluation)
-        for name in ("expected = build(", "state_distribution(", "conflicts(", "\n    evaluation(", "\n    build("):
+        source = inspect.getsource(diagnostics.audit) + inspect.getsource(diagnostics.audit_replay_snapshot) + inspect.getsource(diagnostics.audit_replay_evaluation) + inspect.getsource(diagnostics.audit_replay_phase3_design_evidence)
+        for name in ("expected = build(", "state_distribution(", "conflicts(", "target_run_lengths(", "run_lengths(", "\n    evaluation(", "\n    build("):
             self.assertNotIn(name, source)
+
+    def test_phase3_audit_replay_is_independent_of_production_helpers(self) -> None:
+        with patch.object(diagnostics, "evaluation", side_effect=AssertionError("production evaluation called")), patch.object(diagnostics, "build", side_effect=AssertionError("production build called")):
+            expected = diagnostics.audit_replay_phase3_design_evidence(self.phase2, self.targets)
+            result = diagnostics.audit(self.output, self.phase2, self.phase2_audit, self.targets)
+        self.assertTrue(expected["state_forward_return_summary"])
+        self.assertTrue(result["passed"], result)
 
     def test_no_global_score_state_or_position_output(self) -> None:
         text = json.dumps(self.output, ensure_ascii=False).lower()
