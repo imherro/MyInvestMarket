@@ -22,12 +22,16 @@ AUD = DATA / "cycle_engine_nonoverlap_diagnostics_audit_v1.json"
 HORIZONS = (6, 12, 24)
 ERAS = {"A": ("2010-01", "2014-12"), "B": ("2015-01", "2019-12"), "C": ("2020-01", "2026-08")}
 UPSTREAM_FILES = (E, EA, T, TA, D, DA, W, WA)
-FORBIDDEN_OUTPUT_KEYS = {"score", "ranking", "selection", "state", "weight", "position", "signal", "strongest_features", "weakest_features", "recommended_features", "selected_features", "drop_features", "feature_rank", "importance", "p_value", "t_stat", "significance_label"}
+FORBIDDEN_OUTPUT_KEYS = {"score", "ranking", "selection", "state", "regime", "weight", "position", "allocation", "signal", "trade", "backtest", "threshold", "recommendation", "strongest_features", "weakest_features", "recommended_features", "selected_features", "drop_features", "feature_rank", "importance", "p_value", "t_stat", "significance_label"}
 
 
 def canonical_sha(value: Any) -> str:
     raw = json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":")) + "\n"
     return hashlib.sha256(raw.encode()).hexdigest()
+
+
+def upstream_file_hashes() -> dict[str, str]:
+    return {str(path.relative_to(ROOT)): hashlib.sha256(path.read_bytes()).hexdigest() for path in UPSTREAM_FILES}
 
 
 def month_index(month: str) -> int:
@@ -154,7 +158,7 @@ def build(evidence: dict[str, Any], targets: dict[str, Any], phase3: dict[str, A
             "cohort_rule": "calendar_month_index = year*12 + month; cohort = calendar_month_index % horizon",
             "horizons_months": list(HORIZONS), "eras": ERAS, "feature_count": len(features), "features": features,
             "source_evidence_sha": canonical_sha(evidence), "source_evaluation_sha": canonical_sha(targets), "source_phase3_sha": canonical_sha(phase3),
-            "source_phase4_sha": canonical_sha(json.loads(W.read_text(encoding="utf-8")))}
+            "source_phase4_sha": canonical_sha(json.loads(W.read_text(encoding="utf-8"))), "upstream_file_sha256": upstream_file_hashes()}
 
 
 def _comparison(overlapping: float | None, nonoverlap: float | None) -> dict[str, Any]:
@@ -165,12 +169,12 @@ def _comparison(overlapping: float | None, nonoverlap: float | None) -> dict[str
 
 def audit_v2(data: dict[str, Any]) -> dict[str, Any]:
     evidence, targets, phase3 = load(); expected = build(evidence, targets, phase3)
-    errors = {"natural_month_cohort_violation_count": 0, "overlapping_origin_violation_count": 0, "candidate_scope_violation_count": 0, "readiness_rule_violation_count": 0, "target_availability_violation_count": 0, "sample_alignment_violation_count": 0, "correlation_formula_violation_count": 0, "boolean_formula_violation_count": 0, "stability_summary_violation_count": 0, "overlap_comparison_violation_count": 0, "era_boundary_violation_count": 0, "source_mutation_count": 0, "upstream_mutation_count": 0, "forbidden_output_violation_count": 0}
+    errors = {"natural_month_cohort_violation_count": 0, "cohort_rule_violation_count": 0, "overlapping_origin_violation_count": 0, "cohort_spacing_violation_count": 0, "candidate_scope_violation_count": 0, "feature_scope_violation_count": 0, "readiness_rule_violation_count": 0, "target_availability_violation_count": 0, "sample_alignment_violation_count": 0, "correlation_formula_violation_count": 0, "continuous_formula_violation_count": 0, "boolean_formula_violation_count": 0, "stability_summary_violation_count": 0, "stability_formula_violation_count": 0, "overlap_comparison_violation_count": 0, "era_boundary_violation_count": 0, "source_mutation_count": 0, "upstream_mutation_count": 0, "upstream_audit_gate_violation_count": 0, "forbidden_output_violation_count": 0}
     if any(data.get(k) != expected.get(k) for k in ("source_evidence_sha", "source_evaluation_sha", "source_phase3_sha", "source_phase4_sha")): errors["source_mutation_count"] += 1
-    if data.get("cohort_rule") != "calendar_month_index = year*12 + month; cohort = calendar_month_index % horizon": errors["natural_month_cohort_violation_count"] += 1
+    if data.get("cohort_rule") != "calendar_month_index = year*12 + month; cohort = calendar_month_index % horizon": errors["natural_month_cohort_violation_count"] += 1; errors["cohort_rule_violation_count"] += 1
     if data.get("eras") != ERAS: errors["era_boundary_violation_count"] += 1
     formal = {p for p, f in evidence["records"][-1]["features"].items() if f.get("model_candidate")}
-    actual = set(data.get("features", {})); errors["candidate_scope_violation_count"] += len(actual - formal) + len(formal - actual)
+    actual = set(data.get("features", {})); scope_error = len(actual - formal) + len(formal - actual); errors["candidate_scope_violation_count"] += scope_error; errors["feature_scope_violation_count"] += scope_error
     if [r["month"] for r in evidence["records"]] != [r["month"] for r in targets["records"]]: errors["sample_alignment_violation_count"] += 1
     def forbidden(value: Any) -> int:
         if isinstance(value, dict):
@@ -186,7 +190,7 @@ def audit_v2(data: dict[str, Any]) -> dict[str, Any]:
             for cohort_id, item in cohorts.items():
                 months = item.get("origin_months", [])
                 if any(month_index(m) % h != int(cohort_id.split("_")[1]) for m in months): errors["natural_month_cohort_violation_count"] += 1
-                if any(month_index(b) - month_index(a) < h for a, b in zip(months, months[1:])): errors["overlapping_origin_violation_count"] += 1
+                if any(month_index(b) - month_index(a) < h for a, b in zip(months, months[1:])): errors["overlapping_origin_violation_count"] += 1; errors["cohort_spacing_violation_count"] += 1
                 if months != expected_horizon["cohorts"].get(cohort_id, {}).get("origin_months", []):
                     extra = set(months) - set(expected_horizon["cohorts"].get(cohort_id, {}).get("origin_months", []))
                     for month in extra:
@@ -197,13 +201,15 @@ def audit_v2(data: dict[str, Any]) -> dict[str, Any]:
                         else: errors["readiness_rule_violation_count"] += 1
                 if feature.get("feature_type") == "boolean":
                     if "boolean" not in item or item.get("boolean") != expected_horizon["cohorts"].get(cohort_id, {}).get("boolean"): errors["boolean_formula_violation_count"] += 1
-                elif "continuous" not in item or item.get("continuous") != expected_horizon["cohorts"].get(cohort_id, {}).get("continuous"): errors["correlation_formula_violation_count"] += 1
-            if horizon.get("stability") != expected_horizon.get("stability"): errors["stability_summary_violation_count"] += 1
+                elif "continuous" not in item or item.get("continuous") != expected_horizon["cohorts"].get(cohort_id, {}).get("continuous"): errors["correlation_formula_violation_count"] += 1; errors["continuous_formula_violation_count"] += 1
+            if horizon.get("stability") != expected_horizon.get("stability"): errors["stability_summary_violation_count"] += 1; errors["stability_formula_violation_count"] += 1
             if horizon.get("overlap_comparison") != expected_horizon.get("overlap_comparison"): errors["overlap_comparison_violation_count"] += 1
     source_ok = (data.get("source_evidence_sha") == canonical_sha(evidence) and data.get("source_evaluation_sha") == canonical_sha(targets) and data.get("source_phase3_sha") == canonical_sha(phase3) and data.get("source_phase4_sha") == canonical_sha(json.loads(W.read_text(encoding="utf-8"))))
     upstream_passed = all(json.loads(p.read_text(encoding="utf-8")).get("passed") is True for p in (EA, TA, DA, WA))
-    if not upstream_passed: errors["upstream_mutation_count"] += 1
-    upstream_hash_match = all(p.exists() for p in UPSTREAM_FILES) and source_ok
+    if not upstream_passed: errors["upstream_audit_gate_violation_count"] += 1
+    current_upstream = upstream_file_hashes()
+    if data.get("upstream_file_sha256") != current_upstream: errors["upstream_mutation_count"] += 1
+    upstream_hash_match = all(p.exists() for p in UPSTREAM_FILES) and source_ok and data.get("upstream_file_sha256") == current_upstream
     return {"schema": "cycle_engine_nonoverlap_diagnostics_audit_v1", "feature_count": len(evidence["records"][-1]["features"]), "candidate_feature_count": len(formal), "upstream_hash_match": upstream_hash_match, "upstream_audits_passed": upstream_passed, **errors, "passed": upstream_hash_match and upstream_passed and not any(errors.values())}
 
 

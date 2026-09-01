@@ -67,9 +67,14 @@ class NonOverlapTests(unittest.TestCase):
  def test_upstream_audit_failure_counter(self):
   class FakePath:
    def read_text(self,**kwargs): return '{"passed":false}'
-  with patch.object(n,'EA',FakePath()): self.assertGreater(n.audit(self.data)['upstream_mutation_count'],0)
+  for name in ('EA','TA','DA','WA'):
+   with patch.object(n,name,FakePath()): self.assertGreater(n.audit(self.data)['upstream_audit_gate_violation_count'],0)
+ def test_actual_upstream_content_mutation_counter(self):
+  with patch.object(n,'upstream_file_hashes',side_effect=[n.upstream_file_hashes(),{}]):
+   self.assertGreater(n.audit(self.data)['upstream_mutation_count'],0)
  def test_forbidden_output_counter(self):
-  x=copy.deepcopy(self.data); x['score']=1; self.assertGreater(n.audit(x)['forbidden_output_violation_count'],0)
+  for key in ('score','ranking','selection','state','weight','position','signal'):
+   x=copy.deepcopy(self.data); x[key]=1; self.assertGreater(n.audit(x)['forbidden_output_violation_count'],0)
  def test_research_only_boundary(self):
   self.assertTrue(self.data['research_only']); self.assertNotIn('score',self.data); self.assertNotIn('position',self.data); self.assertNotIn('signal',self.data)
 if __name__=='__main__': unittest.main()
