@@ -1927,7 +1927,8 @@ def chatgpt_qa_history_result() -> dict[str, object]:
         "records": records,
         "storage": {
             "file": relative_path(CHATGPT_QA_PATH),
-            "append_only_by_basis_trade_date": True,
+            "append_only_by_record_id": True,
+            "same_basis_trade_date_records_are_preserved": True,
             "notion_sync": False,
         },
     }

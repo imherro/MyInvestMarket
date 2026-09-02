@@ -18,6 +18,7 @@ def test_chatgpt_qa_history_has_structured_latest_record() -> None:
     for key in ("basis_trade_date", "period_stage", "confidence", "position_pct", "action", "directions", "avoid_directions", "answer_markdown"):
         assert key in latest
     assert payload["storage"]["notion_sync"] is False
+    assert payload["storage"]["append_only_by_record_id"] is True
 
 
 def test_chatgpt_qa_endpoints_are_read_only_and_catalogued() -> None:
