@@ -392,6 +392,13 @@ def api_groups_result() -> list[dict[str, object]]:
                 ),
                 api_endpoint(
                     "GET",
+                    "/api/dashboard",
+                    "精简的今日决策台摘要，供首页快速加载。",
+                    "基准日、执行建议、双时间尺度状态、核心证据、风险提醒、近期曲线和专题页入口。",
+                    read_only=True,
+                ),
+                api_endpoint(
+                    "GET",
                     "/api/research/latest",
                     "最新市场研究结果聚合入口。",
                     "service、market_snapshot、market_score、market_analysis、model_validation、model_health、strategy_robustness。",
@@ -593,6 +600,11 @@ def api_catalog_result(base_url: str = DEFAULT_BASE_URL) -> dict[str, object]:
                 "method": "GET",
                 "path": "/api/index",
                 "purpose": "Web 首页和外部系统读取主页主要内容的首选入口。",
+            },
+            {
+                "method": "GET",
+                "path": "/api/dashboard",
+                "purpose": "首页快速加载所需的精简决策摘要。",
             },
             {
                 "method": "GET",
@@ -1607,6 +1619,89 @@ def cycle_engine_backtest_result() -> dict[str, object]:
     return {"available": True, **payload}
 
 
+def dashboard_result() -> dict[str, object]:
+    records = score_records(include_legacy=False)
+    latest = records[-1] if records else {}
+    latest_research = latest_research_bundle()
+    market_status = market_data_status_result(latest, latest_research)
+    risk = risk_overview_result(latest)
+    allocation = allocation_policy_result(latest, records)
+    cycle = cycle_engine_position_policy_result()
+    cycle_latest = cycle.get("latest", {}) if isinstance(cycle, dict) else {}
+    fear = latest_a_fear_result()
+    fear_record = fear.get("record", {}) if isinstance(fear, dict) else {}
+    recent = records[-90:]
+    summary = {
+        "basis_trade_date": latest.get("basis_trade_date"),
+        "run_id": latest.get("run_id"),
+        "market_position_score": latest.get("market_position_score"),
+        "market_opportunity_score": latest.get("market_opportunity_score"),
+        "recommended_equity_position_range": latest.get("recommended_equity_position_range") or latest.get("equity_position_range"),
+        "market_regime_label": latest.get("market_regime_label"),
+        "trend_state_label": latest.get("trend_state_label"),
+        "confidence": latest.get("confidence"),
+        "risk_caps": latest.get("risk_caps", []),
+        "market_observation": latest.get("market_observation", {}),
+        "decision_explain": {
+            "why_position_changed": (latest.get("decision_explain", {}) or {}).get("why_position_changed", [])[:4],
+            "risk_factors": (latest.get("decision_explain", {}) or {}).get("risk_factors", [])[:4],
+        },
+    }
+    return {
+        "available": bool(latest),
+        "schema_version": 1,
+        "generated_at": now_iso(),
+        "model_version": latest.get("model_version", MODEL_VERSION) if latest else MODEL_VERSION,
+        "account_scope": "stock_account",
+        "summary": summary,
+        "market_data_status": market_status,
+        "risk_overview": risk,
+        "fear": {
+            "available": bool(fear_record),
+            "basis_trade_date": fear_record.get("basis_trade_date"),
+            "fear_score": fear_record.get("fear_score"),
+            "change_1d": fear_record.get("change_1d"),
+            "change_3d": fear_record.get("change_3d"),
+            "level": fear_record.get("level", {}),
+            "phase": fear_record.get("phase", {}),
+            "fear_300": fear_record.get("fear_300"),
+            "fear_1000": fear_record.get("fear_1000"),
+            "small_cap_fear_spread": fear_record.get("small_cap_fear_spread"),
+            "confidence": fear_record.get("confidence"),
+            "safety": fear_record.get("safety", {}),
+        },
+        "cycle": {
+            "available": cycle.get("available") is True,
+            "latest": cycle_latest,
+            "record_count": cycle.get("record_count"),
+        },
+        "allocation": {
+            "state": allocation.get("state"),
+            "total_risk_asset_range": allocation.get("total_risk_asset_range"),
+            "sleeves": allocation.get("sleeves", []),
+        },
+        "recent_chart": {
+            "records": [
+                {
+                    "basis_trade_date": row.get("basis_trade_date"),
+                    "market_position_score": row.get("market_position_score"),
+                    "market_opportunity_score": row.get("market_opportunity_score"),
+                    "shanghai_composite": row.get("shanghai_composite"),
+                }
+                for row in recent
+            ]
+        },
+        "quick_links": [
+            {"label": "完整市场研究", "path": "/research.html"},
+            {"label": "风险与恐慌", "path": "/risk.html"},
+            {"label": "周期引擎", "path": "/cycle.html"},
+            {"label": "四仓配置", "path": "/allocation.html"},
+            {"label": "周期仓位回测", "path": "/cycle-engine-backtest.html"},
+            {"label": "方法与审计", "path": "/methodology.html"},
+        ],
+    }
+
+
 def history_api_result(include_legacy: bool = False) -> dict[str, object]:
     history = filtered_history(load_history(DEFAULT_HISTORY_PATH), include_legacy=include_legacy)
     return {
@@ -1954,6 +2049,9 @@ class MarketWebHandler(BaseHTTPRequestHandler):
                 return
             if path == "/api/index":
                 self.send_json(homepage_index_result())
+                return
+            if path == "/api/dashboard":
+                self.send_json(dashboard_result())
                 return
             if path in ["/api/latest", "/api/research/latest"]:
                 self.send_json(latest_research_bundle())

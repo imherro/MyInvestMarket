@@ -8,17 +8,18 @@ ROOT = Path(__file__).resolve().parents[1]
 class ChartRenderingContractTest(unittest.TestCase):
     def test_a_fear_page_shows_level_components_and_history_without_position_side_effect(self) -> None:
         index_html = (ROOT / "web" / "index.html").read_text(encoding="utf-8")
-        app_js = (ROOT / "web" / "app.js").read_text(encoding="utf-8")
-        styles = (ROOT / "web" / "styles.css").read_text(encoding="utf-8")
+        risk_html = (ROOT / "web" / "risk.html").read_text(encoding="utf-8")
+        dashboard_js = (ROOT / "web" / "dashboard.js").read_text(encoding="utf-8")
+        styles = (ROOT / "web" / "dashboard.css").read_text(encoding="utf-8")
 
-        self.assertIn('class="fear-band"', index_html)
+        self.assertIn("fear-band", index_html)
         self.assertIn('id="fearChart"', index_html)
-        self.assertIn('fetchJson("/api/fear/history")', app_js)
-        self.assertIn('name: "A-FEAR"', app_js)
-        self.assertIn('name: "沪深300恐慌"', app_js)
-        self.assertIn('name: "中证1000恐慌"', app_js)
+        self.assertIn('id="fearScore"', index_html)
+        self.assertIn('id="componentRows"', risk_html)
+        self.assertIn('id="riskList"', risk_html)
+        self.assertIn('getJson("/api/dashboard")', dashboard_js)
         self.assertIn("不是买入分", index_html)
-        self.assertIn(".fear-component-row", styles)
+        self.assertIn(".fear-meter", styles)
 
     def test_allocation_history_uses_stacked_bar_chart(self) -> None:
         app_js = (ROOT / "web" / "app.js").read_text(encoding="utf-8")

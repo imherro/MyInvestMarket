@@ -3,340 +3,114 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>MyInvest A股市场评分</title>
-    <link rel="stylesheet" href="/styles.css" />
+    <title>A股市场决策台</title>
+    <link rel="stylesheet" href="/dashboard.css" />
   </head>
   <body>
     <div data-myinvest-header></div>
-
-    <header class="app-bar">
-      <div>
-        <h1>A股市场评分</h1>
-        <p id="modelLine">加载中</p>
-      </div>
-      <div class="actions">
-        <button id="scoreButton" type="button">记录当前评分</button>
-        <span id="statusLine" role="status"></span>
-      </div>
-    </header>
-
-    <main class="layout">
-      <section id="basisStatusBand" class="basis-status-band normal" aria-label="当前研究基准日">
+    <main class="dashboard-shell">
+      <header class="dashboard-head">
         <div>
-          <span class="label">当前研究基准日</span>
-          <strong id="basisStatusDate">基准日 --</strong>
+          <span class="eyebrow">MYINVEST / MARKET CONTROL</span>
+          <h1>A股市场决策台</h1>
+          <p id="modelLine">研究摘要加载中</p>
         </div>
-        <p id="basisStatusMessage">读取中</p>
-        <div id="basisStatusDetails" class="basis-status-details"></div>
+        <div class="date-block">
+          <span>研究基准日</span>
+          <strong id="basisDate">--</strong>
+          <small id="freshnessState">--</small>
+        </div>
+      </header>
+
+      <nav class="portal-nav" aria-label="市场研究工作台">
+        <a class="active" href="/">决策台</a>
+        <a href="/research.html">市场研究</a>
+        <a href="/risk.html">风险与恐慌</a>
+        <a href="/cycle.html">周期引擎</a>
+        <a href="/allocation.html">四仓配置</a>
+        <a href="/cycle-engine-backtest.html">周期回测</a>
+        <a href="/methodology.html">方法与审计</a>
+      </nav>
+
+      <section id="freshnessAlert" class="attention-strip" aria-label="数据新鲜度">
+        <span id="attentionMark">●</span>
+        <div><strong id="attentionTitle">--</strong><p id="attentionMessage">--</p></div>
+        <a href="/research.html">查看研究状态</a>
       </section>
 
-      <section class="market-observation-band" aria-label="盘感观察">
-        <div class="section-head">
-          <h2>盘感观察</h2>
-          <span id="marketObservationStatus">--</span>
-        </div>
-        <div class="market-observation-grid">
-          <article class="market-observation-panel primary">
-            <span class="label">结构判断</span>
-            <strong id="marketObservationLabel">--</strong>
-            <p id="marketObservationSummary">--</p>
-          </article>
-          <article class="market-observation-panel">
-            <span class="label">关键证据</span>
-            <div id="marketObservationEvidence" class="message-list"></div>
-          </article>
-          <article class="market-observation-panel">
-            <span class="label">后续观察</span>
-            <div id="marketObservationWatchPoints" class="message-list"></div>
-          </article>
-        </div>
-      </section>
-
-      <section class="fear-band" aria-label="市场恐慌状态">
-        <div class="section-head">
-          <h2>市场恐慌状态</h2>
-          <span id="fearStatus">--</span>
-        </div>
-        <div class="fear-summary-grid">
-          <div class="fear-primary">
-            <span class="label">A-FEAR</span>
-            <strong id="fearScore">--</strong>
-            <div class="fear-scale" aria-hidden="true"><span id="fearScaleFill"></span></div>
-            <small id="fearLevel">--</small>
-          </div>
-          <div class="fear-stat">
-            <span class="label">1日变化</span>
-            <strong id="fearChange1d">--</strong>
-            <small>恐慌变化速度</small>
-          </div>
-          <div class="fear-stat">
-            <span class="label">3日变化</span>
-            <strong id="fearChange3d">--</strong>
-            <small>短期恐慌趋势</small>
-          </div>
-          <div class="fear-stat">
-            <span class="label">300 / 1000</span>
-            <strong id="fearMarketSplit">--</strong>
-            <small id="fearSpread">--</small>
-          </div>
-        </div>
-        <div class="fear-detail-grid">
-          <div>
-            <span class="label">四项构成</span>
-            <div id="fearComponents" class="fear-components"></div>
-          </div>
-          <div id="fearChart" class="chart-frame fear-chart"></div>
-        </div>
-        <p class="fear-safety-note">A-FEAR 衡量当前恐慌强度，不是买入分；第一期不直接改变仓位建议。</p>
-      </section>
-
-      <section class="summary-grid" aria-label="评分摘要">
-        <article class="score-card primary">
-          <span class="label">股票账户仓位分</span>
-          <strong id="positionScore">--</strong>
-          <div class="meter"><span id="positionMeter"></span></div>
-          <small id="positionRange">--</small>
-          <small id="volAdjustedRange">--</small>
+      <section class="decision-grid" aria-label="今日决策">
+        <article class="decision-card primary">
+          <span class="card-label">今日执行建议</span>
+          <strong id="equityRange">--</strong>
+          <div class="decision-meta"><span id="positionScore">仓位分 --</span><span id="regimeLabel">--</span></div>
+          <p id="decisionSummary">--</p>
         </article>
-        <article class="score-card">
-          <span class="label">市场机会分</span>
+        <article class="decision-card">
+          <span class="card-label">战略周期锚</span>
+          <strong id="cycleState">--</strong>
+          <div class="decision-meta"><span id="cycleRange">权益 --</span><span id="cycleMonth">--</span></div>
+          <a href="/cycle.html">进入周期引擎 →</a>
+        </article>
+        <article class="decision-card">
+          <span class="card-label">战术状态</span>
           <strong id="opportunityScore">--</strong>
-          <div class="meter"><span id="opportunityMeter"></span></div>
-          <small>100分制</small>
-        </article>
-        <article class="score-card">
-          <span class="label">拥挤惩罚</span>
-          <strong id="crowdingPenalty">--</strong>
-          <div class="meter warning"><span id="crowdingMeter"></span></div>
-          <small>30分上限</small>
-        </article>
-        <article class="score-card">
-          <span class="label">市场状态</span>
-          <strong id="marketRegime">--</strong>
-          <small id="basisDate">--</small>
-          <small id="confidence">--</small>
+          <div class="decision-meta"><span>市场机会分</span><span id="trendLabel">--</span></div>
+          <a href="/research.html">查看评分依据 →</a>
         </article>
       </section>
 
-      <section class="cycle-engine-band" aria-label="Cycle Engine 周期仓位">
-        <div class="section-head">
-          <h2>Cycle Engine 周期仓位</h2>
-          <span id="cycleEngineStatus">--</span>
-        </div>
-        <div class="cycle-engine-grid">
-          <article class="cycle-engine-panel">
-            <span class="label">稳定周期状态</span>
-            <strong id="cycleEngineState">--</strong>
-            <small id="cycleEngineMonth">基准月 --</small>
-          </article>
-          <article class="cycle-engine-panel primary">
-            <span class="label">股票账户权益仓位</span>
-            <strong id="cycleEngineRange">--</strong>
-            <small>由稳定周期状态直接映射</small>
-          </article>
-          <article class="cycle-engine-panel">
-            <span class="label">数据来源</span>
-            <strong id="cycleEngineRecords">--</strong>
-            <small id="cycleEngineSource">--</small>
-          </article>
-        </div>
-        <details class="cycle-engine-history">
-          <summary>查看完整周期仓位历史</summary>
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>基准月</th>
-                  <th>基准交易日</th>
-                  <th>稳定周期状态</th>
-                  <th>权益下限</th>
-                  <th>权益上限</th>
-                  <th>映射依据</th>
-                </tr>
-              </thead>
-              <tbody id="cycleEngineHistoryRows"></tbody>
-            </table>
-          </div>
-        </details>
+      <section class="dashboard-grid">
+        <article class="panel observation-panel">
+          <div class="panel-head"><div><span class="eyebrow">READ THE TAPE</span><h2>盘面观察</h2></div><span id="observationDate">--</span></div>
+          <strong id="observationTitle">--</strong>
+          <p id="observationMessage">--</p>
+          <div id="observationSignals" class="signal-list"></div>
+        </article>
+        <article class="panel evidence-panel">
+          <div class="panel-head"><div><span class="eyebrow">DECISION TRACE</span><h2>仓位为什么是这个数</h2></div><a href="/research.html">完整依据</a></div>
+          <div id="decisionReasons" class="reason-list"></div>
+          <div id="riskCaps" class="risk-callout"></div>
+        </article>
       </section>
 
-      <section class="cycle-engine-chart-band" aria-label="周期状态与上证指数">
-        <div class="section-head">
-          <h2>周期状态与上证指数</h2>
-          <div class="cycle-engine-chart-actions">
-            <span id="cycleEngineChartStatus">--</span>
-            <a class="cycle-engine-backtest-link prominent" href="/cycle-engine-backtest.html">查看周期仓位回测</a>
-          </div>
-        </div>
-        <div id="cycleEngineChart" class="cycle-engine-chart-frame"></div>
-        <p class="cycle-engine-chart-note">灰色虚线为上证指数背景，青绿色线为周期仓位区间中值；底部色带表示稳定周期状态。</p>
-        <a class="cycle-engine-backtest-link" href="/cycle-engine-backtest.html">查看完整回测：收益、回撤与逐月记录</a>
+      <section class="panel allocation-panel">
+        <div class="panel-head"><div><span class="eyebrow">STOCK ACCOUNT</span><h2>股票账户四仓</h2></div><a href="/allocation.html">配置详情</a></div>
+        <div id="allocationState" class="allocation-state">--</div>
+        <div id="allocationCards" class="allocation-cards"></div>
       </section>
 
-      <section class="risk-overview-band" aria-label="数据质量与风险提示">
-        <div class="section-head">
-          <h2>数据质量与风险提示</h2>
-          <span id="riskOverviewStatus">--</span>
-        </div>
-        <div class="risk-overview-grid">
-          <article class="risk-panel">
-            <span class="label">置信度</span>
-            <strong id="riskConfidence">--</strong>
-            <small id="riskConfidenceDetail">--</small>
-          </article>
-          <article class="risk-panel">
-            <span class="label">数据质量 warning</span>
-            <strong id="qualityWarningCount">--</strong>
-            <small id="qualityDataDetail">--</small>
-            <div id="qualityWarnings" class="message-list"></div>
-          </article>
-          <article class="risk-panel">
-            <span class="label">风险上限</span>
-            <strong id="riskCapTotal">--</strong>
-            <small id="riskCapDetail">--</small>
-            <div id="riskCapList" class="message-list"></div>
-          </article>
-        </div>
+      <section class="dashboard-grid lower-grid">
+        <article class="panel fear-band">
+          <div class="panel-head"><div><span class="eyebrow">FEAR MONITOR</span><h2>市场恐慌状态</h2></div><a href="/risk.html">风险详情</a></div>
+          <div class="fear-summary"><strong id="fearScore">--</strong><span id="fearLevel">--</span><small id="fearPhase">--</small></div>
+          <div class="fear-compare"><span>沪深300 <b id="fear300">--</b></span><span>中证1000 <b id="fear1000">--</b></span><span>小盘差 <b id="fearSpread">--</b></span></div>
+          <div id="fearChart" class="spark-chart" role="img" aria-label="A-FEAR近期变化"></div>
+          <p class="panel-note">A-FEAR 是恐慌强度监测，不是买入分。</p>
+        </article>
+        <article class="panel reminder-panel">
+          <div class="panel-head"><div><span class="eyebrow">ATTENTION</span><h2>今日提醒</h2></div></div>
+          <div id="reminderList" class="reminder-list"></div>
+        </article>
       </section>
 
-      <section class="contrarian-band" aria-label="深熊赔率逆向仓位">
-        <div class="section-head">
-          <h2>深熊赔率逆向仓位</h2>
-          <span id="contrarianStatus">--</span>
-        </div>
-        <div class="contrarian-grid">
-          <article class="contrarian-panel">
-            <span class="label">状态</span>
-            <strong id="contrarianActive">--</strong>
-            <small id="contrarianAction">--</small>
-          </article>
-          <article class="contrarian-panel">
-            <span class="label">强度 / 加分</span>
-            <strong id="contrarianScore">--</strong>
-            <small id="contrarianFloor">--</small>
-          </article>
-          <article class="contrarian-panel">
-            <span class="label">配置边界</span>
-            <strong id="contrarianBetaOnly">--</strong>
-            <small>只允许 β核心仓宽基 ETF 承接，不解锁 α主动仓</small>
-          </article>
-        </div>
-        <div id="contrarianDrivers" class="message-list"></div>
+      <section class="panel chart-panel">
+        <div class="panel-head"><div><span class="eyebrow">RECENT TREND</span><h2>近况：仓位分与上证指数</h2></div><a href="/research.html">完整历史</a></div>
+        <div id="recentChart" class="large-chart" role="img" aria-label="近期仓位分与上证指数"></div>
       </section>
 
-      <section class="allocation-band">
-        <div class="section-head">
-          <h2>股票账户四仓配置</h2>
-          <span id="allocationState">--</span>
-        </div>
-        <div id="allocationCards" class="allocation-grid"></div>
-        <div id="allocationChart" class="chart-frame allocation-chart"></div>
-        <div id="allocationTriggers" class="allocation-triggers"></div>
+      <section class="quick-links" aria-label="研究入口">
+        <a href="/research.html"><span>01</span><strong>市场研究</strong><small>评分、子项与每日观察</small></a>
+        <a href="/risk.html"><span>02</span><strong>风险与恐慌</strong><small>A-FEAR、风险上限、波动</small></a>
+        <a href="/cycle.html"><span>03</span><strong>周期引擎</strong><small>200个月状态与仓位锚</small></a>
+        <a href="/allocation.html"><span>04</span><strong>四仓配置</strong><small>β、α、防御、流动性</small></a>
+        <a href="/cycle-engine-backtest.html"><span>05</span><strong>周期回测</strong><small>收益、回撤和逐月结果</small></a>
+        <a href="/methodology.html"><span>06</span><strong>方法与审计</strong><small>数据链、规则和边界</small></a>
       </section>
 
-      <section class="chart-band">
-        <div class="section-head">
-          <h2>总分与上证指数</h2>
-          <span id="recordCount">--</span>
-        </div>
-        <div id="overviewChart" class="chart-frame"></div>
-      </section>
-
-      <section>
-        <div class="section-head">
-          <h2>子项分历史</h2>
-          <select id="moduleSelect" aria-label="选择评分子项"></select>
-        </div>
-        <div id="moduleGrid" class="module-grid"></div>
-      </section>
-
-      <section class="detail-layout">
-        <div>
-          <div class="section-head">
-            <h2>打分依据曲线</h2>
-            <span id="selectedModuleLabel">--</span>
-          </div>
-          <div id="metricCharts" class="metric-grid"></div>
-        </div>
-        <div>
-          <div class="section-head">
-            <h2>当前依据明细</h2>
-            <span id="latestRun">--</span>
-          </div>
-          <div id="evidenceTable" class="evidence-table"></div>
-        </div>
-      </section>
-
-      <section class="history-section">
-        <div class="section-head">
-          <h2>评分历史</h2>
-          <span id="historyUpdated">--</span>
-        </div>
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>评分时间</th>
-                <th>基准日</th>
-                <th>机会分</th>
-                <th>惩罚</th>
-                <th>扣上限前</th>
-                <th>仓位分</th>
-                <th>推荐仓位</th>
-                <th>上证</th>
-                <th>策略版本</th>
-                <th>状态</th>
-              </tr>
-            </thead>
-            <tbody id="historyRows"></tbody>
-          </table>
-        </div>
-      </section>
-
-      <section class="position-map-band">
-        <div class="section-head">
-          <h2>股票账户净分与推荐仓位映射</h2>
-          <span id="positionMapLabel">--</span>
-        </div>
-        <div id="positionMapChart" class="position-map-frame"></div>
-        <div id="positionBenchmarks" class="position-benchmark-grid"></div>
-      </section>
-
-      <section class="market-cycle-band">
-        <div class="section-head">
-          <h2>市场八浪周期与评分区间</h2>
-          <span id="cycleMapLabel">--</span>
-        </div>
-        <div id="marketCycleChart" class="market-cycle-frame"></div>
-        <div id="marketCycleProfile" class="market-cycle-profile"></div>
-        <div id="marketCycleCards" class="market-cycle-grid"></div>
-      </section>
-
-      <section class="api-catalog-band">
-        <div class="section-head">
-          <h2>接口说明</h2>
-          <span id="apiCatalogTotal">--</span>
-        </div>
-        <div class="api-catalog-grid">
-          <article class="api-catalog-panel">
-            <span>推荐入口</span>
-            <div id="apiRecommendedEntrypoints" class="api-chip-list"></div>
-          </article>
-          <article class="api-catalog-panel">
-            <span>接口分组</span>
-            <div id="apiCatalogGroups" class="api-chip-list"></div>
-          </article>
-          <article class="api-catalog-panel">
-            <span>安全边界</span>
-            <ul id="apiSafetyNotes" class="api-safety-list"></ul>
-          </article>
-        </div>
-      </section>
+      <footer class="dashboard-foot">研究输出仅供复盘和仓位框架参考，不构成自动交易指令。</footer>
     </main>
-
     <div data-myinvest-footer></div>
-
-    <script src="/app.js"></script>
+    <script src="/dashboard.js"></script>
     <script src="https://invest.okbbc.com/header.js" data-target="[data-myinvest-header]" defer></script>
     <script src="https://invest.okbbc.com/footer.js" data-target="[data-myinvest-footer]" defer></script>
   </body>

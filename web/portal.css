@@ -1,0 +1,25 @@
+:root { --bg:#f3f6f4; --surface:#fff; --soft:#edf3f0; --ink:#17211f; --muted:#65736e; --line:#d7e0db; --teal:#047d73; --blue:#2c68a0; --red:#bf3d2b; --amber:#b7791f; --shadow:0 10px 26px rgba(24,33,31,.07); }
+* { box-sizing:border-box; }
+body { margin:0; background:var(--bg); color:var(--ink); font-family:"Microsoft YaHei","Segoe UI",system-ui,sans-serif; letter-spacing:0; }
+h1,h2,h3,p { margin:0; } h1 { font-size:1.65rem; } h2 { font-size:1.05rem; } h3 { font-size:.92rem; }
+[data-myinvest-header] { position:sticky; top:0; z-index:1000; }
+.portal-shell { width:min(1440px,calc(100vw - 40px)); margin:20px auto 48px; }
+.portal-head { display:flex; justify-content:space-between; gap:24px; padding:10px 2px 20px; }
+.eyebrow,.kicker { color:var(--blue); font-size:.72rem; font-weight:800; letter-spacing:.05em; }
+.portal-head h1 { margin-top:7px; } .portal-head p { margin-top:7px; color:var(--muted); font-size:.86rem; }
+.portal-head-status { min-width:220px; padding-left:16px; border-left:4px solid var(--teal); } .portal-head-status span,.portal-head-status small { display:block; color:var(--muted); } .portal-head-status strong { display:block; margin-top:7px; font-size:1.1rem; } .portal-head-status small { margin-top:6px; }
+.portal-nav { display:flex; gap:4px; overflow-x:auto; padding:6px; border:1px solid var(--line); border-radius:8px; background:var(--surface); box-shadow:var(--shadow); }
+.portal-nav a { flex:0 0 auto; padding:8px 12px; border-radius:5px; color:var(--muted); font-size:.84rem; text-decoration:none; } .portal-nav a:hover,.portal-nav a.active { background:var(--soft); color:var(--teal); font-weight:700; }
+.portal-section { margin-top:14px; padding:18px; border:1px solid var(--line); border-radius:8px; background:var(--surface); box-shadow:var(--shadow); }
+.section-head { display:flex; justify-content:space-between; align-items:end; gap:14px; margin-bottom:14px; } .section-head > span { color:var(--muted); font-size:.78rem; }
+.metric-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; } .metric { padding:14px; border-top:3px solid var(--teal); background:var(--soft); } .metric span,.metric small { display:block; color:var(--muted); } .metric strong { display:block; margin:9px 0 4px; font-size:1.35rem; }
+.two-col { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; }
+.list { display:grid; gap:8px; margin:0; padding:0; list-style:none; } .list li { padding:10px; border-left:3px solid var(--teal); background:var(--soft); color:var(--muted); font-size:.82rem; line-height:1.5; }
+.list li.risk { border-left-color:var(--red); background:#fff4f1; }
+.table-wrap { overflow:auto; max-height:620px; } table { width:100%; border-collapse:collapse; font-size:.8rem; } th,td { padding:9px 10px; border-bottom:1px solid var(--line); text-align:left; white-space:nowrap; } th { background:var(--soft); color:var(--muted); }
+.link-row { display:flex; flex-wrap:wrap; gap:8px; } .link-row a { padding:8px 10px; border:1px solid var(--line); border-radius:6px; color:var(--blue); font-size:.8rem; text-decoration:none; } .link-row a:hover { border-color:var(--teal); }
+.disclosure { color:var(--muted); font-size:.8rem; line-height:1.65; } .disclosure p + p { margin-top:8px; }
+.bar-list { display:grid; gap:10px; } .bar-row { display:grid; grid-template-columns:190px 1fr 100px; align-items:center; gap:10px; font-size:.8rem; } .bar-track { height:12px; background:var(--soft); } .bar-fill { height:100%; background:var(--teal); } .bar-row:nth-child(2) .bar-fill { background:var(--red); } .bar-row:nth-child(3) .bar-fill { background:#2f7d4f; } .bar-row:nth-child(4) .bar-fill { background:#6b7280; }
+.portal-footer { padding:20px 2px 0; color:var(--muted); font-size:.75rem; }
+@media(max-width:800px) { .metric-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } .two-col { grid-template-columns:1fr; } }
+@media(max-width:540px) { .portal-shell { width:calc(100vw - 24px); margin-top:12px; } .portal-head { display:block; } .portal-head-status { margin-top:18px; padding:12px 0 0; border-top:4px solid var(--teal); border-left:0; } .metric-grid { grid-template-columns:1fr; } .portal-section { padding:14px; } .bar-row { grid-template-columns:120px 1fr 70px; } }

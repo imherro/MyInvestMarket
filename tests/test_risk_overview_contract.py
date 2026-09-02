@@ -99,15 +99,15 @@ class RiskOverviewContractTest(unittest.TestCase):
 
     def test_frontend_contains_risk_overview_surface(self) -> None:
         index_html = (ROOT / "web" / "index.html").read_text(encoding="utf-8")
-        app_js = (ROOT / "web" / "app.js").read_text(encoding="utf-8")
+        risk_html = (ROOT / "web" / "risk.html").read_text(encoding="utf-8")
+        dashboard_js = (ROOT / "web" / "dashboard.js").read_text(encoding="utf-8")
 
-        for element_id in ["riskOverviewStatus", "riskConfidence", "qualityWarnings", "riskCapList"]:
+        for element_id in ["fearScore", "fear300", "fear1000", "reminderList"]:
             self.assertIn(element_id, index_html)
-        self.assertIn("renderRiskOverview()", app_js)
-        self.assertIn("data_quality", app_js)
-        self.assertIn("risk_caps", app_js)
-        self.assertIn("暂无数据质量 warning", app_js)
-        self.assertIn("未触发风险上限", app_js)
+        for element_id in ["componentRows", "riskList", "riskCount", "quality"]:
+            self.assertIn(element_id, risk_html)
+        self.assertIn("renderReminders", dashboard_js)
+        self.assertIn("risk_caps", dashboard_js)
 
 
 if __name__ == "__main__":
