@@ -29,6 +29,13 @@ h2 { font-size: 1.02rem; }
 .portal-nav { display: flex; gap: 4px; overflow-x: auto; padding: 6px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); box-shadow: var(--shadow); }
 .portal-nav a { flex: 0 0 auto; padding: 8px 12px; border-radius: 5px; color: var(--muted); font-size: .84rem; text-decoration: none; }
 .portal-nav a:hover, .portal-nav a.active { background: var(--soft); color: var(--teal); font-weight: 700; }
+.portal-nav a[href="/"] { order: 0; }
+.portal-nav a[href="/cycle.html"] { order: 1; }
+.portal-nav a[href="/research.html"] { order: 2; }
+.portal-nav a[href="/risk.html"] { order: 3; }
+.portal-nav a[href="/allocation.html"] { order: 4; }
+.portal-nav a[href="/cycle-engine-backtest.html"] { order: 5; }
+.portal-nav a[href="/methodology.html"] { order: 6; }
 .attention-strip { display: flex; align-items: center; gap: 12px; margin-top: 14px; padding: 12px 16px; border: 1px solid #e2c98e; border-left: 4px solid var(--amber); border-radius: 8px; background: #fffaf0; }
 .attention-strip.ok { border-color: #b8d8c7; border-left-color: var(--teal); background: #f2faf6; }
 .attention-strip > div { flex: 1; min-width: 0; }

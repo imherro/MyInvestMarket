@@ -48,6 +48,9 @@ class CycleEngineBacktestTests(unittest.TestCase):
         self.assertIn("/api/cycle-engine/backtest", (ROOT / "web/cycle-engine-backtest.js").read_text(encoding="utf-8"))
         self.assertIn("cycle-engine-backtest.html", home)
         self.assertIn("逐月回测明细", page)
+        self.assertIn('class="portal-nav"', page)
+        self.assertIn('class="active" href="/cycle-engine-backtest.html"', page)
+        self.assertIn('.portal-nav a[href="/cycle.html"] { order: 1; }', (ROOT / "web/cycle-engine-backtest.css").read_text(encoding="utf-8"))
 
 
 if __name__ == "__main__":
