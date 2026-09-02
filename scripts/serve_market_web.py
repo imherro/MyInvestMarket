@@ -43,6 +43,13 @@ POST_CLOSE_READY_TIME = time(16, 30)
 CYCLE_POSITION_POLICY_PATH = DATA_DIR / "cycle_engine_position_policy_v1.json"
 CYCLE_ENGINE_CHART_PATH = DATA_DIR / "cycle_engine_chart_v1.json"
 CYCLE_ENGINE_BACKTEST_PATH = ROOT / "web" / "data" / "cycle-engine-backtest.json"
+CYCLE_ENGINE_FEATURES_PATH = DATA_DIR / "cycle_engine_features_v1.json"
+CYCLE_ENGINE_DOMAIN_SIGNALS_PATH = DATA_DIR / "cycle_engine_domain_signals_v1.json"
+CYCLE_ENGINE_CANDIDATE_PATH = DATA_DIR / "cycle_engine_cycle_state_candidate_v1.json"
+CYCLE_ENGINE_STATE_MACHINE_PATH = DATA_DIR / "cycle_engine_state_machine_v1.json"
+CYCLE_ENGINE_FEATURES_AUDIT_PATH = DATA_DIR / "cycle_engine_features_audit_v1.json"
+CYCLE_ENGINE_CANDIDATE_AUDIT_PATH = DATA_DIR / "cycle_engine_cycle_state_candidate_audit_v1.json"
+CYCLE_ENGINE_STATE_MACHINE_AUDIT_PATH = DATA_DIR / "cycle_engine_state_machine_audit_v1.json"
 
 
 def stable_release_result() -> dict[str, object]:
@@ -478,6 +485,14 @@ def api_groups_result() -> list[dict[str, object]]:
                 ),
                 api_endpoint(
                     "GET",
+                    "/api/cycle-engine/evidence",
+                    "读取当前周期状态的输入证据、候选状态、状态机确认过程和仓位映射。",
+                    "四个输入域、标准化指标、候选规则、稳定状态机、仓位映射、最近状态轨迹和审计状态。",
+                    read_only=True,
+                    safety_note="只读取冻结周期引擎产物，不触发重计算、写入或交易。",
+                ),
+                api_endpoint(
+                    "GET",
                     "/api/fear/latest",
                     "读取最新 A-FEAR 恐慌状态、变化、阶段和数据质量。",
                     "最新 A-FEAR record、文件元数据和只读安全边界。",
@@ -630,6 +645,11 @@ def api_catalog_result(base_url: str = DEFAULT_BASE_URL) -> dict[str, object]:
                 "method": "GET",
                 "path": "/api/cycle-engine/backtest",
                 "purpose": "检查周期仓位回测结果、超额收益和回撤变化。",
+            },
+            {
+                "method": "GET",
+                "path": "/api/cycle-engine/evidence",
+                "purpose": "查看当前周期状态的输入证据、候选状态和稳定状态机确认链。",
             },
         ],
         "safety": {
@@ -1592,6 +1612,133 @@ def cycle_engine_position_policy_result() -> dict[str, object]:
     }
 
 
+def cycle_engine_evidence_result() -> dict[str, object]:
+    paths = {
+        "features": CYCLE_ENGINE_FEATURES_PATH,
+        "domain_signals": CYCLE_ENGINE_DOMAIN_SIGNALS_PATH,
+        "candidate": CYCLE_ENGINE_CANDIDATE_PATH,
+        "state_machine": CYCLE_ENGINE_STATE_MACHINE_PATH,
+        "features_audit": CYCLE_ENGINE_FEATURES_AUDIT_PATH,
+        "candidate_audit": CYCLE_ENGINE_CANDIDATE_AUDIT_PATH,
+        "state_machine_audit": CYCLE_ENGINE_STATE_MACHINE_AUDIT_PATH,
+    }
+    artifacts: dict[str, dict[str, object]] = {}
+    for name, path in paths.items():
+        if not path.exists():
+            return {"available": False, "error": f"{path.name} not found", "missing_artifact": name}
+        try:
+            artifacts[name] = json.loads(path.read_text(encoding="utf-8-sig"))
+        except (OSError, json.JSONDecodeError) as exc:
+            return {"available": False, "error": f"{path.name} unavailable: {exc}", "missing_artifact": name}
+
+    features_row = (artifacts["features"].get("records") or [])[-1]
+    domain_row = (artifacts["domain_signals"].get("records") or [])[-1]
+    candidate_row = (artifacts["candidate"].get("records") or [])[-1]
+    state_row = (artifacts["state_machine"].get("records") or [])[-1]
+    policy = cycle_engine_position_policy_result()
+    policy_row = (policy.get("records") or [])[-1]
+    selected_features: list[dict[str, object]] = []
+    for path, feature in (features_row.get("features") or {}).items():
+        if not isinstance(feature, dict) or not feature.get("model_candidate"):
+            continue
+        selected_features.append(
+            {
+                "path": path,
+                "domain": feature.get("domain"),
+                "feature_family": feature.get("feature_family"),
+                "raw_value": feature.get("raw_value"),
+                "percentile": feature.get("expanding_rank_pct"),
+                "unit": feature.get("unit"),
+                "direction_hint": feature.get("direction_hint"),
+                "normalization_source": feature.get("normalization_source"),
+                "pit_date": feature.get("pit_date"),
+                "available": feature.get("available"),
+            }
+        )
+
+    domain_summary = {
+        "valuation": domain_row.get("valuation", {}),
+        "earnings": domain_row.get("earnings", {}),
+        "macro_confirmation": domain_row.get("macro_confirmation", {}),
+        "trend": domain_row.get("trend", {}),
+        "sentiment_overlay": domain_row.get("sentiment_overlay", {}),
+    }
+    candidate_rules = [
+        {"priority": 1, "name": "deep_bear_rule", "condition": "趋势=damaged 且估值=cheap 且盈利=deterioration", "result": "deep_bear"},
+        {"priority": 2, "name": "bottoming_rule_A/B", "condition": "估值=cheap 且盈利∈{bottoming,recovery} 且趋势∈{damaged,bottoming,mixed}；或趋势=bottoming 且估值非 expensive 且盈利非 deterioration", "result": "bottoming"},
+        {"priority": 3, "name": "distribution_rule", "condition": "盈利=deterioration 且趋势=extended；或盈利=deterioration 且估值=expensive 且趋势∈{up,extended,mixed}", "result": "distribution"},
+        {"priority": 4, "name": "late_bull_rule", "condition": "盈利非 deterioration 且趋势=extended 且估值∈{neutral,expensive}；或盈利非 deterioration 且估值=expensive 且趋势∈{up,extended}", "result": "late_bull"},
+        {"priority": 5, "name": "early_bull_rule", "condition": "趋势=up 且估值非 expensive 且盈利∈{bottoming,recovery}", "result": "early_bull"},
+        {"priority": 6, "name": "fallback_rules", "condition": "趋势=damaged -> bear；趋势∈{up,extended} -> bull；否则 -> ambiguous", "result": "bear / bull / ambiguous"},
+    ]
+    state_machine_rules = [
+        "初始化：第一个非 ambiguous 候选状态成为 stable_state。",
+        "候选状态等于当前 stable_state：held_same，确认并保持。",
+        "候选状态为 ambiguous：held_ambiguous，保持上一稳定状态，不把模糊读数当成新状态。",
+        "候选状态变成另一个明确状态：相同目标连续出现两个月才 transition_confirmed；期间一个 ambiguous 月可作为宽限，竞争目标会替换 pending。",
+        "所有状态按月顺序处理；不使用未来月份数据，状态确认日是该月最后一个交易日。",
+    ]
+    position_mapping = [
+        {"state": state, "equity_range": f"{bounds[0]}%-{bounds[1]}%"}
+        for state, bounds in {
+            "deep_bear": (20, 40), "bottoming": (40, 60), "early_bull": (70, 90),
+            "bull": (80, 100), "late_bull": (60, 80), "distribution": (30, 50), "bear": (0, 20),
+        }.items()
+    ]
+    state_records = artifacts["state_machine"].get("records") or []
+    recent_states = [
+        {
+            "month": row.get("month"),
+            "basis_trade_date": row.get("basis_trade_date"),
+            "raw_candidate_state": row.get("raw_candidate_state"),
+            "stable_state": row.get("stable_state"),
+            "transition_status": row.get("transition_status"),
+            "pending_target": row.get("pending_target"),
+            "pending_count": row.get("pending_count"),
+            "stable_reason_codes": row.get("stable_reason_codes", []),
+        }
+        for row in state_records[-6:]
+    ]
+    return {
+        "available": True,
+        "schema": "cycle_engine_evidence_v1",
+        "basis_month": features_row.get("month"),
+        "basis_trade_date": features_row.get("basis_trade_date"),
+        "account_scope": "stock_account",
+        "source_artifacts": {
+            name: {"path": str(path.relative_to(ROOT)), "sha256": hashlib.sha256(path.read_bytes()).hexdigest()}
+            for name, path in paths.items()
+        },
+        "latest": {
+            "domain_signals": domain_summary,
+            "selected_features": selected_features,
+            "candidate": candidate_row,
+            "state_machine": state_row,
+            "policy": policy_row,
+        },
+        "recent_state_trace": recent_states,
+        "algorithm": {
+            "pipeline": [
+                "冻结数据集 -> PIT 安全特征与扩展历史分位 -> 估值/盈利/宏观/趋势域状态 -> 候选状态规则 -> 稳定状态机 -> 股票账户权益区间映射",
+                "A-FEAR 仅作为 sentiment_overlay 展示，不参与候选状态和仓位映射。",
+            ],
+            "candidate_rules": candidate_rules,
+            "state_machine_rules": state_machine_rules,
+            "position_mapping": position_mapping,
+        },
+        "audits": {
+            "features": {"passed": artifacts["features_audit"].get("passed"), "path": str(CYCLE_ENGINE_FEATURES_AUDIT_PATH.relative_to(ROOT))},
+            "candidate": {"passed": artifacts["candidate_audit"].get("passed"), "path": str(CYCLE_ENGINE_CANDIDATE_AUDIT_PATH.relative_to(ROOT))},
+            "state_machine": {"passed": artifacts["state_machine_audit"].get("passed"), "path": str(CYCLE_ENGINE_STATE_MACHINE_AUDIT_PATH.relative_to(ROOT))},
+        },
+        "boundaries": [
+            "late_bull 是当前稳定状态，不等于 2026-08 的原始候选状态已经满足 late_bull 规则。",
+            "周期引擎是月度战略仓位锚；它不判断日内行情，也不预测具体波浪位置。",
+            "周期数据为冻结研究产物；页面和接口只读，不触发重计算、写入或交易。",
+        ],
+    }
+
+
 def cycle_engine_chart_result() -> dict[str, object]:
     if not CYCLE_ENGINE_CHART_PATH.exists():
         return {"available": False, "error": "cycle_engine_chart_v1.json not found"}
@@ -2016,6 +2163,7 @@ def homepage_index_result() -> dict[str, object]:
             "latest_model_validation": "/api/research/latest/model-validation",
             "latest_model_health": "/api/research/latest/model-health",
             "latest_strategy_robustness": "/api/research/latest/strategy-robustness",
+            "cycle_engine_evidence": "/api/cycle-engine/evidence",
             "fear_latest": "/api/fear/latest",
             "fear_history": "/api/fear/history",
             "fear_status": "/api/fear/status",
@@ -2076,6 +2224,9 @@ class MarketWebHandler(BaseHTTPRequestHandler):
                 return
             if path == "/api/cycle-engine/backtest":
                 self.send_json(cycle_engine_backtest_result())
+                return
+            if path == "/api/cycle-engine/evidence":
+                self.send_json(cycle_engine_evidence_result())
                 return
             if path == "/api/fear/latest":
                 self.send_json(latest_a_fear_result())

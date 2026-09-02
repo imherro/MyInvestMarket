@@ -184,6 +184,7 @@ Phase 4.1 使用固定自然月取模的 6/12/24 个月 non-overlap cohorts，�
 - `GET /api/fear/components/latest`：最新四组件、底层指标和300/1000恐慌差。
 - `GET /api/fear/status`：数据日期、样本门槛、置信度和新鲜度。
 - `GET /api/fear/audit/latest`：最新历史深度、分数边界、组件相关性和跳变审计。
+- `GET /api/cycle-engine/evidence`：当前周期状态的实际输入、四域状态、候选规则、稳定状态机轨迹、仓位映射和审计状态。
 
 ## Web 工作台
 
@@ -191,7 +192,7 @@ Phase 4.1 使用固定自然月取模的 6/12/24 个月 non-overlap cohorts，�
 
 - `/research.html`：市场评分、七大模块、仓位依据和评分历史。
 - `/risk.html`：A-FEAR、风险上限、恐慌组件和数据质量。
-- `/cycle.html`：周期引擎 200 个月状态与战略权益区间。
+- `/cycle.html`：周期引擎 200 个月状态与战略权益区间，并展示当前状态的输入证据、候选状态和状态机确认链。
 - `/allocation.html`：股票账户 β核心、α主动、防御因子、流动性四仓。
 - `/cycle-engine-backtest.html`：周期仓位回测、净值、回撤、敏感性和逐月记录。
 - `/methodology.html`：研究分层、数据链、审计边界和接口入口。

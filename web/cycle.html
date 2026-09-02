@@ -1,1 +1,95 @@
-<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>周期引擎 · MyInvest</title><link rel="stylesheet" href="/portal.css"></head><body data-page="cycle"><div data-myinvest-header></div><main class="portal-shell"><header class="portal-head"><div><span class="eyebrow">MYINVEST / CYCLE ENGINE</span><h1>周期引擎</h1><p>以估值、盈利和趋势形成候选状态，再由稳定状态机确认战略仓位锚。</p></div><div class="portal-head-status"><span>样本长度</span><strong id="cycleCount">--</strong><small>Phase 3.1 stable_state</small></div></header><nav class="portal-nav"><a href="/">决策台</a><a href="/research.html">市场研究</a><a href="/risk.html">风险与恐慌</a><a class="active" href="/cycle.html">周期引擎</a><a href="/allocation.html">四仓配置</a><a href="/cycle-engine-backtest.html">周期回测</a><a href="/methodology.html">方法与审计</a></nav><p id="pageError"></p><section class="portal-section"><div class="metric-grid"><div class="metric"><span>稳定周期状态</span><strong id="cycleState">--</strong><small>最新稳定状态</small></div><div class="metric"><span>战略权益锚</span><strong id="cycleRange">--</strong><small>股票账户</small></div><div class="metric"><span>历史样本</span><strong id="cycleCount2">--</strong><small>完整月度记录</small></div><div class="metric"><span>回测</span><strong><a href="/cycle-engine-backtest.html">进入</a></strong><small>收益与回撤</small></div></div></section><section class="portal-section"><div class="section-head"><h2>200个月状态与仓位历史</h2><span>按月倒序</span></div><div class="table-wrap"><table><thead><tr><th>基准月</th><th>基准日</th><th>稳定状态</th><th>权益下限</th><th>权益上限</th><th>映射依据</th></tr></thead><tbody id="cycleRows"></tbody></table></div></section><section class="portal-section disclosure"><p>周期引擎用于中期战略仓位，不预测具体八浪位置。月末信号不应假设在同一收盘价成交。</p><p>状态机审计：<a href="/api/cycle-engine/backtest">查看回测</a> · <a href="/api/index">查看完整主页数据</a></p></section></main><div data-myinvest-footer></div><script src="/portal.js"></script><script>document.addEventListener("DOMContentLoaded",()=>{const target=document.getElementById("cycleCount");const mirror=document.getElementById("cycleCount2");const observer=new MutationObserver(()=>{mirror.textContent=target.textContent});observer.observe(target,{childList:true});});</script><script src="https://invest.okbbc.com/header.js" data-target="[data-myinvest-header]" defer></script><script src="https://invest.okbbc.com/footer.js" data-target="[data-myinvest-footer]" defer></script></body></html>
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>周期引擎 · MyInvest</title>
+    <link rel="stylesheet" href="/portal.css" />
+  </head>
+  <body data-page="cycle">
+    <div data-myinvest-header></div>
+    <main class="portal-shell">
+      <header class="portal-head">
+        <div>
+          <span class="eyebrow">MYINVEST / CYCLE ENGINE</span>
+          <h1>周期引擎</h1>
+          <p>展示当前稳定状态是如何由冻结数据、候选规则和状态机确认出来的。</p>
+        </div>
+        <div class="portal-head-status">
+          <span>样本长度</span>
+          <strong id="cycleCount">--</strong>
+          <small>Phase 3.1 stable_state</small>
+        </div>
+      </header>
+
+      <nav class="portal-nav" aria-label="市场研究工作台">
+        <a href="/">决策台</a>
+        <a class="active" href="/cycle.html">周期引擎</a>
+        <a href="/research.html">市场研究</a>
+        <a href="/risk.html">风险与恐慌</a>
+        <a href="/allocation.html">四仓配置</a>
+        <a href="/cycle-engine-backtest.html">周期回测</a>
+        <a href="/methodology.html">方法与审计</a>
+      </nav>
+
+      <p id="pageError"></p>
+
+      <section id="cycleEvidenceBanner" class="portal-section cycle-evidence-banner">
+        <div class="section-head"><div><span class="eyebrow">CURRENT DECISION TRACE</span><h2 id="cycleHeadline">--</h2></div><span id="cycleBasis">--</span></div>
+        <p id="cycleEvidenceSummary">--</p>
+      </section>
+
+      <section class="portal-section">
+        <div class="metric-grid">
+          <div class="metric"><span>原始候选状态</span><strong id="cycleCandidate">--</strong><small>本月四域规则输出</small></div>
+          <div class="metric"><span>稳定周期状态</span><strong id="cycleState">--</strong><small id="cycleTransition">--</small></div>
+          <div class="metric"><span>战略权益锚</span><strong id="cycleRange">--</strong><small>股票账户</small></div>
+          <div class="metric"><span>历史样本</span><strong id="cycleCount2">--</strong><small>完整月度记录</small></div>
+        </div>
+      </section>
+
+      <section class="portal-section">
+        <div class="section-head"><div><span class="eyebrow">EVIDENCE VECTOR</span><h2>当前状态使用的四个输入域</h2></div><span>不含未来数据</span></div>
+        <div id="cycleDomainCards" class="domain-cards"></div>
+      </section>
+
+      <section class="portal-section">
+        <div class="section-head"><div><span class="eyebrow">NORMALIZED INPUTS</span><h2>实际输入与标准化结果</h2></div><span>当前基准月</span></div>
+        <div class="table-wrap"><table><thead><tr><th>数据路径</th><th>原始值</th><th>历史分位</th><th>单位</th><th>来源与时点</th><th>可用</th></tr></thead><tbody id="cycleFeatureRows"></tbody></table></div>
+      </section>
+
+      <section class="two-col">
+        <section class="portal-section">
+          <div class="section-head"><div><span class="eyebrow">CANDIDATE RULES</span><h2>候选状态判定顺序</h2></div><span>优先级</span></div>
+          <ol id="cycleCandidateRules" class="rule-list"></ol>
+        </section>
+        <section class="portal-section">
+          <div class="section-head"><div><span class="eyebrow">STABLE STATE MACHINE</span><h2>稳定状态确认逻辑</h2></div><span>Phase 3.1</span></div>
+          <ol id="cycleStateMachineRules" class="rule-list"></ol>
+        </section>
+      </section>
+
+      <section class="portal-section">
+        <div class="section-head"><div><span class="eyebrow">RECENT TRACE</span><h2>最近状态轨迹</h2></div><span>最近 6 个月</span></div>
+        <div class="table-wrap"><table><thead><tr><th>基准月</th><th>原始候选</th><th>稳定状态</th><th>状态机动作</th><th>待确认目标</th><th>稳定原因</th></tr></thead><tbody id="cycleTraceRows"></tbody></table></div>
+      </section>
+
+      <section class="portal-section">
+        <div class="section-head"><div><span class="eyebrow">POSITION POLICY</span><h2>状态到权益仓位的映射</h2></div><a href="/allocation.html">查看四仓配置</a></div>
+        <div class="table-wrap"><table><thead><tr><th>稳定状态</th><th>股票账户权益区间</th><th>当前映射</th></tr></thead><tbody id="cycleMappingRows"></tbody></table></div>
+      </section>
+
+      <section class="portal-section">
+        <div class="section-head"><div><span class="eyebrow">AUDIT & BOUNDARIES</span><h2>审计状态与解释边界</h2></div><a href="/api/cycle-engine/evidence">读取 API</a></div>
+        <ul id="cycleAuditList" class="list"></ul>
+        <div class="link-row cycle-source-links"><a href="/api/cycle-engine/evidence">/api/cycle-engine/evidence</a><a href="/api/cycle-engine/backtest">/api/cycle-engine/backtest</a><a href="/api/index">/api/index</a></div>
+      </section>
+
+      <footer class="portal-footer">周期引擎是月度战略仓位锚，不预测具体波浪位置；页面只读，不触发重计算、写入或交易。</footer>
+    </main>
+    <div data-myinvest-footer></div>
+    <script src="/portal.js"></script>
+    <script src="https://invest.okbbc.com/header.js" data-target="[data-myinvest-header]" defer></script>
+    <script src="https://invest.okbbc.com/footer.js" data-target="[data-myinvest-footer]" defer></script>
+  </body>
+</html>

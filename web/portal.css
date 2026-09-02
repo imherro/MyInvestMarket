@@ -15,6 +15,21 @@ h1,h2,h3,p { margin:0; } h1 { font-size:1.65rem; } h2 { font-size:1.05rem; } h3 
 .section-head { display:flex; justify-content:space-between; align-items:end; gap:14px; margin-bottom:14px; } .section-head > span { color:var(--muted); font-size:.78rem; }
 .metric-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; } .metric { padding:14px; border-top:3px solid var(--teal); background:var(--soft); } .metric span,.metric small { display:block; color:var(--muted); } .metric strong { display:block; margin:9px 0 4px; font-size:1.35rem; }
 .two-col { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; }
+.cycle-evidence-banner { border-left:5px solid var(--teal); }
+.cycle-evidence-banner p { color:var(--muted); line-height:1.7; }
+.domain-cards { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:10px; }
+.domain-card { min-height:154px; padding:13px; border:1px solid var(--line); background:var(--soft); }
+.domain-card div { display:flex; justify-content:space-between; align-items:start; gap:8px; }
+.domain-card span,.domain-card small { color:var(--muted); }
+.domain-card strong { color:var(--teal); font-size:1rem; }
+.domain-card small { display:block; margin-top:7px; font-size:.74rem; }
+.domain-card p { margin-top:10px; color:var(--muted); font-size:.78rem; line-height:1.55; }
+.rule-list { display:grid; gap:9px; margin:0; padding-left:22px; color:var(--muted); font-size:.8rem; line-height:1.55; }
+.rule-list li { padding-left:3px; }
+.rule-list li b,.rule-list li em { display:block; color:var(--ink); font-style:normal; }
+.rule-list li em { color:var(--teal); }
+.current-row { background:#e3f2ee; font-weight:700; }
+.cycle-source-links { margin-top:14px; }
 .list { display:grid; gap:8px; margin:0; padding:0; list-style:none; } .list li { padding:10px; border-left:3px solid var(--teal); background:var(--soft); color:var(--muted); font-size:.82rem; line-height:1.5; }
 .list li.risk { border-left-color:var(--red); background:#fff4f1; }
 .table-wrap { overflow:auto; max-height:620px; } table { width:100%; border-collapse:collapse; font-size:.8rem; } th,td { padding:9px 10px; border-bottom:1px solid var(--line); text-align:left; white-space:nowrap; } th { background:var(--soft); color:var(--muted); }
@@ -22,5 +37,6 @@ h1,h2,h3,p { margin:0; } h1 { font-size:1.65rem; } h2 { font-size:1.05rem; } h3 
 .disclosure { color:var(--muted); font-size:.8rem; line-height:1.65; } .disclosure p + p { margin-top:8px; }
 .bar-list { display:grid; gap:10px; } .bar-row { display:grid; grid-template-columns:190px 1fr 100px; align-items:center; gap:10px; font-size:.8rem; } .bar-track { height:12px; background:var(--soft); } .bar-fill { height:100%; background:var(--teal); } .bar-row:nth-child(2) .bar-fill { background:var(--red); } .bar-row:nth-child(3) .bar-fill { background:#2f7d4f; } .bar-row:nth-child(4) .bar-fill { background:#6b7280; }
 .portal-footer { padding:20px 2px 0; color:var(--muted); font-size:.75rem; }
-@media(max-width:800px) { .metric-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } .two-col { grid-template-columns:1fr; } }
-@media(max-width:540px) { .portal-shell { width:calc(100vw - 24px); margin-top:12px; } .portal-head { display:block; } .portal-head-status { margin-top:18px; padding:12px 0 0; border-top:4px solid var(--teal); border-left:0; } .metric-grid { grid-template-columns:1fr; } .portal-section { padding:14px; } .bar-row { grid-template-columns:120px 1fr 70px; } }
+@media(max-width:1100px) { .domain-cards { grid-template-columns:repeat(3,minmax(0,1fr)); } }
+@media(max-width:800px) { .metric-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } .two-col { grid-template-columns:1fr; } .domain-cards { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+@media(max-width:540px) { .portal-shell { width:calc(100vw - 24px); margin-top:12px; } .portal-head { display:block; } .portal-head-status { margin-top:18px; padding:12px 0 0; border-top:4px solid var(--teal); border-left:0; } .metric-grid { grid-template-columns:1fr; } .portal-section { padding:14px; } .bar-row { grid-template-columns:120px 1fr 70px; } .domain-cards { grid-template-columns:1fr; } }
