@@ -50,6 +50,7 @@ CYCLE_ENGINE_STATE_MACHINE_PATH = DATA_DIR / "cycle_engine_state_machine_v1.json
 CYCLE_ENGINE_FEATURES_AUDIT_PATH = DATA_DIR / "cycle_engine_features_audit_v1.json"
 CYCLE_ENGINE_CANDIDATE_AUDIT_PATH = DATA_DIR / "cycle_engine_cycle_state_candidate_audit_v1.json"
 CYCLE_ENGINE_STATE_MACHINE_AUDIT_PATH = DATA_DIR / "cycle_engine_state_machine_audit_v1.json"
+CHATGPT_QA_PATH = DATA_DIR / "chatgpt_qa_history.json"
 
 
 def stable_release_result() -> dict[str, object]:
@@ -474,6 +475,22 @@ def api_groups_result() -> list[dict[str, object]]:
                     "策略稳健性分析。",
                     "因果代理、样本外验证、压力测试和 robustness payload。",
                     read_only=True,
+                ),
+                api_endpoint(
+                    "GET",
+                    "/api/chatgpt-qa/latest",
+                    "读取最近一次基于固定研究问题生成的 ChatGPT 问答摘要。",
+                    "问题、基准日、周期判断、建议仓位、方向、风险、变化和完整回答。",
+                    read_only=True,
+                    safety_note="只读取本地已保存的问答结果，不发起外部提问、不写入 Notion、不执行交易。",
+                ),
+                api_endpoint(
+                    "GET",
+                    "/api/chatgpt-qa/history",
+                    "读取 ChatGPT 问答的每日历史记录。",
+                    "按日期排列的结构化问答历史和完整回答正文。",
+                    read_only=True,
+                    safety_note="只读取本地历史文件，不触发重计算或外部写入。",
                 ),
                 api_endpoint(
                     "GET",
@@ -1867,6 +1884,64 @@ def history_api_result(include_legacy: bool = False) -> dict[str, object]:
     }
 
 
+def load_chatgpt_qa_history() -> dict[str, object]:
+    if not CHATGPT_QA_PATH.exists():
+        return {
+            "schema_version": 1,
+            "question_id": "a_share_daily_research_v1",
+            "question": "",
+            "updated_at": None,
+            "records": [],
+        }
+    try:
+        payload = json.loads(CHATGPT_QA_PATH.read_text(encoding="utf-8-sig"))
+    except (OSError, json.JSONDecodeError):
+        return {
+            "schema_version": 1,
+            "question_id": "a_share_daily_research_v1",
+            "question": "",
+            "updated_at": None,
+            "records": [],
+        }
+    records = payload.get("records", []) if isinstance(payload, dict) else []
+    if not isinstance(records, list):
+        records = []
+    payload["records"] = sorted(
+        [record for record in records if isinstance(record, dict)],
+        key=lambda record: (str(record.get("basis_trade_date") or ""), str(record.get("asked_at") or "")),
+    )
+    return payload
+
+
+def chatgpt_qa_history_result() -> dict[str, object]:
+    payload = load_chatgpt_qa_history()
+    records = payload.get("records", [])
+    return {
+        "available": bool(records),
+        "schema_version": payload.get("schema_version", 1),
+        "question_id": payload.get("question_id", "a_share_daily_research_v1"),
+        "question": payload.get("question", ""),
+        "updated_at": payload.get("updated_at"),
+        "record_count": len(records),
+        "latest": records[-1] if records else None,
+        "records": records,
+        "storage": {
+            "file": relative_path(CHATGPT_QA_PATH),
+            "append_only_by_basis_trade_date": True,
+            "notion_sync": False,
+        },
+    }
+
+
+def chatgpt_qa_latest_result() -> dict[str, object]:
+    result = chatgpt_qa_history_result()
+    return {
+        key: value
+        for key, value in result.items()
+        if key != "records"
+    }
+
+
 def homepage_index_result() -> dict[str, object]:
     records = score_records(include_legacy=False)
     latest = records[-1] if records else {}
@@ -1883,6 +1958,7 @@ def homepage_index_result() -> dict[str, object]:
     policy_map = position_policy_map_result(latest)
     allocation_map = allocation_policy_result(latest, records)
     fear_result = latest_a_fear_result()
+    chatgpt_qa = chatgpt_qa_history_result()
 
     module_cards = []
     for key, module in modules.items():
@@ -2040,6 +2116,14 @@ def homepage_index_result() -> dict[str, object]:
             "endpoints": latest_research.get("endpoints", {}),
         },
         "api_catalog": api_catalog_summary_result(),
+        "chatgpt_qa": {
+            "available": chatgpt_qa.get("available"),
+            "record_count": chatgpt_qa.get("record_count"),
+            "latest": chatgpt_qa.get("latest"),
+            "entrypoint": "/chatgpt-qa.html",
+            "latest_api": "/api/chatgpt-qa/latest",
+            "history_api": "/api/chatgpt-qa/history",
+        },
         "cycle_engine_position_policy": cycle_engine_position_policy_result(),
         "cycle_engine_chart": cycle_engine_chart_result(),
         "cycle_engine_backtest": cycle_engine_backtest_result(),
@@ -2168,6 +2252,8 @@ def homepage_index_result() -> dict[str, object]:
             "fear_history": "/api/fear/history",
             "fear_status": "/api/fear/status",
             "fear_audit": "/api/fear/audit/latest",
+            "chatgpt_qa_latest": "/api/chatgpt-qa/latest",
+            "chatgpt_qa_history": "/api/chatgpt-qa/history",
         },
     }
 
@@ -2221,6 +2307,12 @@ class MarketWebHandler(BaseHTTPRequestHandler):
                 return
             if path == "/api/research/latest/strategy-robustness":
                 self.send_json(latest_strategy_robustness_result())
+                return
+            if path == "/api/chatgpt-qa/latest":
+                self.send_json(chatgpt_qa_latest_result())
+                return
+            if path == "/api/chatgpt-qa/history":
+                self.send_json(chatgpt_qa_history_result())
                 return
             if path == "/api/cycle-engine/backtest":
                 self.send_json(cycle_engine_backtest_result())

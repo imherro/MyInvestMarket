@@ -3,6 +3,11 @@ document.addEventListener("DOMContentLoaded", () => loadPage().catch((error) => 
 
 async function json(url) { const response = await fetch(url); const body = await response.json(); if (!response.ok) throw new Error(body.error || response.statusText); return body; }
 async function loadPage() {
+  if (page === "chatgpt-qa") {
+    const data = await json("/api/chatgpt-qa/history");
+    renderChatgptQa(data);
+    return;
+  }
   const data = await json("/api/index");
   const latest = data.summary || {};
   setText("pageDate", latest.basis_trade_date || "--"); setText("pageModel", data.model_version || "--");
@@ -67,6 +72,15 @@ function renderAllocation(data) {
   const allocation = data.allocation_policy || {}; setText("allocationState", allocation.state || "--"); setText("allocationRange", allocation.total_risk_asset_range || "--"); const sleeves = allocation.sleeves || []; document.getElementById("sleeveRows").innerHTML = sleeves.map((item) => `<tr><td>${escapeHtml(item.label || item.key || "--")}</td><td>${escapeHtml(item.target_range || "--")}</td><td>${format(item.midpoint)}</td><td>${escapeHtml(item.description || "")}</td></tr>`).join(""); const history = allocation.history || []; document.getElementById("allocationRows").innerHTML = history.slice().reverse().slice(0,100).map((row) => `<tr><td>${escapeHtml(row.basis_trade_date || "--")}</td><td>${escapeHtml(row.state || "--")}</td><td>${format(row.market_position_score)}</td><td>${escapeHtml(row.sleeves?.liquidity?.target_range || "--")}</td></tr>`).join("");
 }
 function renderMethodology(data) { setText("methodModel", data.model_version || "--"); setText("methodPolicy", data.position_policy_version || "--"); const links = data.source_endpoints || {}; document.getElementById("apiLinks").innerHTML = Object.entries(links).map(([key,value]) => `<a href="${escapeHtml(value)}">${escapeHtml(key)} · ${escapeHtml(value)}</a>`).join(""); }
+function renderChatgptQa(data) {
+  const latest = data.latest || {};
+  setText("qaBasisDate", latest.basis_trade_date || "--"); setText("qaModel", latest.model || "--"); setText("qaStage", latest.period_stage || "--"); setText("qaConfidence", `置信度 ${format(latest.confidence)}%`); setText("qaPosition", latest.position_range || `${format(latest.position_pct)}%`); setText("qaAction", latest.action || "--"); setText("qaCount", data.record_count ?? 0); setText("qaTrade", latest.no_trade ? "无需交易" : (latest.action || "--")); setText("qaRun", latest.source_run_id || "--"); setText("qaSummary", latest.core_summary || "暂无问答记录"); setText("qaAnswer", latest.answer_markdown || "暂无完整回答");
+  renderQaList("qaDirections", latest.directions, (item) => `${item.name || "--"}：${item.reason || ""}`);
+  renderQaList("qaAvoid", latest.avoid_directions, (item) => `${item.name || "--"}：${item.reason || ""}`);
+  fillList("qaAddSignals", latest.turning_point_add_missing || []); fillList("qaReduceSignals", latest.turning_point_reduce_missing || []);
+  const rows = data.records || []; const node = document.getElementById("qaHistoryRows"); if (node) node.innerHTML = rows.slice().reverse().map((row) => `<tr><td>${escapeHtml(row.basis_trade_date || "--")}</td><td>${escapeHtml(row.period_stage || "--")}</td><td>${format(row.confidence)}%</td><td>${escapeHtml(row.position_range || `${format(row.position_pct)}%`)}</td><td>${escapeHtml(row.action || "--")}</td><td>${escapeHtml((row.directions || []).map((item) => item.name || item).join("、"))}</td><td>${escapeHtml((row.avoid_directions || []).map((item) => item.name || item).join("、"))}</td><td>${escapeHtml(row.changes_vs_yesterday || "--")}</td></tr>`).join("") || `<tr><td colspan="8">暂无问答记录</td></tr>`;
+}
+function renderQaList(id, items, formatter) { const node = document.getElementById(id); if (!node) return; node.innerHTML = (items || []).map((item) => `<li>${escapeHtml(formatter(item))}</li>`).join("") || "<li>暂无记录</li>"; }
 function fillList(id, items, className = "") { const node = document.getElementById(id); if (node) node.innerHTML = items.length ? items.slice(0,8).map((item) => `<li class="${className}">${escapeHtml(item)}</li>`).join("") : "<li>暂无记录</li>"; }
 function setText(id, value) { const node = document.getElementById(id); if (node) node.textContent = value; }
 function format(value) { return value == null || !Number.isFinite(Number(value)) ? "--" : Number(value).toFixed(2); }

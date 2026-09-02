@@ -67,6 +67,16 @@ Phase 4.1 使用固定自然月取模的 6/12/24 个月 non-overlap cohorts，�
 
 ## 核心输出
 
+## ChatGPT问答日更
+
+系统新增 `ChatGPT问答` 子频道，按固定问题每日生成一次独立的市场周期、仓位和配置复核，并将结构化摘要与完整回答追加保存到 `data/chatgpt_qa_history.json`。该历史记录仅服务于本系统网页和接口复盘，不触发交易，也不依赖外部文档写入。
+
+- 页面入口：`/chatgpt-qa.html`
+- 最新结果：`GET /api/chatgpt-qa/latest`
+- 每日历史：`GET /api/chatgpt-qa/history`
+- 问答输出必须包含周期阶段、置信度、建议仓位、相较昨日动作、3～5个方向、3个不追方向、拐点监测、数据缺失项和完整回答正文。
+- 以 `basis_trade_date` 去重；数据不足或无实质变化时，以“今天无需交易”为默认结论。
+
 - `market_opportunity_score`：市场机会分，衡量趋势、宽度、流动性、资金、主线、估值和宏观环境。
 - `crowding_penalty`：拥挤与脆弱性扣分，识别短线过热、资金分歧、估值偏贵、高波动、流动性枯竭。
 - `pre_overlay_market_position_score`：趋势、区制和连续风险折扣后的仓位分，尚未应用深熊逆向 β 地板。
