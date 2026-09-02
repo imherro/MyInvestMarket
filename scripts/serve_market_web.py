@@ -1910,6 +1910,17 @@ def load_chatgpt_qa_history() -> dict[str, object]:
         [record for record in records if isinstance(record, dict)],
         key=lambda record: (str(record.get("basis_trade_date") or ""), str(record.get("asked_at") or "")),
     )
+    for record in payload["records"]:
+        answer_file = record.get("answer_file")
+        if not answer_file:
+            continue
+        candidate = (ROOT / str(answer_file)).resolve()
+        try:
+            candidate.relative_to(ROOT.resolve())
+        except ValueError:
+            continue
+        if candidate.exists() and candidate.is_file():
+            record["answer_markdown"] = candidate.read_text(encoding="utf-8-sig")
     return payload
 
 

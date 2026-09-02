@@ -19,6 +19,8 @@ def test_chatgpt_qa_history_has_structured_latest_record() -> None:
         assert key in latest
     assert payload["storage"]["notion_sync"] is False
     assert payload["storage"]["append_only_by_record_id"] is True
+    assert payload["latest"]["source_url"].startswith("https://chatgpt.com/")
+    assert len(payload["latest"]["answer_markdown"]) > 1000
 
 
 def test_chatgpt_qa_endpoints_are_read_only_and_catalogued() -> None:

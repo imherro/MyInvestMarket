@@ -76,6 +76,7 @@ Phase 4.1 使用固定自然月取模的 6/12/24 个月 non-overlap cohorts，�
 - 每日历史：`GET /api/chatgpt-qa/history`
 - 问答输出必须包含周期阶段、置信度、建议仓位、相较昨日动作、3～5个方向、3个不追方向、拐点监测、数据缺失项和完整回答正文。
 - 以 `basis_trade_date` 去重；数据不足或无实质变化时，以“今天无需交易”为默认结论。
+- 记录保留 `source_type`、`source_url`、`source_title` 与 `answer_file`；网页联网回答和本地 Codex 复核分开标记，页面提供原文审计链接。
 
 - `market_opportunity_score`：市场机会分，衡量趋势、宽度、流动性、资金、主线、估值和宏观环境。
 - `crowding_penalty`：拥挤与脆弱性扣分，识别短线过热、资金分歧、估值偏贵、高波动、流动性枯竭。
