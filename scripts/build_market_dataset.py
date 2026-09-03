@@ -14,6 +14,8 @@ import pandas as pd
 import requests
 import tushare as ts
 
+import hithink_data
+
 
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_OUT_DIR = ROOT / "data"
@@ -151,6 +153,36 @@ def tushare_client() -> Any:
     return ts.pro_api(token)
 
 
+def hithink_index_history(code: str, start: date, end: date, q: Quality) -> pd.DataFrame | None:
+    if not hithink_data.configured():
+        return None
+    try:
+        frame = hithink_data.index_history(code, start, end)
+        if frame.empty:
+            q.note(f"HiThink.index.history returned no rows for {code}; Tushare fallback used")
+            return None
+        q.source("HiThink.index.history")
+        return frame.sort_values("trade_date").reset_index(drop=True)
+    except Exception as exc:
+        q.note(f"HiThink.index.history unavailable for {code}; Tushare fallback used ({exc})")
+        return None
+
+
+def index_history_frame(pro: Any, code: str, start: date, end: date, q: Quality) -> tuple[pd.DataFrame, str]:
+    frame = hithink_index_history(code, start, end, q)
+    if frame is not None:
+        return frame, "HiThink.index.history"
+    try:
+        frame = pro.index_daily(ts_code=code, start_date=start.strftime("%Y%m%d"), end_date=end.strftime("%Y%m%d"))
+        q.source("Tushare.index_daily")
+        if frame.empty or "trade_date" not in frame.columns:
+            return frame, "Tushare.index_daily"
+        return frame.sort_values("trade_date").reset_index(drop=True), "Tushare.index_daily"
+    except Exception as exc:
+        q.missing(f"market.indices.{code}", str(exc))
+        return pd.DataFrame(), "Tushare.index_daily"
+
+
 def fetch_latest_complete_trade_date(pro: Any, as_of: date, q: Quality) -> tuple[str, pd.DataFrame, pd.DataFrame]:
     start = yyyymmdd(as_of - timedelta(days=45))
     end = yyyymmdd(as_of)
@@ -172,17 +204,11 @@ def fetch_latest_complete_trade_date(pro: Any, as_of: date, q: Quality) -> tuple
 
 
 def index_metrics(pro: Any, trade_date: str, q: Quality) -> dict[str, Any]:
-    start = (
-        datetime.strptime(trade_date, "%Y%m%d").date() - timedelta(days=90)
-    ).strftime("%Y%m%d")
+    end_date = datetime.strptime(trade_date, "%Y%m%d").date()
+    start_date = end_date - timedelta(days=90)
     result: dict[str, Any] = {}
     for code, meta in INDEXES.items():
-        try:
-            df = pro.index_daily(ts_code=code, start_date=start, end_date=trade_date)
-            q.source("Tushare.index_daily")
-        except Exception as exc:
-            q.missing(f"market.indices.{code}", str(exc))
-            continue
+        df, source = index_history_frame(pro, code, start_date, end_date, q)
 
         if df.empty:
             q.missing(f"market.indices.{code}", "no index_daily rows")
@@ -208,7 +234,7 @@ def index_metrics(pro: Any, trade_date: str, q: Quality) -> dict[str, Any]:
             "ma20_deviation_pct": finite_float((close / ma20 - 1) * 100),
             "volume_ratio_5d": finite_float(float(latest["vol"]) / prev5_vol),
             "above_ma20": bool(close >= ma20) if math.isfinite(ma20) else None,
-            "source": "Tushare.index_daily",
+            "source": source,
         }
     return result
 
@@ -284,19 +310,13 @@ def index_valuation(pro: Any, trade_date: str, q: Quality) -> dict[str, Any]:
 
 
 def volatility_metrics(pro: Any, trade_date: str, q: Quality) -> dict[str, Any]:
-    start = (
-        datetime.strptime(trade_date, "%Y%m%d").date() - timedelta(days=180)
-    ).strftime("%Y%m%d")
+    end_date = datetime.strptime(trade_date, "%Y%m%d").date()
+    start_date = end_date - timedelta(days=180)
     result: dict[str, Any] = {"trade_date": iso_date(trade_date), "indices": {}, "market": {}}
 
     market_vols: list[float] = []
     for code, meta in INDEXES.items():
-        try:
-            df = pro.index_daily(ts_code=code, start_date=start, end_date=trade_date)
-            q.source("Tushare.index_daily")
-        except Exception as exc:
-            q.missing(f"volatility.indices.{code}", str(exc))
-            continue
+        df, source = index_history_frame(pro, code, start_date, end_date, q)
         if df.empty:
             q.missing(f"volatility.indices.{code}", "empty index_daily")
             continue
@@ -314,7 +334,7 @@ def volatility_metrics(pro: Any, trade_date: str, q: Quality) -> dict[str, Any]:
             "realized_vol_30d": vol_30,
             "realized_vol_60d": vol_60,
             "drawdown_60d_pct": drawdown_60,
-            "source": "Tushare.index_daily",
+            "source": source,
         }
 
     result["market"] = {
@@ -355,9 +375,20 @@ def market_breadth(pro: Any, trade_date: str, daily: pd.DataFrame, sw_l1: pd.Dat
         result["limit_up"] = int((limits.get("limit") == "U").sum()) if not limits.empty else 0
         result["limit_down"] = int((limits.get("limit") == "D").sum()) if not limits.empty else 0
     except Exception as exc:
-        q.missing("breadth.limit_up_down", str(exc))
-        result["limit_up"] = None
-        result["limit_down"] = None
+        try:
+            basis_date = datetime.strptime(trade_date, "%Y%m%d").date()
+            limit_up = hithink_data.special_pool_total("limit-up-pool", basis_date)
+            limit_down = hithink_data.special_pool_total("limit-down-pool", basis_date)
+            if limit_up is None or limit_down is None:
+                raise RuntimeError("HiThink limit pool response had no pagination total")
+            q.source("HiThink.special.limit-pools")
+            q.note(f"Tushare.limit_list_d unavailable; HiThink limit pools used ({exc})")
+            result["limit_up"] = limit_up
+            result["limit_down"] = limit_down
+        except Exception as hithink_exc:
+            q.missing("breadth.limit_up_down", f"Tushare: {exc}; HiThink: {hithink_exc}")
+            result["limit_up"] = None
+            result["limit_down"] = None
 
     try:
         step = pro.limit_step(trade_date=trade_date)

@@ -255,6 +255,10 @@ Phase 8 增加策略稳健性验证：
 
 ## 每日更新
 
+### 数据源策略 v2
+
+日更不依赖通达信或同花顺桌面客户端。已配置同花顺远程 CLI 时，指数历史和周期波动率优先使用 `HiThink.index.history`；单个指数不可用会逐项回退 `Tushare.index_daily`，来源和回退原因写入快照的数据质量字段。全市场逐股聚合、资金流、估值历史口径和宏观数据仍按字段使用 Tushare、AKShare、FRED 等来源，详见 [`docs/data_source_policy_v2.md`](docs/data_source_policy_v2.md)。
+
 工作日收盘后执行：
 
 ```powershell
