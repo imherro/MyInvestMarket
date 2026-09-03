@@ -84,3 +84,6 @@ def test_cycle_page_contains_evidence_sections_and_endpoint() -> None:
     assert 'src="/portal.js"' in html
     assert 'id="cyclePositionPolicyChart"' in html
     assert "七种稳定状态的权益仓位路径" in html
+    portal_js = (ROOT / "web/portal.js").read_text(encoding="utf-8")
+    assert 'waveLabels = ["1", "2", "3", "4", "5", "a", "b", "c"]' in portal_js
+    assert "cycle-policy-wave-band" in portal_js

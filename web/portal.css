@@ -36,6 +36,8 @@ h1,h2,h3,p { margin:0; } h1 { font-size:1.65rem; } h2 { font-size:1.05rem; } h3 
 .cycle-position-policy-chart { overflow-x:auto; padding:4px 0 0; }
 .cycle-policy-svg { display:block; width:100%; min-width:860px; height:auto; }
 .cycle-policy-grid { stroke:var(--line); stroke-width:1; stroke-dasharray:3 5; }
+.cycle-policy-wave-band { opacity:.72; }
+.cycle-policy-wave-label { fill:#78847f; font-size:26px; font-weight:800; opacity:.62; }
 .cycle-policy-axis-label,.cycle-policy-axis-title,.cycle-policy-cycle-label { fill:var(--muted); font-size:12px; }
 .cycle-policy-axis-title { font-weight:700; }
 .cycle-policy-path { fill:none; stroke:var(--teal); stroke-width:5; stroke-linecap:round; stroke-linejoin:round; }
