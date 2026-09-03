@@ -107170,6 +107170,142 @@
         "changes_position_recommendation": false,
         "note": "A-FEAR measures fear intensity; it is not a buy score."
       }
+    },
+    {
+      "schema_version": 1,
+      "version": "a_fear_v1",
+      "basis_trade_date": "2026-09-03",
+      "generated_at": "2026-09-03T21:02:48+08:00",
+      "run_id": "a_fear_v1-2026-09-03-03162ffc12c8",
+      "input_hash": "03162ffc12c882ce5d86dc8413a34e46a36a0faa7e9ff56048b48e50f67b2f96",
+      "official": true,
+      "fear_score": 64.9285,
+      "realized_fear_proxy": 62.8528,
+      "change_1d": -5.2186,
+      "change_3d": 11.0698,
+      "level": {
+        "code": "high",
+        "label": "高恐慌"
+      },
+      "phase": {
+        "code": "fear_rising",
+        "label": "恐慌升温"
+      },
+      "confidence": "high",
+      "components": {
+        "implied_volatility": {
+          "score": 68.0419,
+          "weight": 0.4
+        },
+        "downside_volatility": {
+          "score": 76.1667,
+          "weight": 0.2
+        },
+        "market_breadth": {
+          "score": 67.2133,
+          "weight": 0.25
+        },
+        "tail_loss": {
+          "score": 37.8333,
+          "weight": 0.15
+        }
+      },
+      "metrics": {
+        "io_iv_30d": {
+          "raw_value": 0.17154918,
+          "percentile": 59.3706,
+          "sample_count": 715,
+          "minimum_sample": 250,
+          "available": true
+        },
+        "mo_iv_30d": {
+          "raw_value": 0.26897617,
+          "percentile": 76.7133,
+          "sample_count": 715,
+          "minimum_sample": 250,
+          "available": true
+        },
+        "csi300_downside_vol_20d": {
+          "raw_value": 0.12906754,
+          "percentile": 74.4667,
+          "sample_count": 750,
+          "minimum_sample": 250,
+          "available": true
+        },
+        "csi1000_downside_vol_20d": {
+          "raw_value": 0.21167209,
+          "percentile": 77.8667,
+          "sample_count": 750,
+          "minimum_sample": 250,
+          "available": true
+        },
+        "decliner_ratio": {
+          "raw_value": 0.64335916,
+          "percentile": 66.2,
+          "sample_count": 750,
+          "minimum_sample": 250,
+          "available": true
+        },
+        "decline_beyond_3pct_ratio": {
+          "raw_value": 0.0769508,
+          "percentile": 61.8,
+          "sample_count": 750,
+          "minimum_sample": 250,
+          "available": true
+        },
+        "limit_down_ratio": {
+          "raw_value": 0.0028834,
+          "percentile": 80.0667,
+          "sample_count": 750,
+          "minimum_sample": 250,
+          "available": true
+        },
+        "csi300_loss_1d": {
+          "raw_value": 0.0,
+          "percentile": 0.0,
+          "sample_count": 750,
+          "minimum_sample": 250,
+          "available": true
+        },
+        "csi300_loss_5d": {
+          "raw_value": 0.01678055,
+          "percentile": 79.9333,
+          "sample_count": 750,
+          "minimum_sample": 250,
+          "available": true
+        },
+        "csi1000_loss_1d": {
+          "raw_value": 0.0,
+          "percentile": 0.0,
+          "sample_count": 750,
+          "minimum_sample": 250,
+          "available": true
+        },
+        "csi1000_loss_5d": {
+          "raw_value": 0.0171795,
+          "percentile": 71.4,
+          "sample_count": 750,
+          "minimum_sample": 250,
+          "available": true
+        }
+      },
+      "fear_300": 58.2936,
+      "fear_1000": 66.7483,
+      "small_cap_fear_spread": 8.4547,
+      "data_quality": {
+        "missing_fields": [],
+        "warnings": [],
+        "source_dates": {
+          "market": "2026-09-03",
+          "options": "2026-09-03",
+          "shibor_1m": "2026-09-03"
+        }
+      },
+      "safety": {
+        "read_only_indicator": true,
+        "changes_position_recommendation": false,
+        "note": "A-FEAR measures fear intensity; it is not a buy score."
+      }
     }
   ]
 }
