@@ -32,7 +32,7 @@ function renderCycle(data, evidence) {
   const held = raw !== stable || raw === "ambiguous";
   setText("cycleHeadline", held ? `当前稳定状态沿用：${stateLabel(stable)}` : `当前状态已确认：${stateLabel(stable)}`);
   setText("cycleEvidenceSummary", held ? `${basis} 的四域规则先得到“${stateLabel(raw)}”，没有直接匹配明确的牛熊候选规则；稳定状态机执行“${transitionLabel(stateMachine.transition_status)}”，因此沿用上一稳定状态“${stateLabel(stable)}”，再映射为股票账户权益 ${range}。` : `${basis} 的四域规则得到“${stateLabel(raw)}”，稳定状态机确认后映射为股票账户权益 ${range}。`);
-  renderCycleDomains(current.domain_signals || {}); renderCycleFeatures(current.selected_features || []); renderCycleRules(evidence.algorithm || {}); renderCycleTrace(evidence.recent_state_trace || []); renderCycleMapping(evidence.algorithm?.position_mapping || [], stable); renderCycleAudits(evidence);
+  renderCycleDomains(current.domain_signals || {}); renderCycleFeatures(current.selected_features || []); renderCycleRules(evidence.algorithm || {}); renderCycleTrace(evidence.recent_state_trace || []); renderCycleMapping(evidence.algorithm?.position_mapping || [], stable); renderCyclePositionPolicyChart(evidence.algorithm?.position_mapping || [], stable); renderCycleAudits(evidence);
   const rows = cycle.records || []; const table = document.getElementById("cycleRows"); if (table) table.innerHTML = rows.slice().reverse().map((row) => `<tr><td>${escapeHtml(row.month || "--")}</td><td>${escapeHtml(row.basis_trade_date || "--")}</td><td>${escapeHtml(stateLabel(row.stable_state))}</td><td>${row.equity_min_pct == null ? "不可用" : `${row.equity_min_pct}%`}</td><td>${row.equity_max_pct == null ? "不可用" : `${row.equity_max_pct}%`}</td><td>${escapeHtml(row.policy_reason || "--")}</td></tr>`).join("");
 }
 function renderCycleDomains(domains) {
@@ -63,6 +63,39 @@ function renderCycleTrace(rows) {
 function renderCycleMapping(rows, stable) {
   const node = document.getElementById("cycleMappingRows"); if (!node) return;
   node.innerHTML = rows.map((row) => `<tr class="${row.state === stable ? "current-row" : ""}"><td>${escapeHtml(stateLabel(row.state))}</td><td>${escapeHtml(row.equity_range)}</td><td>${row.state === stable ? "当前映射" : ""}</td></tr>`).join("");
+}
+function renderCyclePositionPolicyChart(rows, stable) {
+  const container = document.getElementById("cyclePositionPolicyChart");
+  if (!container) return;
+  const fallback = [
+    { state: "deep_bear", equity_range: "20%-40%" }, { state: "bottoming", equity_range: "40%-60%" },
+    { state: "early_bull", equity_range: "70%-90%" }, { state: "bull", equity_range: "80%-100%" },
+    { state: "late_bull", equity_range: "60%-80%" }, { state: "distribution", equity_range: "30%-50%" },
+    { state: "bear", equity_range: "0%-20%" },
+  ];
+  const source = Array.isArray(rows) && rows.length ? rows : fallback;
+  const byState = Object.fromEntries(source.map((item) => [item.state, item]));
+  const stages = fallback.map((item) => ({ ...item, ...(byState[item.state] || {}) }));
+  const width = 1180; const height = 430; const margin = { left: 70, right: 44, top: 60, bottom: 98 };
+  const plotWidth = width - margin.left - margin.right; const plotHeight = height - margin.top - margin.bottom;
+  const xFor = (index) => margin.left + (index / (stages.length - 1)) * plotWidth;
+  const midpoint = (value) => { const match = String(value || "").match(/(\d+(?:\.\d+)?)\s*%\s*-\s*(\d+(?:\.\d+)?)\s*%/); return match ? (Number(match[1]) + Number(match[2])) / 2 : 0; };
+  const yFor = (value) => margin.top + ((100 - value) / 100) * plotHeight;
+  const points = stages.map((item, index) => ({ ...item, index, x: xFor(index), midpoint: midpoint(item.equity_range), y: yFor(midpoint(item.equity_range)) }));
+  const path = points.slice(1).reduce((result, point, index) => {
+    const previous = points[index]; const dx = (point.x - previous.x) / 3;
+    return `${result} C ${previous.x + dx} ${previous.y}, ${point.x - dx} ${point.y}, ${point.x} ${point.y}`;
+  }, `M ${points[0].x} ${points[0].y}`);
+  const colors = { deep_bear: "#69746f", bottoming: "#b7791f", early_bull: "#2f7d4f", bull: "#047d73", late_bull: "#2c68a0", distribution: "#bf7a2b", bear: "#bf3d2b" };
+  const waveRefs = ["c浪尾声", "1浪起点", "1-2浪确认", "3浪主升", "4-5浪后段", "5-a过渡", "a-b / b-c"];
+  const labels = { deep_bear: "深熊", bottoming: "筑底", early_bull: "牛市早段", bull: "牛市主升", late_bull: "牛市后段", distribution: "顶部分配", bear: "熊市初段" };
+  const grid = [0, 25, 50, 75, 100].map((value) => `<line class="cycle-policy-grid" x1="${margin.left}" y1="${yFor(value)}" x2="${width - margin.right}" y2="${yFor(value)}"></line><text class="cycle-policy-axis-label" x="${margin.left - 12}" y="${yFor(value) + 4}" text-anchor="end">${value}%</text>`).join("");
+  const connectors = points.map((point, index) => { const boxY = index % 2 === 0 ? 8 : height - 82; const boxHeight = 58; const boxWidth = 136; const boxX = point.x - boxWidth / 2; return `<line class="cycle-policy-connector" x1="${point.x}" y1="${point.y}" x2="${point.x}" y2="${index % 2 === 0 ? boxY + boxHeight : boxY}"></line><rect class="cycle-policy-label-box ${point.state === stable ? "current" : ""}" x="${boxX}" y="${boxY}" width="${boxWidth}" height="${boxHeight}" rx="6" fill="${colors[point.state] || "#047d73"}"></rect><text class="cycle-policy-label-title" x="${point.x}" y="${boxY + 19}" text-anchor="middle">${waveRefs[index]} · ${labels[point.state] || stateLabel(point.state)}${point.state === stable ? " · 当前" : ""}</text><text class="cycle-policy-label-range" x="${point.x}" y="${boxY + 40}" text-anchor="middle">${point.equity_range || "不可用"}（${point.midpoint}%）</text>`; }).join("");
+  const markers = points.map((point) => `<circle class="cycle-policy-node ${point.state === stable ? "current" : ""}" cx="${point.x}" cy="${point.y}" r="${point.state === stable ? 8 : 5}" fill="${colors[point.state] || "#047d73"}"><title>${labels[point.state] || stateLabel(point.state)} · 权益 ${point.equity_range || "不可用"}</title></circle>`).join("");
+  const returnPath = `M ${points[points.length - 1].x} ${points[points.length - 1].y} C ${points[points.length - 1].x + 30} ${points[points.length - 1].y + 50}, ${points[0].x + 30} ${points[0].y + 50}, ${points[0].x} ${points[0].y}`;
+  const svg = `<svg class="cycle-policy-svg" viewBox="0 0 ${width} ${height}" role="img" aria-label="七种稳定状态到股票账户权益仓位的波浪式映射"><text class="cycle-policy-axis-title" x="${margin.left}" y="25">股票账户权益仓位</text>${grid}<path class="cycle-policy-return" d="${returnPath}"></path><path class="cycle-policy-path" d="${path}"></path>${connectors}${markers}<text class="cycle-policy-cycle-label" x="${width - margin.right}" y="${height - 12}" text-anchor="end">下一轮循环 →</text></svg>`;
+  container.innerHTML = svg;
+  setText("cyclePolicyChartLabel", `当前：${stateLabel(stable)} · ${stages.find((item) => item.state === stable)?.equity_range || "不可用"}`);
 }
 function renderCycleAudits(evidence) {
   const node = document.getElementById("cycleAuditList"); if (!node) return;

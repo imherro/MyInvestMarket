@@ -82,3 +82,5 @@ def test_cycle_page_contains_evidence_sections_and_endpoint() -> None:
         assert marker in html
     assert "/api/cycle-engine/evidence" in html
     assert 'src="/portal.js"' in html
+    assert 'id="cyclePositionPolicyChart"' in html
+    assert "七种稳定状态的权益仓位路径" in html
