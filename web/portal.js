@@ -76,37 +76,47 @@ function renderCyclePositionPolicyChart(rows, stable) {
   const source = Array.isArray(rows) && rows.length ? rows : fallback;
   const byState = Object.fromEntries(source.map((item) => [item.state, item]));
   const stages = fallback.map((item) => ({ ...item, ...(byState[item.state] || {}) }));
-  const width = 1180; const height = 540; const margin = { left: 70, right: 44 };
+  const width = 1180; const height = 490; const margin = { left: 70, right: 44 }; const panel = { top: 58, bottom: 354 };
   const plotWidth = width - margin.left - margin.right;
-  const wavePanel = { top: 58, bottom: 258 }; const policyPanel = { top: 330, bottom: 438 };
-  const xFor = (index) => margin.left + (index / (stages.length - 1)) * plotWidth;
   const midpoint = (value) => { const match = String(value || "").match(/(\d+(?:\.\d+)?)\s*%\s*-\s*(\d+(?:\.\d+)?)\s*%/); return match ? (Number(match[1]) + Number(match[2])) / 2 : 0; };
-  const policyY = (value) => policyPanel.top + ((100 - value) / 100) * (policyPanel.bottom - policyPanel.top);
-  const waveY = (value) => wavePanel.top + ((100 - value) / 100) * (wavePanel.bottom - wavePanel.top);
+  const yFor = (value) => panel.top + ((100 - value) / 100) * (panel.bottom - panel.top);
   const smoothPath = (items) => items.slice(1).reduce((result, point, index) => {
     const previous = items[index]; const dx = (point.x - previous.x) / 3;
     return `${result} C ${previous.x + dx} ${previous.y}, ${point.x - dx} ${point.y}, ${point.x} ${point.y}`;
   }, `M ${items[0].x} ${items[0].y}`);
-  const policyPoints = stages.map((item, index) => ({ ...item, index, x: xFor(index), midpoint: midpoint(item.equity_range), y: policyY(midpoint(item.equity_range)) }));
+  const zones = [
+    { state: "deep_bear", wave_range: "c→1", start: 0.00, end: 0.13 },
+    { state: "bottoming", wave_range: "1附近", start: 0.13, end: 0.25 },
+    { state: "early_bull", wave_range: "1→2", start: 0.25, end: 0.38 },
+    { state: "bull", wave_range: "3浪", start: 0.38, end: 0.53 },
+    { state: "late_bull", wave_range: "4→5", start: 0.53, end: 0.67 },
+    { state: "distribution", wave_range: "5→a", start: 0.67, end: 0.80 },
+    { state: "bear", wave_range: "a→c", start: 0.80, end: 1.00 },
+  ];
+  const pointByState = Object.fromEntries(stages.map((item) => [item.state, item]));
+  const policyPoints = zones.map((zone) => {
+    const item = { ...zone, ...(pointByState[zone.state] || {}) }; const value = midpoint(item.equity_range);
+    return { ...item, midpoint: value, x: margin.left + ((zone.start + zone.end) / 2) * plotWidth, y: yFor(value) };
+  });
   const policyPath = smoothPath(policyPoints);
   const waveStops = [
     { wave: "起", level: 28 }, { wave: "1", level: 58 }, { wave: "2", level: 42 }, { wave: "3", level: 88 },
     { wave: "4", level: 64 }, { wave: "5", level: 96 }, { wave: "a", level: 48 }, { wave: "b", level: 70 }, { wave: "c", level: 16 },
   ];
-  const wavePoints = waveStops.map((item, index) => ({ ...item, x: margin.left + (index / (waveStops.length - 1)) * plotWidth, y: waveY(item.level) }));
+  const wavePoints = waveStops.map((item, index) => ({ ...item, x: margin.left + (index / (waveStops.length - 1)) * plotWidth, y: yFor(item.level) }));
   const wavePath = smoothPath(wavePoints);
   const colors = { deep_bear: "#69746f", bottoming: "#b7791f", early_bull: "#2f7d4f", bull: "#047d73", late_bull: "#2c68a0", distribution: "#bf7a2b", bear: "#bf3d2b" };
   const labels = { deep_bear: "深熊", bottoming: "筑底", early_bull: "牛市早段", bull: "牛市主升", late_bull: "牛市后段", distribution: "顶部分配", bear: "熊市初段" };
   const waveLabels = ["1", "2", "3", "4", "5", "a", "b", "c"];
   const waveWidth = plotWidth / waveLabels.length;
-  const waveBackground = waveLabels.map((label, index) => { const x = margin.left + index * waveWidth; const fill = index % 2 === 0 ? "#e7ece9" : "#f1f4f2"; return `<rect class="cycle-policy-wave-band" x="${x}" y="${wavePanel.top}" width="${waveWidth}" height="${policyPanel.bottom - wavePanel.top}" fill="${fill}"></rect><line class="cycle-policy-wave-divider" x1="${x}" y1="${wavePanel.top}" x2="${x}" y2="${policyPanel.bottom}"></line><text class="cycle-policy-wave-label" x="${x + waveWidth / 2}" y="${wavePanel.top + 30}" text-anchor="middle">${label}</text>`; }).join("");
-  const policyGrid = [0, 25, 50, 75, 100].map((value) => `<line class="cycle-policy-grid" x1="${margin.left}" y1="${policyY(value)}" x2="${width - margin.right}" y2="${policyY(value)}"></line><text class="cycle-policy-axis-label" x="${margin.left - 12}" y="${policyY(value) + 4}" text-anchor="end">${value}%</text>`).join("");
-  const policyBars = policyPoints.map((point) => `<rect class="cycle-policy-bar ${point.state === stable ? "current" : ""}" x="${point.x - 20}" y="${point.y}" width="40" height="${policyPanel.bottom - point.y}" rx="3" fill="${colors[point.state] || "#047d73"}"><title>${labels[point.state] || stateLabel(point.state)} · 权益 ${point.equity_range || "不可用"} · 中位数 ${point.midpoint}%</title></rect>`).join("");
-  const policyNodes = policyPoints.map((point) => `<circle class="cycle-policy-node ${point.state === stable ? "current" : ""}" cx="${point.x}" cy="${point.y}" r="${point.state === stable ? 8 : 5}" fill="${colors[point.state] || "#047d73"}"></circle><text class="cycle-policy-state-label" x="${point.x}" y="${policyPanel.bottom + 22}" text-anchor="middle">${labels[point.state] || stateLabel(point.state)}</text><text class="cycle-policy-range-label" x="${point.x}" y="${policyPanel.bottom + 39}" text-anchor="middle">${point.equity_range || "--"}</text>${point.state === stable ? `<text class="cycle-policy-current-label" x="${point.x}" y="${point.y - 13}" text-anchor="middle">当前</text>` : ""}`).join("");
-  const waveNodes = wavePoints.map((point, index) => index === 0 ? "" : `<circle class="cycle-policy-wave-node" cx="${point.x}" cy="${point.y}" r="4"></circle><text class="cycle-policy-wave-point-label" x="${point.x}" y="${point.y < (wavePanel.top + wavePanel.bottom) / 2 ? point.y - 12 : point.y + 20}" text-anchor="middle">${point.wave}</text>`).join("");
+  const waveBackground = waveLabels.map((label, index) => { const x = margin.left + index * waveWidth; const fill = index % 2 === 0 ? "#e7ece9" : "#f1f4f2"; return `<rect class="cycle-policy-wave-band" x="${x}" y="${panel.top}" width="${waveWidth}" height="${panel.bottom - panel.top}" fill="${fill}"></rect><line class="cycle-policy-wave-divider" x1="${x}" y1="${panel.top}" x2="${x}" y2="${panel.bottom}"></line><text class="cycle-policy-wave-label" x="${x + waveWidth / 2}" y="${panel.top + 30}" text-anchor="middle">${label}</text>`; }).join("");
+  const grid = [0, 25, 50, 75, 100].map((value) => `<line class="cycle-policy-grid" x1="${margin.left}" y1="${yFor(value)}" x2="${width - margin.right}" y2="${yFor(value)}"></line><text class="cycle-policy-axis-label" x="${margin.left - 12}" y="${yFor(value) + 4}" text-anchor="end">${value}%</text>`).join("");
+  const policyNodes = policyPoints.map((point) => `<circle class="cycle-policy-node ${point.state === stable ? "current" : ""}" cx="${point.x}" cy="${point.y}" r="${point.state === stable ? 8 : 5}" fill="${colors[point.state] || "#047d73"}"><title>${labels[point.state] || stateLabel(point.state)} · 波段 ${point.wave_range} · 权益 ${point.equity_range || "不可用"} · 中位数 ${point.midpoint}%</title></circle>${point.state === stable ? `<text class="cycle-policy-current-label" x="${point.x}" y="${point.y - 13}" text-anchor="middle">当前</text>` : ""}`).join("");
+  const zoneStrip = policyPoints.map((point) => { const x = margin.left + point.start * plotWidth; const zoneWidth = (point.end - point.start) * plotWidth; const isCurrent = point.state === stable; return `<rect class="cycle-policy-state-zone ${isCurrent ? "current" : ""}" x="${x}" y="382" width="${zoneWidth}" height="54" rx="4" fill="${colors[point.state] || "#047d73"}"></rect><text class="cycle-policy-state-label" x="${x + zoneWidth / 2}" y="403" text-anchor="middle">${labels[point.state] || stateLabel(point.state)} · ${point.wave_range}</text><text class="cycle-policy-range-label" x="${x + zoneWidth / 2}" y="422" text-anchor="middle">权益 ${point.equity_range || "--"}</text>`; }).join("");
+  const waveNodes = wavePoints.map((point, index) => index === 0 ? "" : `<circle class="cycle-policy-wave-node" cx="${point.x}" cy="${point.y}" r="4"></circle><text class="cycle-policy-wave-point-label" x="${point.x}" y="${point.y < (panel.top + panel.bottom) / 2 ? point.y - 12 : point.y + 20}" text-anchor="middle">${point.wave}</text>`).join("");
   const top = wavePoints[5]; const bottom = wavePoints[8];
   const returnPath = `M ${bottom.x} ${bottom.y} C ${bottom.x + 24} ${bottom.y + 26}, ${wavePoints[0].x + 42} ${wavePoints[0].y + 26}, ${wavePoints[0].x} ${wavePoints[0].y}`;
-  const svg = `<svg class="cycle-policy-svg" viewBox="0 0 ${width} ${height}" role="img" aria-label="完整12345abc波浪线，以及七种稳定状态的连续权益仓位柱线对比图"><text class="cycle-policy-panel-title" x="${margin.left}" y="25">波浪路径参考 · 只用于观察典型高低点</text>${waveBackground}<path class="cycle-policy-wave-line" d="${wavePath}"></path>${waveNodes}<text class="cycle-policy-extreme-label high" x="${top.x}" y="${top.y - 28}" text-anchor="middle">典型最高点 · 5浪</text><text class="cycle-policy-extreme-label low" x="${bottom.x}" y="${bottom.y + 32}" text-anchor="middle">典型最低点 · c浪</text><path class="cycle-policy-return" d="${returnPath}"></path><text class="cycle-policy-panel-title" x="${margin.left}" y="${policyPanel.top - 16}">权益仓位中位数 · 柱状图与连续折线</text>${policyGrid}${policyBars}<path class="cycle-policy-path" d="${policyPath}"></path>${policyNodes}<text class="cycle-policy-cycle-label" x="${width - margin.right}" y="${height - 14}" text-anchor="end">虚线：周期回到下一轮起点</text></svg>`;
+  const svg = `<svg class="cycle-policy-svg" viewBox="0 0 ${width} ${height}" role="img" aria-label="完整12345abc波浪线与七种稳定状态权益仓位线的同坐标对比图"><text class="cycle-policy-panel-title" x="${margin.left}" y="25">灰线：波浪路径参考（归一化相对位置） · 青线：权益仓位中位数</text>${waveBackground}${grid}<path class="cycle-policy-wave-line" d="${wavePath}"></path><path class="cycle-policy-path" d="${policyPath}"></path>${waveNodes}${policyNodes}<text class="cycle-policy-extreme-label high" x="${top.x}" y="${top.y - 28}" text-anchor="middle">典型最高点 · 5浪</text><text class="cycle-policy-extreme-label low" x="${bottom.x}" y="${bottom.y + 32}" text-anchor="middle">典型最低点 · c浪</text><path class="cycle-policy-return" d="${returnPath}"></path><text class="cycle-policy-strip-title" x="${margin.left}" y="373">稳定状态对应的波段区间 · 不是精确浪位判定</text>${zoneStrip}<text class="cycle-policy-cycle-label" x="${width - margin.right}" y="${height - 14}" text-anchor="end">虚线：周期回到下一轮起点</text></svg>`;
   container.innerHTML = svg;
   setText("cyclePolicyChartLabel", `当前：${stateLabel(stable)} · ${stages.find((item) => item.state === stable)?.equity_range || "不可用"}`);
 }

@@ -88,4 +88,5 @@ def test_cycle_page_contains_evidence_sections_and_endpoint() -> None:
     assert 'waveLabels = ["1", "2", "3", "4", "5", "a", "b", "c"]' in portal_js
     assert "cycle-policy-wave-band" in portal_js
     assert "cycle-policy-wave-line" in portal_js
-    assert "cycle-policy-bar" in portal_js
+    assert "cycle-policy-state-zone" in portal_js
+    assert 'wave_range: "4→5"' in portal_js
