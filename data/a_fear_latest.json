@@ -1,15 +1,15 @@
 {
   "schema_version": 1,
   "version": "a_fear_v1",
-  "basis_trade_date": "2026-09-08",
-  "generated_at": "2026-09-08T21:02:21+08:00",
-  "run_id": "a_fear_v1-2026-09-08-43a174766229",
-  "input_hash": "43a17476622904c5e5c31e4170bb0da34cabc78aa197c545c0b939327bfee8c3",
+  "basis_trade_date": "2026-09-09",
+  "generated_at": "2026-09-09T21:01:59+08:00",
+  "run_id": "a_fear_v1-2026-09-09-69f6bc7ac1c7",
+  "input_hash": "69f6bc7ac1c7e40e739201c084af7990cdbc7ec66cda3d746a66aeab21477e33",
   "official": true,
-  "fear_score": 55.7583,
-  "realized_fear_proxy": 50.1264,
-  "change_1d": 1.4807,
-  "change_3d": -9.1702,
+  "fear_score": 57.524,
+  "realized_fear_proxy": 55.3542,
+  "change_1d": 1.7657,
+  "change_3d": -13.8996,
   "level": {
     "code": "watch",
     "label": "警觉"
@@ -21,111 +21,111 @@
   "confidence": "high",
   "components": {
     "implied_volatility": {
-      "score": 64.2061,
+      "score": 60.7788,
       "weight": 0.4
     },
     "downside_volatility": {
-      "score": 75.9333,
+      "score": 75.9,
       "weight": 0.2
     },
     "market_breadth": {
-      "score": 30.5467,
+      "score": 63.56,
       "weight": 0.25
     },
     "tail_loss": {
-      "score": 48.35,
+      "score": 14.2833,
       "weight": 0.15
     }
   },
   "metrics": {
     "io_iv_30d": {
-      "raw_value": 0.16847614,
-      "percentile": 55.3621,
-      "sample_count": 718,
+      "raw_value": 0.16594852,
+      "percentile": 51.2517,
+      "sample_count": 719,
       "minimum_sample": 250,
       "available": true
     },
     "mo_iv_30d": {
-      "raw_value": 0.26277236,
-      "percentile": 73.0501,
-      "sample_count": 718,
+      "raw_value": 0.25941753,
+      "percentile": 70.306,
+      "sample_count": 719,
       "minimum_sample": 250,
       "available": true
     },
     "csi300_downside_vol_20d": {
       "raw_value": 0.12648082,
-      "percentile": 73.0,
+      "percentile": 72.9333,
       "sample_count": 750,
       "minimum_sample": 250,
       "available": true
     },
     "csi1000_downside_vol_20d": {
-      "raw_value": 0.21536213,
+      "raw_value": 0.21542037,
       "percentile": 78.8667,
       "sample_count": 750,
       "minimum_sample": 250,
       "available": true
     },
     "decliner_ratio": {
-      "raw_value": 0.36511083,
-      "percentile": 33.9333,
+      "raw_value": 0.65621622,
+      "percentile": 68.2,
       "sample_count": 750,
       "minimum_sample": 250,
       "available": true
     },
     "decline_beyond_3pct_ratio": {
-      "raw_value": 0.04613444,
-      "percentile": 40.2,
+      "raw_value": 0.08108108,
+      "percentile": 63.0,
       "sample_count": 750,
       "minimum_sample": 250,
       "available": true
     },
     "limit_down_ratio": {
-      "raw_value": 0.0,
-      "percentile": 4.4667,
+      "raw_value": 0.00126126,
+      "percentile": 55.4,
       "sample_count": 750,
       "minimum_sample": 250,
       "available": true
     },
     "csi300_loss_1d": {
-      "raw_value": 0.00356007,
-      "percentile": 65.9333,
-      "sample_count": 750,
-      "minimum_sample": 250,
-      "available": true
-    },
-    "csi300_loss_5d": {
-      "raw_value": 0.0114286,
-      "percentile": 71.2667,
-      "sample_count": 750,
-      "minimum_sample": 250,
-      "available": true
-    },
-    "csi1000_loss_1d": {
       "raw_value": 0.0,
       "percentile": 0.0,
       "sample_count": 750,
       "minimum_sample": 250,
       "available": true
     },
+    "csi300_loss_5d": {
+      "raw_value": 0.0,
+      "percentile": 0.0,
+      "sample_count": 750,
+      "minimum_sample": 250,
+      "available": true
+    },
+    "csi1000_loss_1d": {
+      "raw_value": 0.00141116,
+      "percentile": 57.1333,
+      "sample_count": 750,
+      "minimum_sample": 250,
+      "available": true
+    },
     "csi1000_loss_5d": {
-      "raw_value": 0.00412959,
-      "percentile": 56.2,
+      "raw_value": 0.0,
+      "percentile": 0.0,
       "sample_count": 750,
       "minimum_sample": 250,
       "available": true
     }
   },
-  "fear_300": 63.081,
-  "fear_1000": 63.2667,
-  "small_cap_fear_spread": 0.1857,
+  "fear_300": 43.8592,
+  "fear_1000": 62.0113,
+  "small_cap_fear_spread": 18.1522,
   "data_quality": {
     "missing_fields": [],
     "warnings": [],
     "source_dates": {
-      "market": "2026-09-08",
-      "options": "2026-09-08",
-      "shibor_1m": "2026-09-08"
+      "market": "2026-09-09",
+      "options": "2026-09-09",
+      "shibor_1m": "2026-09-09"
     }
   },
   "safety": {
