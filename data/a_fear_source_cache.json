@@ -95711,6 +95711,126 @@
       "data_quality": {
         "warnings": []
       }
+    },
+    {
+      "basis_trade_date": "2026-09-11",
+      "implied_volatility": {
+        "io_iv_30d": 0.16548915,
+        "mo_iv_30d": 0.2630088
+      },
+      "implied_volatility_details": {
+        "io": {
+          "available": true,
+          "iv_30d": 0.16548915,
+          "target_days": 30,
+          "rate": 0.014189,
+          "expiry_evidence": [
+            {
+              "available": true,
+              "atm_iv": 0.19064521,
+              "strike": 4500.0,
+              "forward": 4502.000544,
+              "call_iv": 0.19064521,
+              "put_iv": 0.19064521,
+              "call_code": "IO2609-C-4500.CFX",
+              "put_code": "IO2609-P-4500.CFX",
+              "call_quote": 48.4,
+              "put_quote": 46.4,
+              "maturity_date": "2026-09-18",
+              "days_to_expiry": 7
+            },
+            {
+              "available": true,
+              "atm_iv": 0.16430806,
+              "strike": 4500.0,
+              "forward": 4474.965962,
+              "call_iv": 0.16430806,
+              "put_iv": 0.16430806,
+              "call_code": "IO2610-C-4500.CFX",
+              "put_code": "IO2610-P-4500.CFX",
+              "call_quote": 79.0,
+              "put_quote": 104.0,
+              "maturity_date": "2026-10-16",
+              "days_to_expiry": 35
+            }
+          ]
+        },
+        "mo": {
+          "available": true,
+          "iv_30d": 0.2630088,
+          "target_days": 30,
+          "rate": 0.014189,
+          "expiry_evidence": [
+            {
+              "available": true,
+              "atm_iv": 0.29092841,
+              "strike": 7400.0,
+              "forward": 7407.602068,
+              "call_iv": 0.29092841,
+              "put_iv": 0.29092841,
+              "call_code": "MO2609-C-7400.CFX",
+              "put_code": "MO2609-P-7400.CFX",
+              "call_quote": 122.8,
+              "put_quote": 115.2,
+              "maturity_date": "2026-09-18",
+              "days_to_expiry": 7
+            },
+            {
+              "available": true,
+              "atm_iv": 0.26172735,
+              "strike": 7300.0,
+              "forward": 7334.446836,
+              "call_iv": 0.26172735,
+              "put_iv": 0.26172735,
+              "call_code": "MO2610-C-7300.CFX",
+              "put_code": "MO2610-P-7300.CFX",
+              "call_quote": 253.8,
+              "put_quote": 219.4,
+              "maturity_date": "2026-10-16",
+              "days_to_expiry": 35
+            }
+          ]
+        }
+      },
+      "downside_volatility": {
+        "csi300_20d": 0.12970968,
+        "csi1000_20d": 0.2271358
+      },
+      "market_breadth": {
+        "decliner_ratio": 0.87747748,
+        "decline_beyond_3pct_ratio": 0.27891892,
+        "limit_down_ratio": 0.00378378,
+        "total": 5550,
+        "decliners": 4870,
+        "decline_beyond_3pct": 1548,
+        "limit_down": 21
+      },
+      "tail_loss": {
+        "csi300_loss_1d": 0.00840614,
+        "csi300_loss_5d": 0.00833203,
+        "csi1000_loss_1d": 0.02115404,
+        "csi1000_loss_5d": 0.01076856
+      },
+      "index_closes": {
+        "000300.SH": 4510.1554,
+        "000852.SH": 7427.2405
+      },
+      "source_dates": {
+        "market": "2026-09-11",
+        "options": "2026-09-11",
+        "shibor_1m": "2026-09-11"
+      },
+      "sources": [
+        "Tushare.opt_basic",
+        "Tushare.opt_daily",
+        "Tushare.index_daily",
+        "Tushare.daily",
+        "Tushare.limit_list_d",
+        "Tushare.shibor"
+      ],
+      "data_quality": {
+        "warnings": []
+      }
     }
   ]
 }
