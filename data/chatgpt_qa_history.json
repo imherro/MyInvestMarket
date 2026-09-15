@@ -2,7 +2,7 @@
   "schema_version": 1,
   "question_id": "a_share_daily_research_v1",
   "question": "请基于截至今天收盘前/最新可获得的数据，把自己当作“A股宏观周期研究员 + 量化策略师 + 基金经理”，不要预测明天涨跌，也不要简单复述券商观点。请回答：现在的A股处于什么市场周期阶段，我今天应该增加仓位、维持仓位，还是降低仓位？如果要持仓，未来3～12个月风险收益比最好的3～5个方向是什么？必须给出当前周期阶段、建议总仓位及相较昨天的动作、3～5个配置方向、3个不应追的方向、牛熊拐点监测信号，以及与昨天相比的实质变化；没有足够新信息时，保持不动是默认选择。",
-  "updated_at": "2026-09-14T21:05:22+08:00",
+  "updated_at": "2026-09-15T21:13:50+08:00",
   "records": [
     {
       "record_id": "20260902T103500-qa-1",
@@ -18,15 +18,40 @@
       "no_trade": true,
       "core_summary": "战略周期引擎为 late_bull，但日度模型仍显示主升扩张、趋势初期；宽度较强而主力资金大幅流出，属于结构分化，不足以支持追涨或全面加仓。",
       "directions": [
-        {"rank": 1, "name": "沪深300 / 中证A500宽基ETF", "reason": "作为组合β底盘，估值和行业分散度优于追逐单一热点。"},
-        {"rank": 2, "name": "中证500 / 中证1000宽基ETF", "reason": "保留盈利修复和中小盘弹性，但应小于核心宽基仓位。"},
-        {"rank": 3, "name": "半导体与电子信息ETF", "reason": "只在估值和拥挤度可接受、盈利兑现继续时配置，不用短期涨幅替代基本面。"},
-        {"rank": 4, "name": "红利低波 / 自由现金流ETF", "reason": "为晚周期和资金分歧提供防御与质量暴露。"}
+        {
+          "rank": 1,
+          "name": "沪深300 / 中证A500宽基ETF",
+          "reason": "作为组合β底盘，估值和行业分散度优于追逐单一热点。"
+        },
+        {
+          "rank": 2,
+          "name": "中证500 / 中证1000宽基ETF",
+          "reason": "保留盈利修复和中小盘弹性，但应小于核心宽基仓位。"
+        },
+        {
+          "rank": 3,
+          "name": "半导体与电子信息ETF",
+          "reason": "只在估值和拥挤度可接受、盈利兑现继续时配置，不用短期涨幅替代基本面。"
+        },
+        {
+          "rank": 4,
+          "name": "红利低波 / 自由现金流ETF",
+          "reason": "为晚周期和资金分歧提供防御与质量暴露。"
+        }
       ],
       "avoid_directions": [
-        {"name": "短期涨幅领先的半导体细分追涨", "reason": "拥挤和估值透支风险。"},
-        {"name": "无盈利确认的小盘题材", "reason": "主题强度不能替代盈利和资金持续性。"},
-        {"name": "银行、保险、证券的单日反抽追涨", "reason": "当前更像权重修复线索，尚未证明新主升趋势。"}
+        {
+          "name": "短期涨幅领先的半导体细分追涨",
+          "reason": "拥挤和估值透支风险。"
+        },
+        {
+          "name": "无盈利确认的小盘题材",
+          "reason": "主题强度不能替代盈利和资金持续性。"
+        },
+        {
+          "name": "银行、保险、证券的单日反抽追涨",
+          "reason": "当前更像权重修复线索，尚未证明新主升趋势。"
+        }
       ],
       "turning_point_add_missing": [
         "主力资金由持续流出转为连续净流入",
@@ -71,23 +96,60 @@
       "no_trade": true,
       "core_summary": "第二次独立复核仍认为长期周期偏晚、短期趋势未破坏；主力资金与北向资金方向分歧，未出现足以改变仓位的新增证据。",
       "directions": [
-        {"rank": 1, "name": "沪深300 / 中证A500宽基ETF", "reason": "继续作为β底盘。"},
-        {"rank": 2, "name": "红利低波 / 自由现金流ETF", "reason": "对冲晚周期和资金分歧。"},
-        {"rank": 3, "name": "中证500 / 中证1000宽基ETF", "reason": "小比例保留盈利修复弹性。"},
-        {"rank": 4, "name": "半导体与电子信息ETF", "reason": "只在回撤后且盈利兑现未恶化时观察。"}
+        {
+          "rank": 1,
+          "name": "沪深300 / 中证A500宽基ETF",
+          "reason": "继续作为β底盘。"
+        },
+        {
+          "rank": 2,
+          "name": "红利低波 / 自由现金流ETF",
+          "reason": "对冲晚周期和资金分歧。"
+        },
+        {
+          "rank": 3,
+          "name": "中证500 / 中证1000宽基ETF",
+          "reason": "小比例保留盈利修复弹性。"
+        },
+        {
+          "rank": 4,
+          "name": "半导体与电子信息ETF",
+          "reason": "只在回撤后且盈利兑现未恶化时观察。"
+        }
       ],
       "avoid_directions": [
-        {"name": "热门半导体细分追涨", "reason": "短期拥挤和估值风险。"},
-        {"name": "无盈利的小盘题材", "reason": "缺乏基本面确认。"},
-        {"name": "权重板块单日反抽追涨", "reason": "尚未形成持续趋势。"}
+        {
+          "name": "热门半导体细分追涨",
+          "reason": "短期拥挤和估值风险。"
+        },
+        {
+          "name": "无盈利的小盘题材",
+          "reason": "缺乏基本面确认。"
+        },
+        {
+          "name": "权重板块单日反抽追涨",
+          "reason": "尚未形成持续趋势。"
+        }
       ],
-      "turning_point_add_missing": ["主力资金连续转正", "宽度与指数连续共振", "周期状态完成早牛确认", "恐慌和波动回落"],
-      "turning_point_reduce_missing": ["估值极端高位", "宽度和趋势持续恶化", "盈利与信用周期同步转弱", "恐慌极端并伴随资金退潮"],
+      "turning_point_add_missing": [
+        "主力资金连续转正",
+        "宽度与指数连续共振",
+        "周期状态完成早牛确认",
+        "恐慌和波动回落"
+      ],
+      "turning_point_reduce_missing": [
+        "估值极端高位",
+        "宽度和趋势持续恶化",
+        "盈利与信用周期同步转弱",
+        "恐慌极端并伴随资金退潮"
+      ],
       "changes_vs_yesterday": "与上一条问答使用同一基准日和同一 run_id，数据没有实质变化，今天无需交易。",
       "comparison_to_previous": {
         "previous_record_id": "20260902T103500-qa-1",
         "same_basis_trade_date": true,
-        "changed_fields": ["confidence"],
+        "changed_fields": [
+          "confidence"
+        ],
         "summary": "同基准日复问：周期阶段、建议仓位、动作和主要方向未变；置信度由62%调整为61%，不构成交易信号。"
       },
       "risk_warning": "本次复问没有新增外部数据；全市场估值、ERP、盈利预期修正、宏观高频与两融等仍需补充，结论不能替代完整择时回测。",
@@ -118,24 +180,73 @@
       "no_trade": true,
       "core_summary": "ChatGPT网页联网研究认为当前是估值消化、盈利接棒、结构轮动的牛市中期；外部风险和科技拥挤升温，但A股盈利趋势尚未反转，建议70%维持仓位。",
       "directions": [
-        {"rank": 1, "name": "非银金融", "reason": "盈利改善而估值没有AI那样透支，ETF优先。"},
-        {"rank": 2, "name": "基础化工", "reason": "工业利润改善且估值仍低于自身历史中位数。"},
-        {"rank": 3, "name": "自由现金流/价值因子", "reason": "作为权益仓位稳定器，质量和现金流更适合估值消化期。"},
-        {"rank": 4, "name": "创新药/CXO", "reason": "产业趋势和盈利改善，但有政策与研发风险。"},
-        {"rank": 5, "name": "有色金属", "reason": "盈利逻辑仍在，但已涨过一轮，适合持有不追。"}
+        {
+          "rank": 1,
+          "name": "非银金融",
+          "reason": "盈利改善而估值没有AI那样透支，ETF优先。"
+        },
+        {
+          "rank": 2,
+          "name": "基础化工",
+          "reason": "工业利润改善且估值仍低于自身历史中位数。"
+        },
+        {
+          "rank": 3,
+          "name": "自由现金流/价值因子",
+          "reason": "作为权益仓位稳定器，质量和现金流更适合估值消化期。"
+        },
+        {
+          "rank": 4,
+          "name": "创新药/CXO",
+          "reason": "产业趋势和盈利改善，但有政策与研发风险。"
+        },
+        {
+          "rank": 5,
+          "name": "有色金属",
+          "reason": "盈利逻辑仍在，但已涨过一轮，适合持有不追。"
+        }
       ],
       "avoid_directions": [
-        {"name": "AI硬件 / 半导体设备 / CPO", "reason": "估值、拥挤度和资金集中度偏高。"},
-        {"name": "农业/种业短线题材", "reason": "价格趋势与盈利趋势不匹配。"},
-        {"name": "油气/航运战争交易", "reason": "事件溢价和赔率恶化，消息回落可能快速反转。"}
+        {
+          "name": "AI硬件 / 半导体设备 / CPO",
+          "reason": "估值、拥挤度和资金集中度偏高。"
+        },
+        {
+          "name": "农业/种业短线题材",
+          "reason": "价格趋势与盈利趋势不匹配。"
+        },
+        {
+          "name": "油气/航运战争交易",
+          "reason": "事件溢价和赔率恶化，消息回落可能快速反转。"
+        }
       ],
-      "turning_point_add_missing": ["估值重新出现安全边际", "盈利扩散到超过一半行业", "PMI连续两个月超过50并且服务业改善", "信用和地产销售同步改善", "宽基ETF持续流入、宽度重新扩张"],
-      "turning_point_reduce_missing": ["盈利预期和ROE重新下修", "宽基估值进入90%以上分位", "两融成交额ETF申购进入全民亢奋", "放量下跌、新低扩散和信用利差上升同时出现"],
+      "turning_point_add_missing": [
+        "估值重新出现安全边际",
+        "盈利扩散到超过一半行业",
+        "PMI连续两个月超过50并且服务业改善",
+        "信用和地产销售同步改善",
+        "宽基ETF持续流入、宽度重新扩张"
+      ],
+      "turning_point_reduce_missing": [
+        "盈利预期和ROE重新下修",
+        "宽基估值进入90%以上分位",
+        "两融成交额ETF申购进入全民亢奋",
+        "放量下跌、新低扩散和信用利差上升同时出现"
+      ],
       "changes_vs_yesterday": "联网研究识别出两个实质变化：宽基ETF流出而科创/半导体ETF流入，资金集中度上升；外部油价和全球利率冲击抬升风险溢价。但盈利趋势、ROE、PMI和国内流动性没有出现足以改变仓位的反转，今天无需交易。",
       "comparison_to_previous": {
         "previous_record_id": "20260902T104500-qa-2",
         "same_basis_trade_date": true,
-        "changed_fields": ["source_type", "period_stage", "position_pct", "position_range", "confidence", "directions", "avoid_directions", "evidence"],
+        "changed_fields": [
+          "source_type",
+          "period_stage",
+          "position_pct",
+          "position_range",
+          "confidence",
+          "directions",
+          "avoid_directions",
+          "evidence"
+        ],
         "summary": "这是第一次真实 ChatGPT 网页联网回答，与此前 Codex本地代答相比，周期由牛市后期调整为牛市中期，建议仓位由45%提高为70%；该差异已保留，不能视为系统模型自动改变。"
       },
       "risk_warning": "该回答使用了 ChatGPT 网页联网来源；外部引用和数值仍需人工审计，且今日行情为盘中未收盘数据。它是独立研究意见，不覆盖本系统官方仓位模型。",
@@ -146,7 +257,13 @@
         "a_fear": 57.2063,
         "cycle_stable_state": "late_bull",
         "data_basis": "2026-09-01收盘及2026-09-02上午盘中",
-        "external_sources": ["Reuters", "国家统计局", "新浪财经", "证券时报网", "同花顺财经"]
+        "external_sources": [
+          "Reuters",
+          "国家统计局",
+          "新浪财经",
+          "证券时报网",
+          "同花顺财经"
+        ]
       },
       "answer_file": "data/chatgpt_qa_20260902_6a97938e.md"
     },
@@ -166,16 +283,45 @@
       "no_trade": false,
       "core_summary": "收盘后完整数据确认市场由扩张转为下行收缩、趋势转弱且A-FEAR升至高恐慌；官方权益区间由40%-60%降至0%-20%，建议降低风险暴露，不预测明日涨跌。",
       "directions": [
-        {"rank": 1, "name": "红利低波 / 自由现金流 / 质量ETF", "reason": "下行收缩和高波动环境中的防御与现金流质量暴露。"},
-        {"rank": 2, "name": "沪深300 / 中证A500宽基ETF", "reason": "低比例β底盘，分散单一行业风险，等待宽度和趋势修复后再增加。"},
-        {"rank": 3, "name": "公用事业 / 红利央企ETF", "reason": "盈利和现金流相对稳定，但只做防御配置。"},
-        {"rank": 4, "name": "国防军工 / 军工电子ETF", "reason": "存在主线和资金流入线索，但主线窄，只能小仓观察并等待连续性。"},
-        {"rank": 5, "name": "中证500 / 中证1000宽基ETF", "reason": "保留修复期权，但当前优先级低于防御与核心宽基。"}
+        {
+          "rank": 1,
+          "name": "红利低波 / 自由现金流 / 质量ETF",
+          "reason": "下行收缩和高波动环境中的防御与现金流质量暴露。"
+        },
+        {
+          "rank": 2,
+          "name": "沪深300 / 中证A500宽基ETF",
+          "reason": "低比例β底盘，分散单一行业风险，等待宽度和趋势修复后再增加。"
+        },
+        {
+          "rank": 3,
+          "name": "公用事业 / 红利央企ETF",
+          "reason": "盈利和现金流相对稳定，但只做防御配置。"
+        },
+        {
+          "rank": 4,
+          "name": "国防军工 / 军工电子ETF",
+          "reason": "存在主线和资金流入线索，但主线窄，只能小仓观察并等待连续性。"
+        },
+        {
+          "rank": 5,
+          "name": "中证500 / 中证1000宽基ETF",
+          "reason": "保留修复期权，但当前优先级低于防御与核心宽基。"
+        }
       ],
       "avoid_directions": [
-        {"name": "高估值AI、芯片和半导体细分", "reason": "宽度弱、资金集中、波动偏高，单日强势不能替代盈利确认。"},
-        {"name": "无盈利确认的小盘题材", "reason": "下跌扩散下弹性对应的回撤风险不划算。"},
-        {"name": "银行、建材、公用事业的单日反抽", "reason": "尚未形成指数、宽度和资金共振，不宜追涨。"}
+        {
+          "name": "高估值AI、芯片和半导体细分",
+          "reason": "宽度弱、资金集中、波动偏高，单日强势不能替代盈利确认。"
+        },
+        {
+          "name": "无盈利确认的小盘题材",
+          "reason": "下跌扩散下弹性对应的回撤风险不划算。"
+        },
+        {
+          "name": "银行、建材、公用事业的单日反抽",
+          "reason": "尚未形成指数、宽度和资金共振，不宜追涨。"
+        }
       ],
       "turning_point_add_missing": [
         "上涨占比、行业上涨占比和个股中位数连续修复",
@@ -193,7 +339,19 @@
       "comparison_to_previous": {
         "previous_record_id": "20260902T111000-web-qa-1",
         "same_basis_trade_date": false,
-        "changed_fields": ["basis_trade_date", "source_type", "source_run_id", "period_stage", "confidence", "position_pct", "position_range", "action", "directions", "avoid_directions", "evidence"],
+        "changed_fields": [
+          "basis_trade_date",
+          "source_type",
+          "source_run_id",
+          "period_stage",
+          "confidence",
+          "position_pct",
+          "position_range",
+          "action",
+          "directions",
+          "avoid_directions",
+          "evidence"
+        ],
         "summary": "上一条为9月1日基准的盘中联网研究，建议70%维持；本条使用9月2日收盘完整快照，确认风险结构恶化，官方区间降为0%-20%，周期研究判断由牛市中期调整为熊市初期。两条记录均保留，差异不应理解为自动下单信号。"
       },
       "risk_warning": "本次收盘数据质量校验通过，但中国10年国债收益率使用Eastmoney fallback，QMT持仓字段未接入。模型健康为warning（61.55），漂移分15.23、低严重度；策略稳健性为49.79、D级、deployable=false，样本数56，不能包装为已验证择时结论。内容仅用于研究复盘和风险观察，不涉及真实账户金额、股数或自动交易。",
@@ -245,16 +403,45 @@
       "no_trade": true,
       "core_summary": "官方区间仍为0%-20%，机会分和A-FEAR较昨日小幅改善，但下行收缩、趋势转弱、宽度偏弱且主力仍净流出；建议约10%维持，今天无需交易。",
       "directions": [
-        {"rank": 1, "name": "红利低波 / 自由现金流 / 质量ETF", "reason": "防御、现金流和低波动暴露优先，适合作为当前权益仓底仓。"},
-        {"rank": 2, "name": "沪深300 / 中证A500宽基ETF", "reason": "分散行业风险，作为低比例β底盘，等待宽度和趋势修复。"},
-        {"rank": 3, "name": "公用事业 / 红利央企ETF", "reason": "盈利和现金流相对稳定，但只做防御配置。"},
-        {"rank": 4, "name": "工业金属 / 贵金属ETF", "reason": "当前相对强并有资金承接，但周期性和波动较高，只小比例观察。"},
-        {"rank": 5, "name": "中证500 / 中证1000宽基ETF", "reason": "保留修复期权，但优先级低于防御与核心宽基。"}
+        {
+          "rank": 1,
+          "name": "红利低波 / 自由现金流 / 质量ETF",
+          "reason": "防御、现金流和低波动暴露优先，适合作为当前权益仓底仓。"
+        },
+        {
+          "rank": 2,
+          "name": "沪深300 / 中证A500宽基ETF",
+          "reason": "分散行业风险，作为低比例β底盘，等待宽度和趋势修复。"
+        },
+        {
+          "rank": 3,
+          "name": "公用事业 / 红利央企ETF",
+          "reason": "盈利和现金流相对稳定，但只做防御配置。"
+        },
+        {
+          "rank": 4,
+          "name": "工业金属 / 贵金属ETF",
+          "reason": "当前相对强并有资金承接，但周期性和波动较高，只小比例观察。"
+        },
+        {
+          "rank": 5,
+          "name": "中证500 / 中证1000宽基ETF",
+          "reason": "保留修复期权，但优先级低于防御与核心宽基。"
+        }
       ],
       "avoid_directions": [
-        {"name": "高估值AI、芯片和半导体细分", "reason": "成长主线未形成有效确认，短期波动与估值回撤风险较高。"},
-        {"name": "无盈利确认的小盘题材", "reason": "市场中位数仍为负，弹性不足以补偿回撤风险。"},
-        {"name": "有色、保险、证券等传统权重的单日反抽", "reason": "价量主线重合数为0，尚未形成指数、宽度和资金共振。"}
+        {
+          "name": "高估值AI、芯片和半导体细分",
+          "reason": "成长主线未形成有效确认，短期波动与估值回撤风险较高。"
+        },
+        {
+          "name": "无盈利确认的小盘题材",
+          "reason": "市场中位数仍为负，弹性不足以补偿回撤风险。"
+        },
+        {
+          "name": "有色、保险、证券等传统权重的单日反抽",
+          "reason": "价量主线重合数为0，尚未形成指数、宽度和资金共振。"
+        }
       ],
       "turning_point_add_missing": [
         "上涨占比、行业上涨占比和个股中位数连续改善并转正",
@@ -271,7 +458,17 @@
       "comparison_to_previous": {
         "previous_record_id": "20260902T181408-qa-post-close-1",
         "same_basis_trade_date": false,
-        "changed_fields": ["basis_trade_date", "source_run_id", "period_stage", "confidence", "position_pct", "action", "directions", "avoid_directions", "evidence"],
+        "changed_fields": [
+          "basis_trade_date",
+          "source_run_id",
+          "period_stage",
+          "confidence",
+          "position_pct",
+          "action",
+          "directions",
+          "avoid_directions",
+          "evidence"
+        ],
         "summary": "相较上一条收盘后问答，风险指标有所缓和但官方区间未上移；周期仍判断为熊市初期，建议由昨日的降低仓位转为维持约10%，且今天无需交易。"
       },
       "risk_warning": "核心收盘数据校验通过；中国10年国债收益率使用Eastmoney fallback，QMT持仓字段未接入。估值、宏观、市场内部结构、资金和A-FEAR有数据，但当前日度快照没有盈利预期/ROE修正序列。模型健康为warning（62.07），漂移分14.24、低严重度；策略稳健性为49.77、D级、deployable=false，样本数57，不能包装为已验证择时结论。内容仅用于研究复盘，不涉及真实账户或自动交易。",
@@ -324,24 +521,107 @@
       "no_trade": false,
       "core_summary": "结构区制由下行收缩切回主升扩张、宽度修复并抬升官方区间，但趋势仍转弱、A-FEAR高位升温且主力资金扩大流出；建议约25%温和恢复，不追涨。",
       "directions": [
-        {"rank": 1, "name": "红利低波／自由现金流／质量ETF", "reason": "高恐慌和趋势未确认阶段的防御与质量底仓。"},
-        {"rank": 2, "name": "沪深300／中证A500宽基ETF", "reason": "分散化beta底盘，适合小步恢复。"},
-        {"rank": 3, "name": "国防军工／军工电子ETF", "reason": "资金流入居前但主线较窄，只小比例观察。"},
-        {"rank": 4, "name": "传媒／游戏ETF", "reason": "有强势和资金线索，但波动与估值风险较高。"},
-        {"rank": 5, "name": "食品饮料／白酒ETF", "reason": "今日价格与资金相对强，但不能用单日反弹替代盈利确认。"}
+        {
+          "rank": 1,
+          "name": "红利低波／自由现金流／质量ETF",
+          "reason": "高恐慌和趋势未确认阶段的防御与质量底仓。"
+        },
+        {
+          "rank": 2,
+          "name": "沪深300／中证A500宽基ETF",
+          "reason": "分散化beta底盘，适合小步恢复。"
+        },
+        {
+          "rank": 3,
+          "name": "国防军工／军工电子ETF",
+          "reason": "资金流入居前但主线较窄，只小比例观察。"
+        },
+        {
+          "rank": 4,
+          "name": "传媒／游戏ETF",
+          "reason": "有强势和资金线索，但波动与估值风险较高。"
+        },
+        {
+          "rank": 5,
+          "name": "食品饮料／白酒ETF",
+          "reason": "今日价格与资金相对强，但不能用单日反弹替代盈利确认。"
+        }
       ],
       "avoid_directions": [
-        {"name": "高估值AI、芯片和电子细分", "reason": "电子行业跌幅靠前，估值、波动和拥挤风险未消失。"},
-        {"name": "无盈利确认的小盘题材及北证高弹性品种", "reason": "中证1000恐慌分79.95，小盘回撤风险不匹配。"},
-        {"name": "农林牧渔、传媒、白酒等单日领涨线追涨", "reason": "强势集中在少数行业，尚未形成持续共振。"}
+        {
+          "name": "高估值AI、芯片和电子细分",
+          "reason": "电子行业跌幅靠前，估值、波动和拥挤风险未消失。"
+        },
+        {
+          "name": "无盈利确认的小盘题材及北证高弹性品种",
+          "reason": "中证1000恐慌分79.95，小盘回撤风险不匹配。"
+        },
+        {
+          "name": "农林牧渔、传媒、白酒等单日领涨线追涨",
+          "reason": "强势集中在少数行业，尚未形成持续共振。"
+        }
       ],
-      "turning_point_add_missing": ["上涨占比、行业上涨占比和个股中位数连续转正", "主力资金由净流出转为连续净流入且与北向同向", "主要指数重新站上MA20，趋势由转弱变为初期或强趋势", "A-FEAR回落、波动率收敛，并补上盈利预期和ROE修正确认"],
-      "turning_point_reduce_missing": ["宽度和趋势再次连续恶化，主力退潮扩大并伴随新低扩散", "盈利预期或ROE下修与信用利差、宏观流动性收紧同步出现", "估值风险与高恐慌再次共振"],
+      "turning_point_add_missing": [
+        "上涨占比、行业上涨占比和个股中位数连续转正",
+        "主力资金由净流出转为连续净流入且与北向同向",
+        "主要指数重新站上MA20，趋势由转弱变为初期或强趋势",
+        "A-FEAR回落、波动率收敛，并补上盈利预期和ROE修正确认"
+      ],
+      "turning_point_reduce_missing": [
+        "宽度和趋势再次连续恶化，主力退潮扩大并伴随新低扩散",
+        "盈利预期或ROE下修与信用利差、宏观流动性收紧同步出现",
+        "估值风险与高恐慌再次共振"
+      ],
       "changes_vs_yesterday": "机会分41.62→41.52、风险扣分48.37→48.79；仓位分16.85→25.27，官方区间0%-20%→20%-40%，结构区制contraction→expansion。上涨占比33.27%→44.05%、行业上涨占比35.48%→48.39%、中位数-0.68%→-0.17%，但主力净流出381.01→688.34亿元、A-FEAR64.9285→71.4236，属于矛盾修复，温和增加而不追涨。",
-      "comparison_to_previous": {"previous_record_id": "20260903T210503-qa-post-close-1", "same_basis_trade_date": false, "changed_fields": ["basis_trade_date", "source_run_id", "period_stage", "confidence", "position_pct", "position_range", "action", "directions", "avoid_directions", "evidence"], "summary": "相较上一条收盘后问答，宽度和结构区制改善使官方权益区间上移，但主力流出扩大、A-FEAR升至高恐慌且趋势仍转弱；周期由熊市初期调整为熊市末期／弱修复观察，建议由约10%提高到约25%，不视为全面牛市确认。"},
+      "comparison_to_previous": {
+        "previous_record_id": "20260903T210503-qa-post-close-1",
+        "same_basis_trade_date": false,
+        "changed_fields": [
+          "basis_trade_date",
+          "source_run_id",
+          "period_stage",
+          "confidence",
+          "position_pct",
+          "position_range",
+          "action",
+          "directions",
+          "avoid_directions",
+          "evidence"
+        ],
+        "summary": "相较上一条收盘后问答，宽度和结构区制改善使官方权益区间上移，但主力流出扩大、A-FEAR升至高恐慌且趋势仍转弱；周期由熊市初期调整为熊市末期／弱修复观察，建议由约10%提高到约25%，不视为全面牛市确认。"
+      },
       "risk_warning": "本次快照数据质量校验通过；中国10年国债收益率使用Eastmoney fallback，QMT持仓字段未接入。当前日度快照没有盈利预期／ROE修正序列，不能虚构盈利拐点。模型健康为warning（61.84），漂移分13.78、低严重度；策略稳健性为58.67、D级、deployable=false，回测记录59条、收益观测58个，不能包装为已验证的可部署择时结论。内容仅用于研究复盘，不涉及真实账户或自动交易。",
       "evidence_summary": "估值便宜度31.85%、30日年化波动28.81%；上涨占比44.05%、行业上涨占比48.39%、个股中位数-0.1714%；主力净流出688.34亿元、北向净流入27.42亿元；A-FEAR71.4236（高恐慌、恐慌升温）；市场机会分41.52、风险扣分48.79、仓位分25.27。",
-      "evidence": {"market_opportunity_score": 41.52, "market_position_score": 25.27, "risk_penalty_score": 48.79, "recommended_equity_position_range": "20%-40%", "a_fear": 71.4236, "a_fear_level": "高恐慌", "a_fear_phase": "恐慌升温", "breadth_score_pct": 43.01, "advancer_ratio_pct": 44.05, "industry_up_ratio_pct": 48.39, "median_pct_change": -0.1714, "mainline_score_pct": 41.27, "main_net_inflow_100m_cny": -688.3364, "northbound_net_inflow_100m_cny": 27.4164, "valuation_cheapness_pct": 31.85, "realized_vol_30d_pct": 28.81, "market_regime": "expansion", "trend_state": "weakening_trend", "model_health_score": 61.84, "model_health_status": "warning", "drift_score": 13.78, "robustness_score": 58.67, "robustness_grade": "D", "deployable": false, "robustness_record_count": 59, "robustness_return_count": 58, "data_quality": "passed", "earnings_data_available": false},
+      "evidence": {
+        "market_opportunity_score": 41.52,
+        "market_position_score": 25.27,
+        "risk_penalty_score": 48.79,
+        "recommended_equity_position_range": "20%-40%",
+        "a_fear": 71.4236,
+        "a_fear_level": "高恐慌",
+        "a_fear_phase": "恐慌升温",
+        "breadth_score_pct": 43.01,
+        "advancer_ratio_pct": 44.05,
+        "industry_up_ratio_pct": 48.39,
+        "median_pct_change": -0.1714,
+        "mainline_score_pct": 41.27,
+        "main_net_inflow_100m_cny": -688.3364,
+        "northbound_net_inflow_100m_cny": 27.4164,
+        "valuation_cheapness_pct": 31.85,
+        "realized_vol_30d_pct": 28.81,
+        "market_regime": "expansion",
+        "trend_state": "weakening_trend",
+        "model_health_score": 61.84,
+        "model_health_status": "warning",
+        "drift_score": 13.78,
+        "robustness_score": 58.67,
+        "robustness_grade": "D",
+        "deployable": false,
+        "robustness_record_count": 59,
+        "robustness_return_count": 58,
+        "data_quality": "passed",
+        "earnings_data_available": false
+      },
       "answer_file": "data/chatgpt_qa_20260904_210600-qa-1.md",
       "answer_markdown": "## A．当前周期阶段\n\n**牛市后期（结构性修复观察）｜置信度 64%。** 六阶段归类以周期引擎的 `late_bull` 为长期锚，但今天的日度信号更像修复而不是新一轮全面主升：结构区制仍为主升扩张，宽度和资金明显改善，A-FEAR从高恐慌回落至警觉；同时上证、深成指、创业板仍低于MA20，趋势状态仍是趋势转弱，估值便宜度只有29.84%，且盈利预期和ROE修正没有进入快照。\n\n## B．建议总仓位及相较昨天动作\n\n**建议总仓位约45%，相较昨天温和增加；官方权益区间为40%–60%。** 这是研究模型的风险资产区间，不是自动下单指令。相比9月4日约25%和20%–40%的区间，今天有足够新信息支持恢复一部分风险预算，但不支持一次性打满；如果没有既定再平衡需求，仍应分步而非追涨。\n\n## C．未来3–12个月风险收益比较好的方向（ETF优先）\n\n1. **红利低波／自由现金流／质量ETF**：估值偏贵、趋势未确认时，作为权益底仓和波动缓冲。\n2. **沪深300／中证A500宽基ETF**：分散行业集中风险，承接结构性修复的核心Beta。\n3. **半导体／通信设备／电子信息ETF**：资金和涨幅同时靠前，但主线集中、波动高，只适合主动仓小比例配置。\n4. **公用事业／红利央企ETF**：现金流和防御属性较强，适合与成长主线搭配，不追单日反抽。\n5. **中证500ETF**：保留中盘修复弹性，但优先级低于核心宽基和防御因子；中证1000在小盘恐慌差接近10个百分点时不宜重配。\n\n## D．三个不应追的方向\n\n1. **半导体、通信设备中单日暴涨的细分品种**：资金集中和短线拥挤可能放大回撤，今天的流入不能替代盈利确认。\n2. **无盈利确认的小盘题材、北证高弹性品种**：中证1000恐慌66.11、高于沪深300的56.16，风险收益比仍不够好。\n3. **农林牧渔及传统权重的单日领涨或反抽线**：价格强但未同时得到持续资金、指数趋势和盈利扩散确认。\n\n## E．大幅加仓和减仓还缺的信号\n\n大幅加仓还需要：上涨占比和行业上涨占比连续高于当前水平、个股中位数持续为正；主力资金5日累计净流出约2030亿元先收敛并转为连续净流入，且与北向同向；上证、深成指和创业板重新站上MA20，趋势由转弱转为初期或强趋势；A-FEAR继续回落、波动率下行；同时补上盈利预期、ROE修正、信用利差和宏观流动性的确认。\n\n大幅减仓还需要：宽度与趋势重新连续恶化、主力资金再度持续流出并扩散新低；A-FEAR重新进入高恐慌且小盘恐慌差扩大；或盈利预期／ROE下修与信用利差上行、宏观流动性收紧同步出现。今天不预测明日涨跌。\n\n## F．与昨天相比的实质变化\n\n- 机会分 **41.52→62.60**，风险扣分 **48.79→42.38**，仓位分 **25.27→45.74**；官方权益区间由 **20%–40% 上移至 40%–60%**。\n- 上涨占比 **44.05%→57.07%**，行业上涨占比 **48.39%→54.84%**，个股中位数 **-0.1714%→+0.3374%**；涨停数39→93、跌停数9→2，市场宽度显著修复。\n- 主力资金由净流出 **-688.34亿元** 转为净流入 **+580.99亿元**，但5日累计仍为约 **-2030.07亿元**；北向净流入 **27.42→27.14亿元**，基本稳定。\n- A-FEAR **71.4236→54.2776**，由高恐慌／恐慌升温转为警觉／恐慌缓和；30日年化波动 **28.81%→28.56%**，只小幅下降。估值便宜度 **31.85%→29.84%**，安全边际反而略弱。\n\n因此，今天的实质变化是“风险预算可以温和恢复”，不是“牛市已确认”或“可以追涨”。\n\n## 风险、模型健康和证据边界\n\n本次快照和API基准日均为2026-09-07，数据质量校验通过；中国10年国债收益率使用Eastmoney fallback，899050.BJ历史使用Tushare fallback，QMT持仓字段未接入。盈利预期、ROE修正、PMI/PPI/CPI、M1/M2/社融、信用利差和两融等没有全部进入本次日度证据，不能虚构盈利拐点。模型健康为 **warning，62.30分**，漂移分 **13.14**、低严重度，滚动20日和60日Sharpe仍为负；策略稳健性 **55.95分、D级、deployable=false**，样本59条，因果强度低，不能包装为已验证的可部署择时结论。以上仅用于研究复盘和风险观察，不涉及真实账户金额、股数或自动交易。"
     },
@@ -361,16 +641,45 @@
       "no_trade": false,
       "core_summary": "宽度、主力资金和A-FEAR同步改善，官方权益区间由20%-40%回到40%-60%；但主要指数仍低于MA20、估值偏贵、趋势转弱，建议约45%温和恢复，不追单日强势。",
       "directions": [
-        {"rank": 1, "name": "红利低波／自由现金流／质量ETF", "reason": "估值偏贵、趋势未确认时提供防御、质量和现金流底仓。"},
-        {"rank": 2, "name": "沪深300／中证A500宽基ETF", "reason": "分散行业集中风险，承接结构性修复的核心Beta。"},
-        {"rank": 3, "name": "半导体／通信设备／电子信息ETF", "reason": "资金和涨幅同时靠前，但主线集中、波动高，只适合主动仓小比例。"},
-        {"rank": 4, "name": "公用事业／红利央企ETF", "reason": "现金流和防御属性较强，适合与成长主线搭配。"},
-        {"rank": 5, "name": "中证500ETF", "reason": "保留中盘修复弹性，但优先级低于核心宽基和防御因子。"}
+        {
+          "rank": 1,
+          "name": "红利低波／自由现金流／质量ETF",
+          "reason": "估值偏贵、趋势未确认时提供防御、质量和现金流底仓。"
+        },
+        {
+          "rank": 2,
+          "name": "沪深300／中证A500宽基ETF",
+          "reason": "分散行业集中风险，承接结构性修复的核心Beta。"
+        },
+        {
+          "rank": 3,
+          "name": "半导体／通信设备／电子信息ETF",
+          "reason": "资金和涨幅同时靠前，但主线集中、波动高，只适合主动仓小比例。"
+        },
+        {
+          "rank": 4,
+          "name": "公用事业／红利央企ETF",
+          "reason": "现金流和防御属性较强，适合与成长主线搭配。"
+        },
+        {
+          "rank": 5,
+          "name": "中证500ETF",
+          "reason": "保留中盘修复弹性，但优先级低于核心宽基和防御因子。"
+        }
       ],
       "avoid_directions": [
-        {"name": "半导体、通信设备中单日暴涨的细分品种", "reason": "资金集中和短线拥挤可能放大回撤，流入不能替代盈利确认。"},
-        {"name": "无盈利确认的小盘题材、北证高弹性品种", "reason": "中证1000恐慌高于沪深300，小盘风险收益比仍不够好。"},
-        {"name": "农林牧渔及传统权重的单日领涨或反抽线", "reason": "尚未同时得到持续资金、指数趋势和盈利扩散确认。"}
+        {
+          "name": "半导体、通信设备中单日暴涨的细分品种",
+          "reason": "资金集中和短线拥挤可能放大回撤，流入不能替代盈利确认。"
+        },
+        {
+          "name": "无盈利确认的小盘题材、北证高弹性品种",
+          "reason": "中证1000恐慌高于沪深300，小盘风险收益比仍不够好。"
+        },
+        {
+          "name": "农林牧渔及传统权重的单日领涨或反抽线",
+          "reason": "尚未同时得到持续资金、指数趋势和盈利扩散确认。"
+        }
       ],
       "turning_point_add_missing": [
         "上涨占比、行业上涨占比和个股中位数连续改善并保持正值",
@@ -387,7 +696,18 @@
       "comparison_to_previous": {
         "previous_record_id": "20260904T210600-qa-post-close-1",
         "same_basis_trade_date": false,
-        "changed_fields": ["basis_trade_date", "source_run_id", "period_stage", "confidence", "position_pct", "position_range", "action", "directions", "avoid_directions", "evidence"],
+        "changed_fields": [
+          "basis_trade_date",
+          "source_run_id",
+          "period_stage",
+          "confidence",
+          "position_pct",
+          "position_range",
+          "action",
+          "directions",
+          "avoid_directions",
+          "evidence"
+        ],
         "summary": "相较上一条收盘后问答，宽度和主力资金由修复分歧转为更广泛改善，A-FEAR显著回落，官方权益区间由20%-40%上移至40%-60%；但趋势仍转弱、主要指数未站回MA20、估值偏贵，因此建议由约25%提高到约45%，仍不追涨。"
       },
       "risk_warning": "本次快照和API基准日均为2026-09-07，数据质量校验通过；中国10年国债收益率使用Eastmoney fallback，899050.BJ历史使用Tushare fallback，QMT持仓字段未接入。盈利预期、ROE修正、PMI/PPI/CPI、M1/M2/社融、信用利差和两融等没有全部进入本次日度证据，不能虚构盈利拐点。模型健康为warning（62.30），漂移分13.14、低严重度，滚动20日和60日Sharpe仍为负；策略稳健性为55.95、D级、deployable=false，样本59条且因果强度低，不能包装为已验证的可部署择时结论。内容仅用于研究复盘，不涉及真实账户或自动交易。",
@@ -441,16 +761,45 @@
       "no_trade": true,
       "core_summary": "宽度和波动改善，但主力资金转为净流出、价量重合主线为0，趋势仍转弱；官方权益区间未变，建议约45%维持，今天无需交易。",
       "directions": [
-        {"rank": 1, "name": "红利低波／自由现金流／质量ETF", "reason": "估值偏贵、趋势未确认时提供防御、现金流和质量底仓。"},
-        {"rank": 2, "name": "沪深300／中证A500宽基ETF", "reason": "分散行业集中风险，作为结构性修复的核心Beta。"},
-        {"rank": 3, "name": "公用事业／红利央企ETF", "reason": "盈利和现金流相对稳定，适合与宽基搭配。"},
-        {"rank": 4, "name": "工业金属／资源ETF", "reason": "资金流入居前并有周期弹性，但只适合小比例观察。"},
-        {"rank": 5, "name": "中证500ETF", "reason": "保留中盘修复弹性，但优先级低于核心宽基和防御因子。"}
+        {
+          "rank": 1,
+          "name": "红利低波／自由现金流／质量ETF",
+          "reason": "估值偏贵、趋势未确认时提供防御、现金流和质量底仓。"
+        },
+        {
+          "rank": 2,
+          "name": "沪深300／中证A500宽基ETF",
+          "reason": "分散行业集中风险，作为结构性修复的核心Beta。"
+        },
+        {
+          "rank": 3,
+          "name": "公用事业／红利央企ETF",
+          "reason": "盈利和现金流相对稳定，适合与宽基搭配。"
+        },
+        {
+          "rank": 4,
+          "name": "工业金属／资源ETF",
+          "reason": "资金流入居前并有周期弹性，但只适合小比例观察。"
+        },
+        {
+          "rank": 5,
+          "name": "中证500ETF",
+          "reason": "保留中盘修复弹性，但优先级低于核心宽基和防御因子。"
+        }
       ],
       "avoid_directions": [
-        {"name": "石油石化、房地产、钢铁等单日领涨或反抽线", "reason": "价格强但未形成稳定价量共振，不能替代盈利周期确认。"},
-        {"name": "半导体、电子、计算机中的高波动细分品种", "reason": "行业表现靠后，盈利预期和ROE修正缺失，估值与波动不支持追涨。"},
-        {"name": "无盈利确认的小盘题材、北证高弹性品种", "reason": "中小盘波动和回撤仍高，当前逆向Beta模块未启用。"}
+        {
+          "name": "石油石化、房地产、钢铁等单日领涨或反抽线",
+          "reason": "价格强但未形成稳定价量共振，不能替代盈利周期确认。"
+        },
+        {
+          "name": "半导体、电子、计算机中的高波动细分品种",
+          "reason": "行业表现靠后，盈利预期和ROE修正缺失，估值与波动不支持追涨。"
+        },
+        {
+          "name": "无盈利确认的小盘题材、北证高弹性品种",
+          "reason": "中小盘波动和回撤仍高，当前逆向Beta模块未启用。"
+        }
       ],
       "turning_point_add_missing": [
         "上涨占比、行业上涨占比和个股中位数连续保持正值",
@@ -467,7 +816,16 @@
       "comparison_to_previous": {
         "previous_record_id": "20260907T210447-qa-post-close-1",
         "same_basis_trade_date": false,
-        "changed_fields": ["basis_trade_date", "source_run_id", "confidence", "position_pct", "action", "directions", "avoid_directions", "evidence"],
+        "changed_fields": [
+          "basis_trade_date",
+          "source_run_id",
+          "confidence",
+          "position_pct",
+          "action",
+          "directions",
+          "avoid_directions",
+          "evidence"
+        ],
         "summary": "相较上一条收盘后问答，宽度、行业扩散和波动率改善，但主力资金由净流入转为净流出、主线强度显著下降；官方区间未变，因此维持约45%仓位并明确今天无需交易。"
       },
       "risk_warning": "本次快照和研究API基准日均为2026-09-08，数据质量校验通过；缺失项包括macro.fred_key_indicators.DFF，中国10年国债收益率使用Eastmoney fallback，899050.BJ历史使用Tushare fallback，QMT持仓字段未接入。盈利预期、ROE修正、PMI/PPI/CPI、M1/M2/社融、信用利差和两融等没有全部进入本次日度证据，不能虚构盈利拐点。模型健康为warning（64.31），漂移分8.98、低严重度，滚动60日Sharpe为-1.79；策略稳健性为62.24、C级、deployable=false，样本59条且因果强度低，不能包装为已验证的可部署择时结论。内容仅用于研究复盘，不涉及真实账户或自动交易。",
@@ -505,8 +863,8 @@
       },
       "answer_file": "data/chatgpt_qa_20260908_210429-qa-1.md",
       "answer_markdown": "## A．当前周期阶段\n\n**牛市后期（结构性修复观察）｜置信度 61%。** 六阶段判断仍以周期引擎的 `late_bull` 稳定状态为长期锚，但 2026-09-08 的日度信号更像宽度修复与结构轮动，而不是全面主升：上涨占比和行业扩散改善，结构区制仍为主升扩张；但主力资金转为净流出、价量重合主线为 0，主要指数只有 2/4 站上 MA20，趋势仍为趋势转弱，估值便宜度仅 30.62%，盈利预期和 ROE 修正也没有进入本次快照。\n\n## B．建议总仓位及相较昨天动作\n\n**建议总仓位约 45%，相较昨天维持；官方权益区间为 40%–60%，今天无需交易。** 仓位分由 45.74 降至 39.87，但区间没有下移。宽度改善尚不足以抵消主力资金转弱和主线质量下降，因此保持风险预算，不追单日强势，也不因一天的资金反转做大幅调整。\n\n## C．未来3–12个月风险收益比较好的方向（ETF优先）\n\n1. **红利低波／自由现金流／质量 ETF**：估值偏贵、趋势未确认时提供防御、现金流和质量底仓。\n2. **沪深 300／中证 A500 宽基 ETF**：分散行业集中风险，作为结构性修复的核心 Beta。\n3. **公用事业／红利央企 ETF**：盈利和现金流相对稳定，适合与宽基搭配，不追单日反抽。\n4. **工业金属／资源 ETF**：资金流入居前且具备周期弹性，但估值、商品价格和持续性风险较高，只做小比例观察。\n5. **中证 500 ETF**：保留中盘修复弹性，但优先级低于核心宽基和防御因子；在趋势重新确认前不扩大到中证 1000。\n\n## D．三个不应追的方向\n\n1. **石油石化、房地产、钢铁等单日领涨或反抽线**：价格强但与资金榜没有形成稳定价量共振，不能把一天的反弹当成盈利周期反转。\n2. **半导体、电子、计算机中的高波动细分品种**：今日行业表现靠后，且盈利预期和 ROE 修正缺失，估值与波动不足以支持追涨。\n3. **无盈利确认的小盘题材、北证高弹性品种**：中小盘波动和回撤仍高，当前逆向 Beta 模块未启用，风险收益比不够好。\n\n## E．大幅加仓和减仓还缺的信号\n\n大幅加仓还需要：上涨占比、行业上涨占比和个股中位数连续保持正值；主力资金 5 日累计净流出约 1624 亿元继续收敛并转为连续净流入，且与北向同向；上证、深成指和创业板重新站上 MA20，趋势由转弱转为初期或强趋势；主线形成持续的价量重合；A-FEAR 和波动率继续回落；同时补上盈利预期、ROE 修正、信用利差和宏观流动性的确认。\n\n大幅减仓还需要：宽度与趋势连续恶化、主力资金持续流出并扩散新低；A-FEAR 重新进入高恐慌且小盘恐慌差扩大；或盈利预期／ROE 下修与信用利差上行、宏观流动性收紧同步出现。今天不预测明日涨跌。\n\n## F．与昨天相比的实质变化\n\n- 机会分 **62.60→54.73**，风险扣分 **42.38→42.42**，仓位分 **45.74→39.87**；官方权益区间仍为 **40%–60%**。\n- 上涨占比 **57.07%→61.58%**，行业上涨占比 **54.84%→70.97%**，个股中位数 **+0.3374%→+0.5376%**；市场宽度继续改善，站上 MA20 的指数由 1 个增至 2 个。\n- 主力资金由净流入 **+580.99 亿元** 转为净流出 **-281.89 亿元**，但 5 日累计由约 **-2030.07 亿元** 收敛至 **-1624.06 亿元**；北向净流入 **27.14→26.60 亿元**，仍为小幅流入。\n- 主线强度 **89.87→51.10**，价量重合主线为 0；估值便宜度 **29.84%→30.62%**，30 日年化波动 **28.56%→25.47%**；A-FEAR **54.2776→55.7583**，仍为警觉／恐慌缓和，但一日小幅回升。\n\n实质变化是“宽度和波动改善，但主线质量与内资资金承接恶化”，不足以改变仓位区间，结论为**维持仓位、今天无需交易**。\n\n## 风险、模型健康和证据边界\n\n本次快照和研究 API 基准日均为 2026-09-08，数据质量校验通过；缺失项包括 `macro.fred_key_indicators.DFF`，中国 10 年国债收益率使用 Eastmoney fallback，899050.BJ 历史使用 Tushare fallback，QMT 持仓字段未接入。盈利预期、ROE 修正、PMI/PPI/CPI、M1/M2/社融、信用利差和两融等没有全部进入本次日度证据，不能虚构盈利拐点。模型健康为 **warning，64.31 分**，漂移分 **8.98**、低严重度；滚动 60 日 Sharpe 为 **-1.79**。策略稳健性为 **62.24、C 级、deployable=false**，样本 59 条且因果强度低，不能包装为已验证的可部署择时结论。以上仅用于研究复盘和风险观察，不涉及真实账户金额、股数或自动交易。"
-    }
-    ,{
+    },
+    {
       "record_id": "20260909T210410-qa-1",
       "basis_trade_date": "2026-09-09",
       "asked_at": "2026-09-09T21:04:10+08:00",
@@ -522,16 +880,45 @@
       "no_trade": false,
       "core_summary": "月度周期锚仍为late_bull，但候选状态模糊、宏观确认偏负；日度宽度和资金承接明显恶化，结构区制转为下行收缩，建议将风险资产降至约10%，不追跌。",
       "directions": [
-        {"rank": 1, "name": "红利低波／自由现金流／质量ETF", "reason": "估值安全边际有限、趋势转弱时优先保留现金流和低波动质量暴露。"},
-        {"rank": 2, "name": "沪深300／中证A500宽基ETF", "reason": "作为分散化Beta底盘，等宽度和趋势确认后再恢复仓位。"},
-        {"rank": 3, "name": "公用事业／红利央企ETF", "reason": "现金流和防御属性相对稳定，适合作为低风险权益仓的一部分。"},
-        {"rank": 4, "name": "工业金属／资源ETF", "reason": "有色和工业金属资金与涨幅靠前，具备周期弹性，但只适合小比例观察。"},
-        {"rank": 5, "name": "通信设备／军工装备ETF", "reason": "有资金流入线索，但主线中性且价量重合为0，需等待持续性确认。"}
+        {
+          "rank": 1,
+          "name": "红利低波／自由现金流／质量ETF",
+          "reason": "估值安全边际有限、趋势转弱时优先保留现金流和低波动质量暴露。"
+        },
+        {
+          "rank": 2,
+          "name": "沪深300／中证A500宽基ETF",
+          "reason": "作为分散化Beta底盘，等宽度和趋势确认后再恢复仓位。"
+        },
+        {
+          "rank": 3,
+          "name": "公用事业／红利央企ETF",
+          "reason": "现金流和防御属性相对稳定，适合作为低风险权益仓的一部分。"
+        },
+        {
+          "rank": 4,
+          "name": "工业金属／资源ETF",
+          "reason": "有色和工业金属资金与涨幅靠前，具备周期弹性，但只适合小比例观察。"
+        },
+        {
+          "rank": 5,
+          "name": "通信设备／军工装备ETF",
+          "reason": "有资金流入线索，但主线中性且价量重合为0，需等待持续性确认。"
+        }
       ],
       "avoid_directions": [
-        {"name": "煤炭、有色、军工等单日领涨线", "reason": "宽度弱、主力大幅流出，缺少指数—宽度—资金共振，价格强不等于趋势反转。"},
-        {"name": "高波动成长细分，如半导体、传媒、医药中的强势反抽", "reason": "创业板30日年化波动约36.91%，主要成长指数仍低于MA20，波动风险不支持追涨。"},
-        {"name": "无盈利确认的小盘题材、北证高弹性品种", "reason": "中证1000恐慌62.01高于沪深300的43.86，小盘恐慌差18.15个百分点，北证50也低于MA20。"}
+        {
+          "name": "煤炭、有色、军工等单日领涨线",
+          "reason": "宽度弱、主力大幅流出，缺少指数—宽度—资金共振，价格强不等于趋势反转。"
+        },
+        {
+          "name": "高波动成长细分，如半导体、传媒、医药中的强势反抽",
+          "reason": "创业板30日年化波动约36.91%，主要成长指数仍低于MA20，波动风险不支持追涨。"
+        },
+        {
+          "name": "无盈利确认的小盘题材、北证高弹性品种",
+          "reason": "中证1000恐慌62.01高于沪深300的43.86，小盘恐慌差18.15个百分点，北证50也低于MA20。"
+        }
       ],
       "turning_point_add_missing": [
         "上涨占比和行业上涨占比连续回到50%以上，个股中位数持续为正",
@@ -550,7 +937,18 @@
       "comparison_to_previous": {
         "previous_record_id": "20260908T210429-qa-1",
         "same_basis_trade_date": false,
-        "changed_fields": ["basis_trade_date", "source_run_id", "period_stage", "confidence", "position_pct", "position_range", "action", "directions", "avoid_directions", "evidence"],
+        "changed_fields": [
+          "basis_trade_date",
+          "source_run_id",
+          "period_stage",
+          "confidence",
+          "position_pct",
+          "position_range",
+          "action",
+          "directions",
+          "avoid_directions",
+          "evidence"
+        ],
         "summary": "相较上一条收盘后问答，宽度由修复转为明显偏弱、主力流出扩大、结构区制转入下行收缩，官方权益区间由40%-60%下调至0%-20%；月度周期锚仍未切换，因此降低到约10%，不做恐慌式追跌。"
       },
       "risk_warning": "本次快照和研究API基准日均为2026-09-09，数据质量校验通过；缺失项包括macro.fred_key_indicators.CPIAUCSL，中国10年国债收益率使用Eastmoney fallback，899050.BJ使用Tushare fallback，QMT持仓字段未接入。周期引擎盈利域为recovery但质量分位约31.47，宏观确认仅有PMI49.2且较上月下降1.1；日度评分未完整纳入盈利预期修正、ROE修正、M1/M2/社融、信用利差和两融等序列，不能虚构盈利拐点或流动性全面宽松。模型健康为warning（62.94），漂移分14.10、低严重度，滚动20日Sharpe为0.43、60日Sharpe为-1.68；策略稳健性为66.55、C级、deployable=false，因果强度8.33，验证样本62条、收益观测61条且真实历史仍短，不能包装为已验证的可部署择时结论。内容仅用于研究复盘，不涉及真实账户或自动交易。",
@@ -594,7 +992,9 @@
         "robustness_record_count": 62,
         "robustness_return_count": 61,
         "data_quality": "passed",
-        "missing_fields": ["macro.fred_key_indicators.CPIAUCSL"],
+        "missing_fields": [
+          "macro.fred_key_indicators.CPIAUCSL"
+        ],
         "earnings_data_available": true
       },
       "answer_file": "data/chatgpt_qa_20260909_210410-qa-1.md",
@@ -616,15 +1016,40 @@
       "no_trade": false,
       "core_summary": "日度市场进入下行收缩且趋势继续转弱，宽度、资金承接和A-FEAR同时恶化；长期月度稳定状态仍为late_bull但候选模糊、宏观确认偏负，建议风险资产约5%，不追跌。",
       "directions": [
-        {"rank": 1, "name": "红利低波／自由现金流／质量ETF", "reason": "趋势弱、恐慌高时优先保留现金流和低波动质量暴露。"},
-        {"rank": 2, "name": "沪深300／中证A500宽基ETF", "reason": "作为分散化Beta底盘，只低比例配置并等待宽度、趋势确认。"},
-        {"rank": 3, "name": "公用事业／红利央企ETF", "reason": "今日相对强势且偏防御，但需要连续性，不追单日反抽。"},
-        {"rank": 4, "name": "银行／非银金融ETF", "reason": "有相对强势和资金线索，但先视为传统权重反抽，等待共振确认。"}
+        {
+          "rank": 1,
+          "name": "红利低波／自由现金流／质量ETF",
+          "reason": "趋势弱、恐慌高时优先保留现金流和低波动质量暴露。"
+        },
+        {
+          "rank": 2,
+          "name": "沪深300／中证A500宽基ETF",
+          "reason": "作为分散化Beta底盘，只低比例配置并等待宽度、趋势确认。"
+        },
+        {
+          "rank": 3,
+          "name": "公用事业／红利央企ETF",
+          "reason": "今日相对强势且偏防御，但需要连续性，不追单日反抽。"
+        },
+        {
+          "rank": 4,
+          "name": "银行／非银金融ETF",
+          "reason": "有相对强势和资金线索，但先视为传统权重反抽，等待共振确认。"
+        }
       ],
       "avoid_directions": [
-        {"name": "银行、券商、建材、公用事业的单日反抽", "reason": "上涨占比仅17.21%，领涨不等于全面反转。"},
-        {"name": "半导体、AI、传媒、医药等高波动成长反弹", "reason": "主线与宽度差值达61.2个百分点，缺少扩散确认。"},
-        {"name": "无盈利确认的小盘题材和北证高弹性品种", "reason": "中证1000恐慌70.88高于沪深300的64.79，强跌占比15.98%。"}
+        {
+          "name": "银行、券商、建材、公用事业的单日反抽",
+          "reason": "上涨占比仅17.21%，领涨不等于全面反转。"
+        },
+        {
+          "name": "半导体、AI、传媒、医药等高波动成长反弹",
+          "reason": "主线与宽度差值达61.2个百分点，缺少扩散确认。"
+        },
+        {
+          "name": "无盈利确认的小盘题材和北证高弹性品种",
+          "reason": "中证1000恐慌70.88高于沪深300的64.79，强跌占比15.98%。"
+        }
       ],
       "turning_point_add_missing": [
         "上涨占比、行业上涨占比连续回到50%以上且个股中位数转正",
@@ -642,7 +1067,17 @@
       "comparison_to_previous": {
         "previous_record_id": "20260909T210410-qa-1",
         "same_basis_trade_date": false,
-        "changed_fields": ["basis_trade_date", "source_run_id", "period_stage", "confidence", "position_pct", "action", "directions", "avoid_directions", "evidence"],
+        "changed_fields": [
+          "basis_trade_date",
+          "source_run_id",
+          "period_stage",
+          "confidence",
+          "position_pct",
+          "action",
+          "directions",
+          "avoid_directions",
+          "evidence"
+        ],
         "summary": "相较上一条收盘后问答，宽度从偏弱进一步恶化，主力流出扩大，A-FEAR由警觉升至高恐慌；官方区间仍为0%-20%，但建议中枢由约10%降至约5%。长期月度稳定状态仍为late_bull，因此这是短期风险阶段切换，不是长期周期状态机已完成切换。"
       },
       "risk_warning": "本次市场快照、A-FEAR和研究API基准日均为2026-09-10，日度missing_fields为空且API校验通过；周期引擎中证1000估值输入不可用且无代理，PMI为49.2且较上月下降1.1，宏观月度数据存在滞后，中国10年国债收益率使用Eastmoney fallback，QMT持仓未接入。模型健康warning 62.39、漂移15.13低严重度，滚动20日Sharpe 0.74、60日Sharpe -1.88；稳健性64.68、C级、deployable=false，因果趋势强度约8.15，验证样本63条、收益观测62条且真实历史仍短，不能包装为已验证的可部署择时结论。内容仅用于研究复盘，不涉及真实账户或自动交易。",
@@ -689,7 +1124,9 @@
         "robustness_return_count": 62,
         "data_quality": "passed",
         "missing_fields": [],
-        "cycle_unavailable_fields": ["valuation.indices.csi1000"],
+        "cycle_unavailable_fields": [
+          "valuation.indices.csi1000"
+        ],
         "earnings_data_available": true
       },
       "answer_file": "data/chatgpt_qa_20260910_210554-qa-1.md",
@@ -711,15 +1148,40 @@
       "no_trade": false,
       "core_summary": "日度市场进入下行收缩且趋势继续转弱，宽度、资金承接和A-FEAR进一步恶化；长期月度稳定状态仍为late_bull但候选模糊、宏观确认偏负，建议风险资产约3%，不追跌。",
       "directions": [
-        {"rank": 1, "name": "红利低波／自由现金流／质量ETF", "reason": "趋势弱、恐慌高时优先保留现金流和低波动质量暴露。"},
-        {"rank": 2, "name": "沪深300／中证A500宽基ETF", "reason": "作为分散化Beta底盘，只低比例配置并等待宽度、趋势确认。"},
-        {"rank": 3, "name": "公用事业／红利央企ETF", "reason": "防御属性相对稳定，但今日只是相对抗跌线索，不追单日反抽。"},
-        {"rank": 4, "name": "通信设备／军工电子ETF", "reason": "有涨幅或资金流入线索，但主线集中、宽度极弱，仅作极小观察仓。"}
+        {
+          "rank": 1,
+          "name": "红利低波／自由现金流／质量ETF",
+          "reason": "趋势弱、恐慌高时优先保留现金流和低波动质量暴露。"
+        },
+        {
+          "rank": 2,
+          "name": "沪深300／中证A500宽基ETF",
+          "reason": "作为分散化Beta底盘，只低比例配置并等待宽度、趋势确认。"
+        },
+        {
+          "rank": 3,
+          "name": "公用事业／红利央企ETF",
+          "reason": "防御属性相对稳定，但今日只是相对抗跌线索，不追单日反抽。"
+        },
+        {
+          "rank": 4,
+          "name": "通信设备／军工电子ETF",
+          "reason": "有涨幅或资金流入线索，但主线集中、宽度极弱，仅作极小观察仓。"
+        }
       ],
       "avoid_directions": [
-        {"name": "通信、元件、军工电子等单日强势细分", "reason": "资金流入不能替代宽度、指数趋势和盈利扩散确认。"},
-        {"name": "建筑材料、公用事业、银行等传统权重单日反抽", "reason": "行业上涨占比仅6.45%，缺少市场层面的共振。"},
-        {"name": "高波动成长、无盈利小盘题材和北证高弹性品种", "reason": "中证1000恐慌76.47，高于沪深300的62.59；强跌占比27.87%，赔率不足。"}
+        {
+          "name": "通信、元件、军工电子等单日强势细分",
+          "reason": "资金流入不能替代宽度、指数趋势和盈利扩散确认。"
+        },
+        {
+          "name": "建筑材料、公用事业、银行等传统权重单日反抽",
+          "reason": "行业上涨占比仅6.45%，缺少市场层面的共振。"
+        },
+        {
+          "name": "高波动成长、无盈利小盘题材和北证高弹性品种",
+          "reason": "中证1000恐慌76.47，高于沪深300的62.59；强跌占比27.87%，赔率不足。"
+        }
       ],
       "turning_point_add_missing": [
         "上涨占比、行业上涨占比连续回到50%以上且个股中位数转正",
@@ -737,7 +1199,15 @@
       "comparison_to_previous": {
         "previous_record_id": "20260910T210554-qa-1",
         "same_basis_trade_date": false,
-        "changed_fields": ["basis_trade_date", "source_run_id", "confidence", "position_pct", "directions", "avoid_directions", "evidence"],
+        "changed_fields": [
+          "basis_trade_date",
+          "source_run_id",
+          "confidence",
+          "position_pct",
+          "directions",
+          "avoid_directions",
+          "evidence"
+        ],
         "summary": "相较上一条收盘后问答，宽度与个股中位数进一步恶化，主力净流出扩大，A-FEAR仍在高恐慌并继续升温，小盘恐慌差显著拉宽；官方区间仍为0%-20%，但建议中枢由约5%降至约3%。长期月度稳定状态仍为late_bull，因此这是短期风险阶段加深，不是长期周期状态机已完成切换。"
       },
       "risk_warning": "本次市场快照、A-FEAR和研究API的基准日均为2026-09-11，日度missing_fields为空且API校验通过。周期引擎的valuation.indices.csi1000不可用且没有代理；周期宏观确认主要依赖PMI，最新PMI为49.2且较上月下降1.1；中国10年国债收益率使用Eastmoney fallback，899050.BJ使用Tushare fallback，QMT持仓未接入。模型健康warning 61.65、漂移15.64低严重度，滚动20日Sharpe 0.14、60日Sharpe -1.86；稳健性60.44、C级、deployable=false，因果趋势强度约8.01，验证样本64条、收益观测63条且真实历史仍短，不能包装为已验证的可部署择时结论。内容仅用于研究复盘和风险观察，不涉及真实账户或自动交易。",
@@ -784,13 +1254,14 @@
         "robustness_return_count": 63,
         "data_quality": "passed",
         "missing_fields": [],
-        "cycle_unavailable_fields": ["valuation.indices.csi1000"],
+        "cycle_unavailable_fields": [
+          "valuation.indices.csi1000"
+        ],
         "earnings_data_available": true
       },
       "answer_file": "data/chatgpt_qa_20260911_210442-qa-1.md",
       "answer_markdown": "# A股收盘后 ChatGPT 问答\n\n- 基准日：2026-09-11\n- 提问时间：2026-09-11 21:04:42 +08:00\n- 来源运行：20260911T210322-5935fc77\n\n## A．当前周期阶段\n\n**熊市初期（短期风险阶段）｜置信度 82%。** 六阶段判断基于收盘后的日度风险状态：结构区制为下行收缩、趋势转弱，市场上涨占比仅 11.59%，个股中位数为 -2.21%，A-FEAR 为 74.5023 且继续升温。月度周期引擎的长期稳定状态仍为 `late_bull`，最新候选为 `ambiguous`、宏观确认 `negative`、盈利域为 `recovery`；因此这里的“熊市初期”是短期风险阶段，不等于月度状态机已经完成长期切换。\n\n## B．建议总仓位及相较昨天动作\n\n**建议总仓位约 3%，相较昨天降低；官方推荐权益区间仍为 0%–20%。** 仓位分由 15.58 降至 14.57，区间没有继续下移，但今日宽度进一步恶化、主力净流出扩大、小盘恐慌差显著拉宽，支持继续收缩风险暴露；不做明日涨跌预测，也不恐慌追跌。\n\n## C．未来 3–12 个月风险收益比相对较好的方向（ETF 优先）\n\n1. **红利低波／自由现金流／质量 ETF**：趋势弱、恐慌高时优先保留现金流和低波动质量暴露。\n2. **沪深 300／中证 A500 宽基 ETF**：作为分散化 Beta 底盘，只适合低比例配置，等待宽度和趋势确认。\n3. **公用事业／红利央企 ETF**：防御属性相对稳定，但今日只是相对抗跌线索，不追单日反抽。\n4. **通信设备／军工电子 ETF**：存在涨幅或资金流入线索，但主线集中、宽度极弱，仅作极小观察仓，等待持续性确认。\n\n## D．三个不应追的方向\n\n1. **通信、元件、军工电子等单日强势细分**：资金流入不能替代宽度、指数趋势和盈利扩散确认。\n2. **建筑材料、公用事业、银行等传统权重单日反抽**：行业上涨占比仅 6.45%，缺少市场层面的共振。\n3. **高波动成长、无盈利小盘题材和北证高弹性品种**：中证1000恐慌 76.47，高于沪深300的 62.59；强跌占比 27.87%，赔率不足以支持追涨。\n\n## E．大幅加仓和减仓还缺的信号\n\n大幅加仓还需要：上涨占比、行业上涨占比连续回到 50% 以上且个股中位数转正；主力资金由今日净流出 945.17 亿元转为连续净流入，并与北向同向；主要指数重新站上 MA20，趋势由转弱变为初期或强趋势；A-FEAR持续回落、小盘恐慌差收窄；周期候选离开模糊状态，并出现 PMI、盈利和 ROE 的同步确认。\n\n进一步大幅减仓还需要：宽度继续恶化、强跌扩散，主力资金连续流出且北向转负；主要指数继续低于 MA20；A-FEAR在高位继续上行并接近极端，小盘恐慌差继续扩大；盈利预期或 ROE 下修、信用利差上行与流动性收紧同时出现。\n\n## F．与昨天相比的实质变化\n\n- 机会分 **38.54→37.03**，风险扣分 **43.21→49.94**，仓位分 **15.58→14.57**；官方权益区间仍为 **0%–20%**。\n- 上涨占比 **17.21%→11.59%**，行业上涨占比 **12.90%→6.45%**，个股中位数 **-1.4908%→-2.21%**；强跌占比 **15.98%→27.87%**，下跌扩散明显加剧。\n- 主力资金净流出 **-704.08→-945.17 亿元**，北向净流入 **22.37→29.13 亿元**；资金分歧扩大。\n- 主线得分 **65.58%→50.44%**，宽度得分 **4.38%→4.33%**，主线与宽度仍严重背离；结构区制和趋势状态仍为 **下行收缩／趋势转弱**。\n- A-FEAR **71.4439→74.5023**，仍为高恐慌且恐慌升温；沪深300恐慌 **64.7875→62.5887**，中证1000恐慌 **70.8847→76.4672**，小盘恐慌差 **6.0973→13.8785**。\n\n实质变化是“下跌广度继续恶化、内资流出加速、恐慌向小盘扩散”。官方区间暂未再下移，但建议中枢由约 5% 降至约 3%；今天不追跌，也不把少数通信或权重线索当作反转信号。\n\n## 风险、模型健康和证据边界\n\n本次市场快照、A-FEAR和研究 API 的基准日均为 **2026-09-11**，日度数据质量 `missing_fields=[]` 且 API 校验通过。资料边界包括：周期引擎的 `valuation.indices.csi1000` 不可用且没有代理；周期宏观确认主要依赖 PMI，最新 PMI 为 49.2、较上月下降 1.1，月度数据存在滞后；中国10年国债收益率使用 Eastmoney fallback，899050.BJ 使用 Tushare fallback，QMT 持仓未接入。\n\n模型健康为 **warning，61.65 分**，漂移分 **15.64、低严重度**；滚动20日 Sharpe 为 **0.14**，滚动60日 Sharpe 为 **-1.86**。策略稳健性为 **60.44、C级、deployable=false**，因果趋势强度约 **8.01**，验证样本 64 条、收益观测 63 条且真实历史仍短，不能包装成已验证的可部署择时结论。A-FEAR只衡量恐慌强度，不直接改变仓位建议。以上仅用于研究复盘和风险观察，不涉及真实账户金额、股数或自动交易。"
-    }
-    ,
+    },
     {
       "record_id": "20260914T210522-qa-1",
       "basis_trade_date": "2026-09-14",
@@ -807,15 +1278,40 @@
       "no_trade": false,
       "core_summary": "市场从极端下跌转入弱修复，宽度、个股中位数和A-FEAR明显改善，但结构仍为高位派发、趋势转弱且主力资金仍净流出；建议风险资产约25%，有限回补、不追涨。",
       "directions": [
-        {"rank": 1, "name": "红利低波／自由现金流／质量ETF", "reason": "趋势未确认前优先保留现金流质量和相对稳定的权益暴露。"},
-        {"rank": 2, "name": "沪深300／中证A500宽基ETF", "reason": "作为分散化Beta底盘，适合分批回补并等待趋势与宽度连续确认。"},
-        {"rank": 3, "name": "公用事业／红利央企ETF", "reason": "防御和分散属性较好，但不追单日反抽。"},
-        {"rank": 4, "name": "电力设备／电子化学品相关行业ETF", "reason": "存在成长主线和资金流入线索，但扩散尚未确认，只作小比例观察仓。"}
+        {
+          "rank": 1,
+          "name": "红利低波／自由现金流／质量ETF",
+          "reason": "趋势未确认前优先保留现金流质量和相对稳定的权益暴露。"
+        },
+        {
+          "rank": 2,
+          "name": "沪深300／中证A500宽基ETF",
+          "reason": "作为分散化Beta底盘，适合分批回补并等待趋势与宽度连续确认。"
+        },
+        {
+          "rank": 3,
+          "name": "公用事业／红利央企ETF",
+          "reason": "防御和分散属性较好，但不追单日反抽。"
+        },
+        {
+          "rank": 4,
+          "name": "电力设备／电子化学品相关行业ETF",
+          "reason": "存在成长主线和资金流入线索，但扩散尚未确认，只作小比例观察仓。"
+        }
       ],
       "avoid_directions": [
-        {"name": "银行、建材等传统权重的单日反抽", "reason": "相对强势不等于指数、宽度和资金共振，结构区制仍为高位派发。"},
-        {"name": "电子化学品、电力设备等高波动成长细分的追涨", "reason": "资金和涨幅线索仍集中，主力资金总体净流出，缺少连续性和盈利扩散确认。"},
-        {"name": "无盈利小盘题材、北证和高Beta品种", "reason": "A-FEAR仍处高恐慌，30日年化波动率23.72%，尚未回到适合追价的状态。"}
+        {
+          "name": "银行、建材等传统权重的单日反抽",
+          "reason": "相对强势不等于指数、宽度和资金共振，结构区制仍为高位派发。"
+        },
+        {
+          "name": "电子化学品、电力设备等高波动成长细分的追涨",
+          "reason": "资金和涨幅线索仍集中，主力资金总体净流出，缺少连续性和盈利扩散确认。"
+        },
+        {
+          "name": "无盈利小盘题材、北证和高Beta品种",
+          "reason": "A-FEAR仍处高恐慌，30日年化波动率23.72%，尚未回到适合追价的状态。"
+        }
       ],
       "turning_point_add_missing": [
         "上涨占比和行业上涨占比连续维持在50%以上，个股中位数继续为正",
@@ -833,7 +1329,18 @@
       "comparison_to_previous": {
         "previous_record_id": "20260911T210442-qa-1",
         "same_basis_trade_date": false,
-        "changed_fields": ["basis_trade_date", "source_run_id", "period_stage", "confidence", "position_pct", "position_range", "action", "directions", "avoid_directions", "evidence"],
+        "changed_fields": [
+          "basis_trade_date",
+          "source_run_id",
+          "period_stage",
+          "confidence",
+          "position_pct",
+          "position_range",
+          "action",
+          "directions",
+          "avoid_directions",
+          "evidence"
+        ],
         "summary": "相较上一条收盘后问答，市场从极端下跌转为明显弱修复，官方权益区间由0%-20%升至20%-40%，建议中枢由约3%升至约25%；但高位派发、趋势转弱、主力净流出和模型低稳健性仍限制加仓幅度。"
       },
       "risk_warning": "本次市场快照、A-FEAR和研究API基准日均为2026-09-14，missing_fields为空且接口校验通过。周期引擎的valuation.indices.csi1000不可用且没有代理；PMI为49.2且较上月下降1.1，宏观月度数据存在滞后。模型健康warning 61.83、漂移15.09低严重度，滚动20日Sharpe约-0.98、60日约-2.35；策略稳健性44.09、D级、deployable=false，因果趋势强度约8.02，样本仍短，不能包装为已验证的可部署择时结论。A-FEAR只衡量恐慌强度，不直接改变仓位建议。内容仅用于研究复盘和风险观察，不涉及真实账户或自动交易。",
@@ -880,11 +1387,150 @@
         "robustness_return_count": 64,
         "data_quality": "passed",
         "missing_fields": [],
-        "cycle_unavailable_fields": ["valuation.indices.csi1000"],
+        "cycle_unavailable_fields": [
+          "valuation.indices.csi1000"
+        ],
         "earnings_data_available": true
       },
       "answer_file": "data/chatgpt_qa_20260914_210522-qa-1.md",
       "answer_markdown": "# A股收盘后 ChatGPT 问答\n\n- 基准日：2026-09-14\n- 提问时间：2026-09-14 21:05:22 +08:00\n- 来源运行：20260914T210324-2eda2668\n\n## A．当前周期阶段\n\n**熊市初期（弱修复观察）｜置信度 68%。** 今日上涨占比 56.32%、个股中位数涨跌幅 0.28%，A-FEAR 降至 64.4689 且进入“恐慌缓和”，说明短线从极端下跌转为修复；但结构区制仍是“高位派发”，趋势仍为“趋势转弱”，主力资金仍净流出 131.49 亿元。因此六阶段判断仍放在熊市初期，括号内的弱修复只描述日度反弹，不代表长期周期已完成切换。月度周期引擎的稳定状态仍为 `late_bull`，候选状态和宏观确认仍不足以支持高置信度切换。\n\n## B．建议总仓位及相较昨天动作\n\n**建议总仓位约 25%，相较昨天有限回补；官方权益区间为 20%–40%。** 仓位分由 14.57 升至 24.46，主要因为宽度、个股中位数和恐慌阶段明显修复；但高位派发、趋势转弱和主力净流出仍在，暂不把 25% 以上的回补扩展为全面进攻，也不预测明日涨跌。四仓上优先使用宽基ETF与防御因子仓，α主动仓只保留小比例观察。\n\n## C．未来 3–12 个月风险收益比相对较好的方向（ETF 优先）\n\n1. **红利低波／自由现金流／质量 ETF**：在趋势未确认前提供相对稳定的权益暴露和现金流质量。\n2. **沪深 300／中证 A500 宽基 ETF**：作为分散化 Beta 底盘，适合分批回补，等待趋势与宽度连续确认。\n3. **公用事业／红利央企 ETF**：今日传统权重有反抽线索，但应以防御和分散为主，不追单日涨幅。\n4. **电力设备／电子化学品相关行业 ETF**：存在成长主线和资金流入线索，但主线扩散尚未确认，只适合小比例观察仓。\n\n## D．三个不应追的方向\n\n1. **银行、建材等传统权重的单日反抽**：今日相对强势不等于指数—宽度—资金共振，结构区制仍为高位派发。\n2. **电子化学品、电力设备及其他高波动成长细分的追涨**：资金和涨幅线索仍集中，主力资金总体净流出，缺少连续性与盈利扩散确认。\n3. **无盈利小盘题材、北证和高Beta品种**：A-FEAR仍处高恐慌，30日年化波动率 23.72%，小盘风险虽较昨日缓和但尚未回到可追价状态。\n\n## E．大幅加仓和减仓还缺的信号\n\n大幅加仓还需要：上涨占比、行业上涨占比连续维持在 50% 以上，个股中位数继续为正；主力资金由今日净流出 131.49 亿元转为连续净流入，并与北向同向；主要指数重新站稳 MA20，趋势由转弱转为初期或强趋势；A-FEAR继续回落、小盘恐慌差不再恶化；周期候选离开模糊状态，并出现 PMI、盈利和 ROE 的同步确认。\n\n进一步大幅减仓还需要：宽度再次跌破修复水平、强跌扩散，主力资金重新连续流出且北向转负；主要指数跌回 MA20 下方；A-FEAR重新升温并伴随小盘恐慌差扩大；盈利预期或 ROE 下修、信用利差上行与流动性收紧同时出现。\n\n## F．与昨天相比的实质变化\n\n- 机会分 **37.03→43.84**，风险扣分 **49.94→38.45**，仓位分 **14.57→24.46**；官方权益区间由 **0%–20%→20%–40%**，建议动作由降低风险改为有限回补。\n- 上涨占比 **11.59%→56.32%**，行业上涨占比 **6.45%→51.61%**，个股中位数 **-2.21%→0.28%**；下跌扩散明显缓解。\n- 主力资金净流出 **-945.17→-131.49 亿元**，仍为流出但幅度显著收敛；北向净流入 **29.13→23.85 亿元**，仍为正。\n- A-FEAR **74.5023→64.4689**，从高恐慌、恐慌升温转为高恐慌、恐慌缓和；沪深300恐慌 **62.5887→73.0116**，中证1000恐慌 **76.4672→64.9626**，小盘恐慌差 **13.8785→-8.0489**。\n\n实质变化是“市场从极端下跌转入宽度修复、资金流出收敛和恐慌缓和”，但主力仍未转正、趋势仍转弱，所以今天可有限回补，不宜追涨或一次性把风险预算打满。\n\n## 风险、模型健康和证据边界\n\n本次市场快照、A-FEAR、研究 API 的基准日均为 **2026-09-14**，数据质量 `missing_fields=[]`，相关接口校验通过。周期引擎的 `valuation.indices.csi1000` 仍不可用且没有代理；PMI 最新值为 49.2、较上月下降 1.1，宏观月度数据存在滞后。\n\n模型健康为 **warning，61.83 分**，漂移分 **15.09、低严重度**；滚动20日 Sharpe 约 **-0.98**，滚动60日 Sharpe 约 **-2.35**。策略稳健性为 **44.09、D级、deployable=false**，因果趋势强度约 **8.02**，样本仍短，不能包装成已验证的可部署择时结论。A-FEAR只衡量恐慌强度，不直接改变仓位建议。以上仅用于研究复盘和风险观察，不涉及真实账户金额、股数或自动交易。"
+    },
+    {
+      "record_id": "20260915T211350-qa-1",
+      "basis_trade_date": "2026-09-15",
+      "asked_at": "2026-09-15T21:13:50+08:00",
+      "model": "Codex GPT-5",
+      "source_type": "local_post_close",
+      "source_title": "MyInvestMarket 收盘后日更",
+      "source_run_id": "20260915T210519-f40ef723",
+      "period_stage": "熊市初期（下行收缩、恐慌升温）",
+      "confidence": 72,
+      "position_pct": 10,
+      "position_range": "0%-20%",
+      "action": "下调模型建议仓位",
+      "no_trade": false,
+      "core_summary": "9月15日宽度修复失效，趋势、资金和恐慌同步转弱；建议参考权益暴露约10%，落在官方0%-20%区间。",
+      "directions": [
+        {
+          "rank": 1,
+          "name": "货币基金／短久期利率债ETF",
+          "reason": "弱势确认前优先保留流动性与降低组合波动。"
+        },
+        {
+          "rank": 2,
+          "name": "红利低波／自由现金流／质量因子ETF",
+          "reason": "作为较低波动权益暴露候选，仍需核对股息可持续性、估值与集中度。"
+        },
+        {
+          "rank": 3,
+          "name": "沪深300／中证A500宽基ETF",
+          "reason": "适合分散化Beta研究，但指数仍低于MA20且估值不便宜，等待趋势确认。"
+        },
+        {
+          "rank": 4,
+          "name": "公用事业／运营商现金流型行业ETF",
+          "reason": "防御性研究候选；本次日度行业数据不足以证明相对收益，需另核对估值和成分。"
+        }
+      ],
+      "avoid_directions": [
+        {
+          "name": "半导体、电子化学品、风电设备等局部强势主题",
+          "reason": "流入集中而主力全市场净流出644.12亿元，宽度未扩散。"
+        },
+        {
+          "name": "创业板、北证及高Beta小盘成长",
+          "reason": "20日跌幅明显且低于MA20，高恐慌环境下波动与流动性风险较大。"
+        },
+        {
+          "name": "未盈利小票和拥挤题材",
+          "reason": "缺少覆盖全市场的盈利修正、拥挤度与可交易性筛选，不能凭题材热度外推回报。"
+        }
+      ],
+      "turning_point_add_missing": [
+        "上涨占比和行业上涨占比连续多日高于50%，个股中位数为正并扩散。",
+        "主力资金持续转为净流入且与跨境资金不明显背离。",
+        "主要指数收复并站稳MA20，趋势转弱状态解除。",
+        "A-FEAR回落且跌停、强跌占比同步缓和。",
+        "盈利预测和ROE改善从少数行业扩散至更广市场。"
+      ],
+      "turning_point_reduce_missing": [
+        "宽度继续恶化、跌停和强跌家数同步增加。",
+        "主力连续大额流出且北向转负。",
+        "指数下破近期低点、波动继续抬升。",
+        "盈利预期转弱或融资条件收紧。"
+      ],
+      "changes_vs_yesterday": "机会分43.84→30.46，风险扣分38.45→41.03，仓位分24.46→10.98，官方权益区间20%-40%→0%-20%；上涨占比56.32%→20.19%，行业上涨占比51.61%→6.45%，个股中位数+0.28%→-1.50%；主力净流出-131.49→-644.12亿元，北向流入23.85→22.97亿元；A-FEAR64.4689→78.0664，转为恐慌升温。",
+      "comparison_to_previous": {
+        "previous_record_id": "20260914T210522-qa-1",
+        "same_basis_trade_date": false,
+        "changed_fields": [
+          "basis_trade_date",
+          "source_run_id",
+          "period_stage",
+          "confidence",
+          "position_pct",
+          "position_range",
+          "action",
+          "directions",
+          "avoid_directions",
+          "evidence"
+        ],
+        "summary": "与昨日不是同一基准日的新记录；最新数据表明宽度和资金流快速恶化，仓位分由24.46降至10.98，建议参考暴露由25%降至10%。"
+      },
+      "risk_warning": "A股趋势和广度在9月15日明显走弱。估值分位不低，宏观流动性和盈利扩散资料有缺口；DXY、美元兑人民币、8月末M2/社融/新增信贷以及全A盈利预测修正不可用。模型健康warning，稳健性D级且deployable=false，65个收益观测不能支持可部署择时结论。A-FEAR不是买入信号。仓位仅为研究模型参考，不涉及真实持仓与个券交易指令。",
+      "evidence_summary": "基准日2026-09-15，run_id 20260915T210519-f40ef723；机会30.46、风险扣分41.03、仓位分10.98、建议区间0%-20%。A-FEAR78.0664、高恐慌升温，1日+13.5975。上涨占比20.19%、行业上涨占比6.45%、个股中位数-1.4994%；主力净流出644.12亿元、北向净流入22.97亿元。上证/深证/创业板20日收益-3.16%/-9.13%/-12.35%，均低于MA20。PMI 49.8且环比回升，但综合PMI 49.5；沪市公司H1净利润同比+17.6%，不代表全A普遍改善。模型健康60.86 warning；稳健性39.35 D级、deployable=false。",
+      "evidence": {
+        "market_opportunity_score": 30.46,
+        "market_position_score": 10.98,
+        "risk_penalty_score": 41.03,
+        "recommended_equity_position_range": "0%-20%",
+        "a_fear": 78.0664,
+        "a_fear_level": "高恐慌",
+        "a_fear_phase": "恐慌升温",
+        "a_fear_change_1d": 13.5975,
+        "fear_300": 74.9861,
+        "fear_1000": 75.8882,
+        "advancer_ratio_pct": 20.19,
+        "industry_up_ratio_pct": 6.45,
+        "median_pct_change": -1.4994,
+        "main_net_inflow_100m_cny": -644.1153,
+        "northbound_net_inflow_100m_cny": 22.9705,
+        "shanghai_20d_return_pct": -3.1582,
+        "shenzhen_20d_return_pct": -9.1265,
+        "chinext_20d_return_pct": -12.3503,
+        "valuation_pe_percentile_5y": {
+          "shanghai": 78.08,
+          "chinext": 48.46,
+          "shenzhen": 79.55
+        },
+        "china_10y_yield_pct": 1.6865,
+        "us_10y_yield_pct": 4.96,
+        "pmi_august": 49.8,
+        "model_health_score": 60.86,
+        "model_health_status": "warning",
+        "drift_score": 16.99,
+        "rolling_sharpe_20d": -1.653,
+        "rolling_sharpe_60d": -2.063,
+        "robustness_score": 39.35,
+        "robustness_grade": "D",
+        "deployable": false,
+        "oos_sharpe": -3.1706,
+        "causal_strength": 7.9,
+        "return_observation_count": 65,
+        "missing_fields": [
+          "macro.dxy",
+          "macro.usd_cny",
+          "A股全市场8月末M2/社融/新增信贷快照",
+          "全市场盈利预测修正与ROE扩散序列"
+        ]
+      },
+      "answer_file": "data/chatgpt_qa_20260915T211350-qa-1.md",
+      "answer_markdown": "# A股收盘后 ChatGPT 问答\n\n- 基准日：2026-09-15\n- 提问时间：2026-09-15 21:13:50 +08:00\n- 来源运行：20260915T210519-f40ef723\n\n## A．六阶段判断\n\n**熊市初期（下行收缩、恐慌升温）｜置信度 72%。** 这是当前市场状态的六阶段归类，不代表已经确认长期熊市。上证、深证、创业板均低于 MA20，个股上涨占比仅 20.19%，行业上涨占比 6.45%，A-FEAR升至 78.07；反向证据是项目月度周期引擎数据文件截至9月1日、未含本次交易日，不能拿旧标签确认长期拐点；8月制造业PMI回升，因此跨季度阶段只给中等置信度。\n\n## B．建议总仓位及相较昨天动作\n\n**模型研究参考权益仓位约 10%，官方区间 0%–20%；较昨日 25%参考值下调约 15 个百分点。** 市场机会分由 43.84降至30.46，风险扣分由38.45升至41.03，仓位分由24.46降至10.98。若只按四仓政策区间表达：β宽基仓0%–7%、α主动仓0%–2%、防御因子仓2%–11%、流动性仓80%–100%；这些是股票账户模型比例，不是基于真实持仓的交易指令。\n\n## C．未来 3–12 个月风险收益比方向（ETF优先）\n\n1. **货币基金／短久期利率债ETF**：当前用于压低组合波动和保留流动性，等待权益宽度及资金流确认；它是防守配置，不等同于看空长期权益。\n2. **红利低波、自由现金流、质量因子ETF**：作为较低波动的权益暴露优先观察；仍需比较股息可持续性、成分股估值和行业集中度，不能只按历史股息率筛选。\n3. **沪深300／中证A500宽基ETF**：若以3–12个月分散化Beta为目标，优先于单一主题；当前三大指数仍在MA20下方，且沪深、深成指PE约处近五年78、80分位，宜等趋势和估值风险改善后再评估。\n4. **公用事业／运营商等现金流型行业ETF**：可作为防御性行业研究候选，需进一步核对成分集中、分红覆盖和利率敏感度；本次日度行业数据不足以证明其相对收益优势。\n\n## D．三个不应追的方向\n\n1. **半导体、电子化学品、风电设备等当日资金流入或局部强势主题**：主力资金全市场仍净流出644.12亿元，只有约20.19%的个股上涨，资金线索尚未扩散成市场宽度。\n2. **创业板、北证及高Beta小盘成长**：创业板20日跌幅约12.35%，北证50约9.61%；三者均低于MA20，当前恐慌升温。\n3. **未盈利小票和拥挤题材**：短线振幅和流动性风险较高；本次未取得覆盖全市场的盈利预测修正、个股拥挤度及可交易性筛选，不能据主题热度外推基本面回报。\n\n## E．大幅加仓和进一步减仓还缺的信号\n\n大幅加仓前，至少需要：上涨家数占比和行业上涨占比连续多个交易日回到50%以上、个股中位数转正并扩散；主力资金转为持续净流入且北向/跨境资金不明显背离；主要指数收复并站稳MA20，趋势转弱状态解除；A-FEAR从高位回落且跌停、强跌占比同步缓和；盈利预测和ROE改善能从少数行业扩散到更广范围。\n\n进一步下调模型暴露前，需观察：宽度继续恶化并伴随跌停和强跌家数上升；主力资金连续大额流出、北向转负；指数下破近期低点且波动继续抬高；盈利预期转弱或融资条件收紧。单日恐慌分不能单独触发仓位变化。\n\n## F．与昨天相比的实质变化\n\n- 机会分 **43.84→30.46**，风险扣分 **38.45→41.03**，仓位分 **24.46→10.98**；官方权益区间从 **20%–40%降至0%–20%**。\n- 上涨家数占比 **56.32%→20.19%**，行业上涨占比 **51.61%→6.45%**，个股中位数 **+0.28%→-1.50%**；宽度修复显著逆转。\n- 主力净流入 **-131.49→-644.12亿元**；北向仍为净流入但由 **23.85降至22.97亿元**，内外资线索分化扩大。\n- A-FEAR **64.4689→78.0664**，日变动 **+13.5975**，阶段由恐慌缓和转为恐慌升温。上证/深证/创业板20日收益分别约 **-3.16%/-9.13%/-12.35%**，且均低于MA20。\n\n**实质变化是昨天的宽度修复迅速失效，指数趋势、市场广度和资金流同步转弱，因此模型从有限回补转为防守建议。** 这不是对明日涨跌的预测；若实际持仓与风险承受度不同，不应机械照搬模型比例。\n\n## 宏观、盈利、估值与流动性检查\n\n截至9月15日可获得的国家统计局数据中，8月制造业PMI为49.8（较上月+0.6），新订单50.6、生产50.4，但综合PMI产出49.5、非制造业商务活动49.0，复苏仍不均衡。1–8月工业增加值同比+5.3%，8月社零同比仅+0.4%；工业结构中高技术制造业仍较强。上交所披露的沪市公司2026年上半年营收同比+6.3%、净利润同比+17.6%，但这不等于全A盈利普遍改善，尚缺全市场盈利预期修正与ROE扩散数据。[国家统计局：8月PMI](https://www.stats.gov.cn/sj/zxfb/202608/t20260831_1965154.html)、[国家统计局：8月国民经济运行](https://www.stats.gov.cn/sj/zxfb/202609/t20260915_1965307.html)、[上交所：沪市公司2026年半年报综述](https://www.sse.com.cn/aboutus/mediacenter/hotandd/c/c_20260830_10830362.shtml)\n\n估值并非全面便宜：上证PE约15.69、近五年78分位，深证PE约29.56、80分位，创业板PE约37.19、48分位。利率方面，本地快照显示中国10年国债收益率1.6865%（9月15日），美国10年期4.96%（9月11日）；但DXY、美元兑人民币缺失，本地快照也没有8月末M2、社融与新增信贷的可核验值，因此只能说债券收益率较低，不能据此断言股市流动性宽松。A股资金代理显示北向小幅净流入而主力大幅净流出，分歧明显。\n\n## 模型健康、稳健性与风险提示\n\n模型健康 **60.86/100，warning**；漂移分 **16.99、低严重度**，滚动20日/60日 Sharpe约 **-1.65/-2.06**。稳健性 **39.35、D级、deployable=false**；样本约65个收益观测，样本外Sharpe约-3.17，因果强度约7.9/100。样本短且样本外结果偏弱，不能包装成已验证、可部署的择时能力。A-FEAR只描述恐慌强度，不直接产生买入信号。本分析用于收盘研究，不涉及真实账户金额、股数、个券交易指令或自动下单。",
+      "external_sources": [
+        "https://www.stats.gov.cn/sj/zxfb/202608/t20260831_1965154.html",
+        "https://www.stats.gov.cn/sj/zxfb/202609/t20260915_1965307.html",
+        "https://www.sse.com.cn/aboutus/mediacenter/hotandd/c/c_20260830_10830362.shtml"
+      ]
     }
   ]
 }
