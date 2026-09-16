@@ -1,23 +1,23 @@
 # A-FEAR v1 Audit
 
-- Generated at: 2026-09-15T21:05:18+08:00
+- Generated at: 2026-09-16T21:03:46+08:00
 - Passed: True
-- Source observations: 769
-- Complete IO/MO observations: 723
-- Official scores: 474
-- Latest: 2026-09-15 / 78.0664 / high
+- Source observations: 770
+- Complete IO/MO observations: 724
+- Official scores: 475
+- Latest: 2026-09-16 / 42.7517 / high
 - Score range: 10.9538 .. 99.0023
 
 ## Checks
 
 | Check | Passed | Detail |
 |---|---:|---|
-| source_history_depth | True | 769 source observations; target 750. |
-| official_history_depth | True | 474 official daily scores after the minimum-sample warm-up. |
-| latest_is_official | True | Latest 2026-09-15 score=78.0664 confidence=high. |
+| source_history_depth | True | 770 source observations; target 750. |
+| official_history_depth | True | 475 official daily scores after the minimum-sample warm-up. |
+| latest_is_official | True | Latest 2026-09-16 score=42.7517 confidence=high. |
 | score_bounds | True | Observed range 10.9538..99.0023. |
-| component_independence | True | Highest absolute pairwise component Spearman correlation=0.6612. |
-| jump_frequency | True | Absolute one-day changes above 30: 14/474 (2.95%). |
+| component_independence | True | Highest absolute pairwise component Spearman correlation=0.659. |
+| jump_frequency | True | Absolute one-day changes above 30: 15/475 (3.16%). |
 | latest_broad_panic_consistency | True | Latest score is below the extreme-panic threshold; breadth/tail confirmation is not required. |
 
 ## Largest One-Day Changes
@@ -28,6 +28,7 @@
 | 2024-10-09 | 47.7758 | 91.0875 | 43.3117 |
 | 2026-03-10 | 68.9744 | 31.5121 | 37.4623 |
 | 2026-03-24 | 96.3819 | 59.1975 | 37.1844 |
+| 2026-09-16 | 78.0664 | 42.7517 | 35.3147 |
 | 2026-02-03 | 84.265 | 50.1056 | 34.1594 |
 | 2026-03-19 | 46.9378 | 80.5506 | 33.6128 |
 | 2026-07-27 | 87.8748 | 55.2758 | 32.599 |
